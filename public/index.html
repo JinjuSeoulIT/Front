@@ -1,0 +1,333 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>직원 등록</title>
+  </head>
+  <body>
+    <div id="root"></div>
+
+    <script
+      crossorigin
+      src="https://unpkg.com/react@18/umd/react.development.js"
+    ></script>
+    <script
+      crossorigin
+      src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"
+    ></script>
+    <script
+      crossorigin
+      src="https://unpkg.com/@emotion/react@11/dist/emotion-react.umd.min.js"
+    ></script>
+    <script
+      crossorigin
+      src="https://unpkg.com/@emotion/styled@11/dist/emotion-styled.umd.min.js"
+    ></script>
+    <script
+      crossorigin
+      src="https://unpkg.com/@mui/material@5/umd/material-ui.development.js"
+    ></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <script type="text/babel">
+      const { useState, useEffect } = React;
+      const {
+        Button,
+        FormControl,
+        FormControlLabel,
+        FormLabel,
+        InputLabel,
+        MenuItem,
+        Radio,
+        RadioGroup,
+        Select,
+        TextField,
+      } = MaterialUI;
+
+      const DAUM_POSTCODE_SCRIPT =
+        "https://t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js";
+
+      const initialForm = {
+        employeeId: "",
+        name: "",
+        email: "",
+        emailError: "",
+        department: "",
+        gender: "",
+        birthDate: "",
+        phonePrefix: "010",
+        phoneNumber: "",
+        postcode: "",
+        address: "",
+        detailAddress: "",
+        extraAddress: "",
+      };
+
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+      const formatPhoneNumber = (value) => {
+        const digitsOnly = value.replace(/[^0-9]/g, "");
+        if (digitsOnly.length <= 4) return digitsOnly;
+        if (digitsOnly.length <= 8) {
+          return `${digitsOnly.slice(0, 4)}-${digitsOnly.slice(4)}`;
+        }
+        return `${digitsOnly.slice(0, 4)}-${digitsOnly.slice(4, 8)}`;
+      };
+
+      function EmployeeForm() {
+        const [form, setForm] = useState(initialForm);
+
+        useEffect(() => {
+          const existingScript = document.querySelector(
+            `script[src="${DAUM_POSTCODE_SCRIPT}"]`
+          );
+
+          if (existingScript) {
+            return;
+          }
+
+          const script = document.createElement("script");
+          script.src = DAUM_POSTCODE_SCRIPT;
+          script.async = true;
+          document.body.appendChild(script);
+        }, []);
+
+        const handleEmailChange = (event) => {
+          const { value } = event.target;
+          setForm((prev) => ({
+            ...prev,
+            email: value,
+            emailError:
+              value === "" || emailRegex.test(value)
+                ? ""
+                : "이메일 형식을 확인해 주세요.",
+          }));
+        };
+
+        const handleChange = (event) => {
+          const { name, value } = event.target;
+          if (!name) {
+            return;
+          }
+          setForm((prev) => ({ ...prev, [name]: value }));
+        };
+
+        const handlePhoneChange = (event) => {
+          setForm((prev) => ({
+            ...prev,
+            phoneNumber: formatPhoneNumber(event.target.value),
+          }));
+        };
+
+        const handleAddressSearch = () => {
+          if (!window.daum || !window.daum.Postcode) {
+            alert("주소 검색 스크립트가 아직 준비되지 않았습니다. 잠시 후 다시 시도해 주세요.");
+            return;
+          }
+
+          new window.daum.Postcode({
+            oncomplete: (data) => {
+              const address =
+                data.userSelectedType === "R"
+                  ? data.roadAddress
+                  : data.jibunAddress;
+              let extraAddress = "";
+
+              if (data.userSelectedType === "R") {
+                if (data.bname && /[동|로|가]$/g.test(data.bname)) {
+                  extraAddress += data.bname;
+                }
+                if (data.buildingName && data.apartment === "Y") {
+                  extraAddress += extraAddress
+                    ? `, ${data.buildingName}`
+                    : data.buildingName;
+                }
+                if (extraAddress) {
+                  extraAddress = ` (${extraAddress})`;
+                }
+              }
+
+              setForm((prev) => ({
+                ...prev,
+                postcode: data.zonecode || "",
+                address,
+                extraAddress,
+              }));
+            },
+          }).open();
+        };
+
+        const handleSubmit = (event) => {
+          event.preventDefault();
+          const fullPhone = `${form.phonePrefix}-${form.phoneNumber}`;
+          alert(
+            `등록 완료!\n${JSON.stringify({ ...form, phone: fullPhone }, null, 2)}`
+          );
+        };
+
+        return (
+          <div>
+            <h2>직원 등록</h2>
+            <form onSubmit={handleSubmit}>
+              <TextField
+                fullWidth
+                label="직원 아이디"
+                name="employeeId"
+                value={form.employeeId}
+                onChange={handleChange}
+                margin="normal"
+                required
+              />
+
+              <TextField
+                fullWidth
+                label="직원 이름"
+                name="name"
+                value={form.name}
+                onChange={handleChange}
+                margin="normal"
+                required
+              />
+
+              <TextField
+                fullWidth
+                label="이메일"
+                name="email"
+                type="email"
+                value={form.email}
+                onChange={handleEmailChange}
+                margin="normal"
+                error={Boolean(form.emailError)}
+                helperText={form.emailError || ""}
+              />
+
+              <FormControl fullWidth margin="normal">
+                <InputLabel id="dept-label">부서</InputLabel>
+                <Select
+                  labelId="dept-label"
+                  name="department"
+                  value={form.department}
+                  label="부서"
+                  onChange={handleChange}
+                >
+                  <MenuItem value="accounting">회계</MenuItem>
+                  <MenuItem value="sales">영업</MenuItem>
+                  <MenuItem value="hr">인사</MenuItem>
+                  <MenuItem value="it">IT</MenuItem>
+                </Select>
+              </FormControl>
+
+              <FormControl component="fieldset" margin="normal">
+                <FormLabel>성별</FormLabel>
+                <RadioGroup
+                  name="gender"
+                  value={form.gender}
+                  onChange={handleChange}
+                >
+                  <FormControlLabel value="M" control={<Radio />} label="남자" />
+                  <FormControlLabel value="F" control={<Radio />} label="여자" />
+                </RadioGroup>
+              </FormControl>
+
+              <TextField
+                fullWidth
+                label="생년월일"
+                name="birthDate"
+                type="date"
+                value={form.birthDate}
+                onChange={handleChange}
+                margin="normal"
+                InputLabelProps={{ shrink: true }}
+              />
+
+              <FormControl fullWidth margin="normal">
+                <InputLabel id="phone-prefix-label">번호 앞자리</InputLabel>
+                <Select
+                  labelId="phone-prefix-label"
+                  name="phonePrefix"
+                  value={form.phonePrefix}
+                  label="번호 앞자리"
+                  onChange={handleChange}
+                >
+                  <MenuItem value="010">010</MenuItem>
+                  <MenuItem value="011">011</MenuItem>
+                  <MenuItem value="016">016</MenuItem>
+                  <MenuItem value="017">017</MenuItem>
+                  <MenuItem value="018">018</MenuItem>
+                  <MenuItem value="019">019</MenuItem>
+                </Select>
+              </FormControl>
+
+              <TextField
+                fullWidth
+                label="전화번호"
+                name="phoneNumber"
+                type="tel"
+                value={form.phoneNumber}
+                onChange={handlePhoneChange}
+                margin="normal"
+                inputProps={{ maxLength: 9 }}
+              />
+
+              <TextField
+                fullWidth
+                label="우편번호"
+                name="postcode"
+                value={form.postcode}
+                onChange={handleChange}
+                margin="normal"
+              />
+
+              <Button
+                type="button"
+                variant="outlined"
+                fullWidth
+                onClick={handleAddressSearch}
+              >
+                우편번호 찾기
+              </Button>
+
+              <TextField
+                fullWidth
+                label="주소"
+                name="address"
+                value={form.address}
+                onChange={handleChange}
+                margin="normal"
+              />
+              <TextField
+                fullWidth
+                label="상세 주소"
+                name="detailAddress"
+                value={form.detailAddress}
+                onChange={handleChange}
+                margin="normal"
+              />
+              <TextField
+                fullWidth
+                label="참고 항목"
+                name="extraAddress"
+                value={form.extraAddress}
+                onChange={handleChange}
+                margin="normal"
+              />
+
+              <Button
+                type="submit"
+                fullWidth
+                variant="contained"
+                color="primary"
+              >
+                등록하기
+              </Button>
+            </form>
+          </div>
+        );
+      }
+
+      const root = ReactDOM.createRoot(document.getElementById("root"));
+      root.render(<EmployeeForm />);
+    </script>
+  </body>
+</html>

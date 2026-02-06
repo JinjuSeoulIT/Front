@@ -1,0 +1,23 @@
+[
+  {
+    "content": "프론트엔드 page 컴포넌트 세분화. (Done)"
+  },
+  {
+    "content": "employeeAPI에서 백엔드로부터 넘어오는 Response 객체 확인을 위한 console.log 추가 (Done)"
+  },
+  {
+    "content": "employeeAPI에서 res.data에는 백엔드에서 넘어온 ApiResponse을 employeeSaga에서 콘솔로 확인"
+  },
+  {
+    "content": "logback 생성, 3가지 appender추가 . info레벨의 콘솔 로그, debug레벨의 파일로그, warning이상 레벨의 파일로그."
+  },
+  {
+    "content": "/data/updates.json 추가로 업데이트 관리."
+  },
+  {
+    "content": "넘버링 추가해서 순서를 볼 수 있게 처리하였음. 그림도 추가하였음."
+  }
+]
+
+
+ 

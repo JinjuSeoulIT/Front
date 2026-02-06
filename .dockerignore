@@ -1,0 +1,9 @@
+node_modules
+.next
+build
+npm-debug.log
+yarn-error.log
+.git
+.vscode
+.idea
+**/.DS_Store

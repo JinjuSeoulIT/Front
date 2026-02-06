@@ -1,0 +1,14 @@
+[
+  {
+    "date": "12.18",
+    "content": "프론트엔드 page 컴포넌트 세분화. (Done)"
+  },
+  {
+    "date": "12.16",
+    "content": "employeeAPI에서 console.log(res)로 백엔드로부터 넘어오는 Response 객체 확인. (Done)"
+  },
+  {
+    "date": "미정",
+    "content": "employeeAPI에서 res.data에는 백엔드에서 넘어온 ApiResponse(success, message, T)를 employeeSaga에서 처리"
+  }
+]
