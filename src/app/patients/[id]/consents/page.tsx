@@ -94,6 +94,12 @@ function normalizeAgreedAtForSubmit(value: string) {
   return v.length === 16 ? `${v}:00` : v;
 }
 
+function consentTypeKey(t: ConsentType, index?: number) {
+  if (t.code) return `${t.code}:${t.id ?? "no-id"}`;
+  if (t.id != null) return `id:${t.id}`;
+  return `idx:${index ?? 0}`;
+}
+
 export default function PatientConsentsPage() {
   const params = useParams<{ id: string }>();
   const dispatch = useDispatch<AppDispatch>();
@@ -606,25 +612,32 @@ export default function PatientConsentsPage() {
                 fullWidth
                 disabled={typeLoading}
               >
-                {consentTypes.map((t) => (
-                  <MenuItem key={t.id} value={t.code}>
+                {consentTypes.map((t, index) => (
+                  <MenuItem key={consentTypeKey(t, index)} value={t.code}>
                     {t.name}
                   </MenuItem>
                 ))}
               </TextField>
             ) : (
-              <TextField
-                label="동의서 유형"
-                value={consentForm.consentType}
-                onChange={(e) =>
-                  setConsentForm((prev) => ({
-                    ...prev,
-                    consentType: e.target.value,
-                  }))
-                }
-                fullWidth
-                disabled={consentDialogMode === "edit"}
-              />
+              <Stack spacing={1}>
+                <TextField
+                  label="동의서 유형"
+                  value={consentForm.consentType}
+                  onChange={(e) =>
+                    setConsentForm((prev) => ({
+                      ...prev,
+                      consentType: e.target.value,
+                    }))
+                  }
+                  fullWidth
+                  disabled={consentDialogMode === "edit" || (consentDialogMode === "create" && consentTypes.length === 0)}
+                />
+                {consentDialogMode === "create" && consentTypes.length === 0 && (
+                  <Typography variant="caption" color="error">
+                    동의서 유형이 비활성화 상태입니다.
+                  </Typography>
+                )}
+              </Stack>
             )}
             <TextField
               label="비고"
@@ -696,7 +709,11 @@ export default function PatientConsentsPage() {
           <Button
             variant="contained"
             onClick={onSubmitConsent}
-            disabled={consentLoading || !consentForm.consentType.trim()}
+            disabled={
+              consentLoading ||
+              !consentForm.consentType.trim() ||
+              (consentDialogMode === "create" && consentTypes.length === 0)
+            }
           >
             {consentDialogMode === "create" ? "등록" : "저장"}
           </Button>
@@ -781,8 +798,8 @@ export default function PatientConsentsPage() {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {consentTypesAll.map((t) => (
-                  <TableRow key={t.id} hover>
+                {consentTypesAll.map((t, index) => (
+                  <TableRow key={consentTypeKey(t, index)} hover>
                     <TableCell>{t.code}</TableCell>
                     <TableCell>{t.name}</TableCell>
                     <TableCell>{t.sortOrder ?? "-"}</TableCell>

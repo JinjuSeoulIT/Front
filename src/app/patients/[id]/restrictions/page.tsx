@@ -34,6 +34,7 @@ import {
   fetchPatientRestrictionsApi,
   updatePatientRestrictionApi,
 } from "@/lib/restrictionApi";
+import { fetchCodesApi } from "@/lib/codeApi";
 
 type RestrictionFormState = {
   restrictionType: string;
@@ -42,16 +43,11 @@ type RestrictionFormState = {
   activeYn: boolean;
 };
 
-const restrictionOptions = [
-  { value: "INFECTION", label: "감염주의(Infection)" },
-  { value: "ALLERGY", label: "알레르기(Allergy)" },
-  { value: "BLACKLIST", label: "블랙리스트(Blacklist)" },
-  { value: "NO_SHOW", label: "노쇼(No-show)" },
-];
+type RestrictionOption = { value: string; label: string };
 
-function restrictionLabel(type?: string | null) {
+function restrictionLabel(type: string | undefined | null, options: RestrictionOption[]) {
   if (!type) return "-";
-  const found = restrictionOptions.find((opt) => opt.value === type);
+  const found = options.find((opt) => opt.value === type);
   return found ? found.label : type;
 }
 
@@ -74,6 +70,7 @@ export default function PatientRestrictionsPage() {
   const [restrictions, setRestrictions] = React.useState<PatientRestriction[]>(
     []
   );
+  const [restrictionOptions, setRestrictionOptions] = React.useState<RestrictionOption[]>([]);
 
   const [dialogOpen, setDialogOpen] = React.useState(false);
   const [dialogMode, setDialogMode] = React.useState<"create" | "edit">("create");
@@ -103,6 +100,25 @@ export default function PatientRestrictionsPage() {
   React.useEffect(() => {
     loadRestrictions();
   }, [loadRestrictions]);
+
+  React.useEffect(() => {
+    let mounted = true;
+    const loadRestrictionCodes = async () => {
+      try {
+        const list = await fetchCodesApi("PATIENT_RESTRICTION");
+        if (!mounted) return;
+        setRestrictionOptions(list.map((c) => ({ value: c.code, label: c.name })));
+      } catch {
+        if (mounted) {
+          setRestrictionOptions([]);
+        }
+      }
+    };
+    loadRestrictionCodes();
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   const openCreate = () => {
     setDialogMode("create");
@@ -244,7 +260,7 @@ export default function PatientRestrictionsPage() {
               {restrictions.map((item) => (
                 <TableRow key={item.restrictionId} hover>
                   <TableCell sx={{ fontWeight: 800 }}>
-                    {restrictionLabel(item.restrictionType)}
+                    {restrictionLabel(item.restrictionType, restrictionOptions)}
                   </TableCell>
                   <TableCell>{item.reason ?? "-"}</TableCell>
                   <TableCell>{item.activeYn ? "활성" : "비활성"}</TableCell>
@@ -305,6 +321,7 @@ export default function PatientRestrictionsPage() {
                 }))
               }
               fullWidth
+              disabled={restrictionOptions.length === 0}
             >
               {restrictionOptions.map((opt) => (
                 <MenuItem key={opt.value} value={opt.value}>
@@ -312,6 +329,11 @@ export default function PatientRestrictionsPage() {
                 </MenuItem>
               ))}
             </TextField>
+            {restrictionOptions.length === 0 && (
+              <Typography variant="caption" color="error">
+                제한 유형이 비활성화 상태입니다.
+              </Typography>
+            )}
             <TextField
               label="사유"
               value={form.reason}
@@ -339,7 +361,7 @@ export default function PatientRestrictionsPage() {
           <Button
             variant="contained"
             onClick={onSubmit}
-            disabled={!form.restrictionType.trim()}
+            disabled={!form.restrictionType.trim() || restrictionOptions.length === 0}
           >
             {dialogMode === "create" ? "등록" : "저장"}
           </Button>
