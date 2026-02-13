@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import * as React from "react";
 import Link from "next/link";
@@ -9,7 +9,6 @@ import {
   Card,
   CardContent,
   Chip,
-  Divider,
   FormControl,
   InputLabel,
   MenuItem,
@@ -20,31 +19,31 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import AssignmentOutlinedIcon from "@mui/icons-material/AssignmentOutlined";
+import ScienceOutlinedIcon from "@mui/icons-material/ScienceOutlined";
 import FactCheckOutlinedIcon from "@mui/icons-material/FactCheckOutlined";
 import HelpOutlineOutlinedIcon from "@mui/icons-material/HelpOutlineOutlined";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import AddIcon from "@mui/icons-material/Add";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
-import MonitorHeartOutlinedIcon from "@mui/icons-material/MonitorHeartOutlined";
-import ScienceOutlinedIcon from "@mui/icons-material/ScienceOutlined";
+import SearchOutlinedIcon from "@mui/icons-material/SearchOutlined";
+import RestartAltOutlinedIcon from "@mui/icons-material/RestartAltOutlined";
 import {
-  Assessment,
-  AssessmentCreatePayload,
-  createAssessmentApi,
-  deleteAssessmentApi,
-  fetchAssessmentsApi,
-  updateAssessmentApi,
-} from "@/lib/assessmentApi";
+  ImagingExam,
+  ImagingExamCreatePayload,
+  createImagingExamApi,
+  deleteImagingExamApi,
+  fetchImagingExamsApi,
+  searchImagingExamsApi,
+  updateImagingExamApi,
+} from "@/lib/imagingExamApi";
 
-const emptyForm: AssessmentCreatePayload = {
+type SearchBy = "visitId" | "imagingType";
+
+const emptyForm: ImagingExamCreatePayload = {
   visitId: "",
-  visitReason: "",
-  medicalHistory: "",
-  allergyYn: "N",
-  allergyNote: "",
-  nurseId: "",
-  isActive: "Y",
+  imagingType: "",
+  examStatusYn: "Y",
+  examAt: "",
 };
 
 const safe = (value?: string | null) => {
@@ -52,54 +51,70 @@ const safe = (value?: string | null) => {
   return v ? v : "-";
 };
 
-const activeLabel = (value?: string | null) => {
-  const v = value?.trim();
-  return v ? v : "Y";
-};
-
-const activeText = (value?: string | null) =>
-  activeLabel(value) === "N" ? "비활성" : "활성";
-
 const normalize = (value?: string | null) => {
   const v = value?.trim();
   return v ? v : null;
 };
 
-export default function NursePage() {
-  const [items, setItems] = React.useState<Assessment[]>([]);
+const normalizeDateTime = (value?: string | null) => {
+  const v = value?.trim();
+  if (!v) return null;
+  return v.length === 16 ? `${v}:00` : v;
+};
+
+const toDateTimeInputValue = (value?: string | null) => {
+  const v = value?.trim();
+  if (!v) return "";
+  return v.replace(" ", "T").slice(0, 16);
+};
+
+const statusLabel = (value?: string | null) => {
+  const v = value?.trim().toUpperCase();
+  return v === "N" ? "비활성" : "활성";
+};
+
+const isInactive = (value?: string | null) => {
+  const v = value?.trim().toUpperCase();
+  return v === "N";
+};
+
+export default function NurseImagingPage() {
+  const [items, setItems] = React.useState<ImagingExam[]>([]);
   const [selectedId, setSelectedId] = React.useState<string | null>(null);
-  const [form, setForm] = React.useState<AssessmentCreatePayload>(emptyForm);
+  const [form, setForm] = React.useState<ImagingExamCreatePayload>(emptyForm);
   const [loading, setLoading] = React.useState(false);
   const [saving, setSaving] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [tab, setTab] = React.useState<"ACTIVE" | "INACTIVE" | "ALL">("ACTIVE");
 
+  const [searchBy, setSearchBy] = React.useState<SearchBy>("visitId");
+  const [keyword, setKeyword] = React.useState("");
+  const [searchMode, setSearchMode] = React.useState(false);
+
   const selected = React.useMemo(
-    () => items.find((i) => i.assessmentId === selectedId) ?? null,
+    () => items.find((i) => i.imagingExamId === selectedId) ?? null,
     [items, selectedId]
   );
 
   const filtered = React.useMemo(() => {
     return items.filter((i) => {
-      const active = activeLabel(i.isActive);
-      if (tab === "ACTIVE" && active === "N") return false;
-      if (tab === "INACTIVE" && active !== "N") return false;
+      if (tab === "ACTIVE" && isInactive(i.examStatusYn)) return false;
+      if (tab === "INACTIVE" && !isInactive(i.examStatusYn)) return false;
       return true;
     });
   }, [items, tab]);
 
   const totalCount = items.length;
-  const inactiveCount = items.filter((i) => activeLabel(i.isActive) === "N")
-    .length;
+  const inactiveCount = items.filter((i) => isInactive(i.examStatusYn)).length;
   const activeCount = totalCount - inactiveCount;
 
   const load = React.useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const data = await fetchAssessmentsApi();
+      const data = await fetchImagingExamsApi();
       setItems(data);
-      if (selectedId && !data.find((i) => i.assessmentId === selectedId)) {
+      if (selectedId && !data.find((i) => i.imagingExamId === selectedId)) {
         setSelectedId(null);
       }
     } catch (err) {
@@ -120,36 +135,59 @@ export default function NursePage() {
     }
     setForm({
       visitId: selected.visitId ?? "",
-      visitReason: selected.visitReason ?? "",
-      medicalHistory: selected.medicalHistory ?? "",
-      allergyYn: selected.allergyYn ?? "N",
-      allergyNote: selected.allergyNote ?? "",
-      nurseId: selected.nurseId ?? "",
-      isActive: selected.isActive ?? "Y",
+      imagingType: selected.imagingType ?? "",
+      examStatusYn: selected.examStatusYn ?? "Y",
+      examAt: toDateTimeInputValue(selected.examAt),
     });
   }, [selected]);
+
+  const handleSearch = async () => {
+    const value = keyword.trim();
+    if (!value) {
+      setError("검색어를 입력하세요.");
+      return;
+    }
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await searchImagingExamsApi(searchBy, value);
+      setItems(data);
+      setSearchMode(true);
+      if (selectedId && !data.find((i) => i.imagingExamId === selectedId)) {
+        setSelectedId(null);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "검색 실패");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSearchReset = async () => {
+    setKeyword("");
+    setSearchMode(false);
+    await load();
+  };
 
   const handleSave = async () => {
     setSaving(true);
     setError(null);
     try {
-      const payload: AssessmentCreatePayload = {
+      const payload: ImagingExamCreatePayload = {
         visitId: normalize(form.visitId),
-        visitReason: normalize(form.visitReason),
-        medicalHistory: normalize(form.medicalHistory),
-        allergyYn: normalize(form.allergyYn) ?? "N",
-        allergyNote: normalize(form.allergyNote),
-        nurseId: normalize(form.nurseId),
-        isActive: form.isActive ?? "Y",
+        imagingType: normalize(form.imagingType),
+        examStatusYn: normalize(form.examStatusYn) ?? "Y",
+        examAt: normalizeDateTime(form.examAt),
       };
 
       if (selected) {
-        await updateAssessmentApi(selected.assessmentId, payload);
+        await updateImagingExamApi(selected.imagingExamId, payload);
       } else {
-        await createAssessmentApi(payload);
+        await createImagingExamApi(payload);
       }
 
       await load();
+      setSearchMode(false);
     } catch (err) {
       setError(err instanceof Error ? err.message : "저장 실패");
     } finally {
@@ -158,15 +196,16 @@ export default function NursePage() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("문진을 비활성 처리할까요?")) return;
+    if (!confirm("영상검사를 비활성 처리할까요?")) return;
     setSaving(true);
     setError(null);
     try {
-      await deleteAssessmentApi(id);
+      await deleteImagingExamApi(id);
       if (selectedId === id) {
         setSelectedId(null);
       }
       await load();
+      setSearchMode(false);
     } catch (err) {
       setError(err instanceof Error ? err.message : "삭제 실패");
     } finally {
@@ -195,31 +234,17 @@ export default function NursePage() {
             <Stack direction={{ xs: "column", md: "row" }} spacing={2} alignItems="center">
               <Stack spacing={0.5} sx={{ flexGrow: 1 }}>
                 <Typography sx={{ fontSize: 22, fontWeight: 900 }}>
-                  간호 워크스테이션
+                  영상검사 워크스테이션
                 </Typography>
                 <Typography sx={{ color: "var(--muted)" }}>
-                  문진 관리 및 CRUD 검증을 위한 간호 화면입니다.
+                  영상검사 CRUD와 검색 점검을 위한 간호 화면입니다.
                 </Typography>
               </Stack>
               <Stack direction="row" spacing={1}>
-                <Button
-                  component={Link}
-                  href="/nurse/imaging"
-                  variant="contained"
-                  color="secondary"
-                  startIcon={<ScienceOutlinedIcon />}
-                  sx={{ fontWeight: 800 }}
-                >
-                  영상검사
+                <Button component={Link} href="/nurse" variant="outlined">
+                  문진
                 </Button>
-                <Button
-                  component={Link}
-                  href="/nurse/vitals"
-                  variant="contained"
-                  color="error"
-                  startIcon={<MonitorHeartOutlinedIcon />}
-                  sx={{ fontWeight: 800 }}
-                >
+                <Button component={Link} href="/nurse/vitals" variant="outlined">
                   활력징후
                 </Button>
                 <Button
@@ -230,11 +255,7 @@ export default function NursePage() {
                 >
                   새로고침
                 </Button>
-                <Button
-                  variant="contained"
-                  startIcon={<AddIcon />}
-                  onClick={handleNew}
-                >
+                <Button variant="contained" startIcon={<AddIcon />} onClick={handleNew}>
                   신규 작성
                 </Button>
               </Stack>
@@ -246,6 +267,7 @@ export default function NursePage() {
           <Chip label={`전체 ${totalCount}`} color="primary" />
           <Chip label={`활성 ${activeCount}`} variant="outlined" />
           <Chip label={`비활성 ${inactiveCount}`} variant="outlined" />
+          {searchMode && <Chip label="검색 결과" color="secondary" />}
           {loading && <Chip label="불러오는 중" variant="outlined" />}
           {error && <Chip label={`오류: ${error}`} color="error" />}
         </Stack>
@@ -262,11 +284,45 @@ export default function NursePage() {
             <CardContent sx={{ p: 2.5 }}>
               <Stack direction="row" spacing={1} alignItems="center" justifyContent="space-between">
                 <Stack direction="row" spacing={1} alignItems="center">
-                  <AssignmentOutlinedIcon sx={{ color: "var(--brand)" }} />
-                  <Typography fontWeight={800}>문진 리스트</Typography>
+                  <ScienceOutlinedIcon sx={{ color: "var(--brand)" }} />
+                  <Typography fontWeight={800}>영상검사 리스트</Typography>
                 </Stack>
                 <Chip label={`표시 ${filtered.length}`} size="small" />
               </Stack>
+
+              <Tabs
+                value={searchBy}
+                onChange={(_, v) => setSearchBy(v as SearchBy)}
+                sx={{ mt: 1 }}
+              >
+                <Tab label="진료ID" value="visitId" />
+                <Tab label="영상종류" value="imagingType" />
+              </Tabs>
+
+              <Stack direction={{ xs: "column", sm: "row" }} spacing={1} sx={{ mt: 1.5 }}>
+                <TextField
+                  size="small"
+                  placeholder={searchBy === "visitId" ? "진료ID 입력" : "영상종류 입력"}
+                  value={keyword}
+                  onChange={(e) => setKeyword(e.target.value)}
+                  fullWidth
+                />
+                <Button
+                  variant="contained"
+                  startIcon={<SearchOutlinedIcon />}
+                  onClick={handleSearch}
+                >
+                  검색
+                </Button>
+                <Button
+                  variant="outlined"
+                  startIcon={<RestartAltOutlinedIcon />}
+                  onClick={handleSearchReset}
+                >
+                  초기화
+                </Button>
+              </Stack>
+
               <Tabs
                 value={tab}
                 onChange={(_, v) => setTab(v as "ACTIVE" | "INACTIVE" | "ALL")}
@@ -280,33 +336,33 @@ export default function NursePage() {
               <Stack spacing={1.25} sx={{ mt: 2 }}>
                 {filtered.map((row) => (
                   <Box
-                    key={row.assessmentId}
-                    onClick={() => setSelectedId(row.assessmentId)}
+                    key={row.imagingExamId}
+                    onClick={() => setSelectedId(row.imagingExamId)}
                     sx={{
                       p: 1.5,
                       borderRadius: 2,
                       border: "1px solid var(--line)",
                       bgcolor:
-                        selected?.assessmentId === row.assessmentId
+                        selected?.imagingExamId === row.imagingExamId
                           ? "rgba(11, 91, 143, 0.12)"
                           : "rgba(255,255,255,0.7)",
                       cursor: "pointer",
                     }}
                   >
                     <Stack direction="row" justifyContent="space-between">
-                      <Typography fontWeight={700}>{row.assessmentId}</Typography>
-                      <Chip label={activeText(row.isActive)} size="small" />
+                      <Typography fontWeight={700}>{row.imagingExamId}</Typography>
+                      <Chip label={statusLabel(row.examStatusYn)} size="small" />
                     </Stack>
                     <Typography sx={{ color: "var(--muted)", fontSize: 12, mt: 0.25 }}>
-                      방문 {safe(row.visitId)} · 간호사 {safe(row.nurseId)}
+                      진료 {safe(row.visitId)} · 종류 {safe(row.imagingType)}
                     </Typography>
                     <Typography sx={{ color: "var(--muted)", fontSize: 12, mt: 0.25 }}>
-                      사유 {safe(row.visitReason)}
+                      검사일시 {safe(row.examAt)}
                     </Typography>
                   </Box>
                 ))}
                 {!filtered.length && (
-                  <Typography color="text.secondary">표시할 문진이 없습니다.</Typography>
+                  <Typography color="text.secondary">표시할 영상검사가 없습니다.</Typography>
                 )}
               </Stack>
             </CardContent>
@@ -317,19 +373,19 @@ export default function NursePage() {
               <CardContent sx={{ p: 2.5 }}>
                 <Stack direction="row" spacing={1} alignItems="center" justifyContent="space-between">
                   <Stack direction="row" spacing={1} alignItems="center">
-                    <AssignmentOutlinedIcon sx={{ color: "var(--brand-strong)" }} />
-                    <Typography fontWeight={800}>선택 문진</Typography>
+                    <ScienceOutlinedIcon sx={{ color: "var(--brand-strong)" }} />
+                    <Typography fontWeight={800}>선택 영상검사</Typography>
                   </Stack>
                   {selected && (
                     <Stack direction="row" spacing={1}>
-                      <Chip label={activeText(selected.isActive)} size="small" />
-                      {activeLabel(selected.isActive) !== "N" && (
+                      <Chip label={statusLabel(selected.examStatusYn)} size="small" />
+                      {!isInactive(selected.examStatusYn) && (
                         <Button
                           variant="outlined"
                           color="warning"
                           size="small"
                           startIcon={<DeleteOutlineIcon />}
-                          onClick={() => handleDelete(selected.assessmentId)}
+                          onClick={() => handleDelete(selected.imagingExamId)}
                           disabled={saving}
                         >
                           비활성
@@ -340,12 +396,13 @@ export default function NursePage() {
                 </Stack>
 
                 <Box sx={{ mt: 2, p: 2, borderRadius: 2, bgcolor: "rgba(255,255,255,0.7)" }}>
-                  <Row label="문진 ID" value={safe(selected?.assessmentId)} />
-                  <Row label="방문 ID" value={safe(selected?.visitId)} />
-                  <Row label="간호사 ID" value={safe(selected?.nurseId)} />
-                  <Row label="활성 여부" value={activeText(selected?.isActive)} />
-                  <Row label="생성일" value={safe(selected?.createdAt)} />
-                  <Row label="수정일" value={safe(selected?.updatedAt)} />
+                  <Row label="영상검사 ID" value={safe(selected?.imagingExamId)} />
+                  <Row label="진료 ID" value={safe(selected?.visitId)} />
+                  <Row label="검사종류" value={safe(selected?.imagingType)} />
+                  <Row label="상태" value={statusLabel(selected?.examStatusYn)} />
+                  <Row label="검사일시" value={safe(selected?.examAt)} />
+                  <Row label="생성일시" value={safe(selected?.createdAt)} />
+                  <Row label="수정일시" value={safe(selected?.updatedAt)} />
                 </Box>
               </CardContent>
             </Card>
@@ -353,38 +410,13 @@ export default function NursePage() {
             <Card sx={{ borderRadius: 3, border: "1px solid var(--line)" }}>
               <CardContent sx={{ p: 2.5 }}>
                 <Stack direction="row" spacing={1} alignItems="center">
-                  <AssignmentOutlinedIcon sx={{ color: "var(--brand)" }} />
-                  <Typography fontWeight={800}>문진 내용</Typography>
-                </Stack>
-                <Box sx={{ mt: 2, p: 2, borderRadius: 2, bgcolor: "rgba(255,255,255,0.7)" }}>
-                  <Typography fontWeight={700}>방문 사유</Typography>
-                  <Typography sx={{ color: "var(--muted)", mt: 0.5 }}>
-                    {safe(selected?.visitReason)}
-                  </Typography>
-                  <Divider sx={{ my: 1.5 }} />
-                  <Typography fontWeight={700}>병력</Typography>
-                  <Typography sx={{ color: "var(--muted)", mt: 0.5, whiteSpace: "pre-wrap" }}>
-                    {safe(selected?.medicalHistory)}
-                  </Typography>
-                  <Divider sx={{ my: 1.5 }} />
-                  <Typography fontWeight={700}>알레르기</Typography>
-                  <Typography sx={{ color: "var(--muted)", mt: 0.5 }}>
-                    {safe(selected?.allergyYn)} · {safe(selected?.allergyNote)}
-                  </Typography>
-                </Box>
-              </CardContent>
-            </Card>
-
-            <Card sx={{ borderRadius: 3, border: "1px solid var(--line)" }}>
-              <CardContent sx={{ p: 2.5 }}>
-                <Stack direction="row" spacing={1} alignItems="center">
-                  <AssignmentOutlinedIcon sx={{ color: "var(--brand)" }} />
-                  <Typography fontWeight={800}>문진 등록 / 수정</Typography>
+                  <ScienceOutlinedIcon sx={{ color: "var(--brand)" }} />
+                  <Typography fontWeight={800}>영상검사 등록 / 수정</Typography>
                 </Stack>
                 <Box sx={{ maxWidth: 560, width: "100%", mt: 2 }}>
                   <Stack spacing={1.5}>
                     <TextField
-                      label="방문 ID"
+                      label="진료 ID"
                       value={form.visitId ?? ""}
                       onChange={(e) =>
                         setForm((prev) => ({ ...prev, visitId: e.target.value }))
@@ -392,61 +424,39 @@ export default function NursePage() {
                       size="small"
                     />
                     <TextField
-                      label="방문 사유"
-                      value={form.visitReason ?? ""}
+                      label="영상종류"
+                      value={form.imagingType ?? ""}
                       onChange={(e) =>
-                        setForm((prev) => ({ ...prev, visitReason: e.target.value }))
+                        setForm((prev) => ({ ...prev, imagingType: e.target.value }))
                       }
                       size="small"
-                    />
-                    <TextField
-                      label="병력"
-                      value={form.medicalHistory ?? ""}
-                      onChange={(e) =>
-                        setForm((prev) => ({
-                          ...prev,
-                          medicalHistory: e.target.value,
-                        }))
-                      }
-                      size="small"
-                      multiline
-                      minRows={3}
                     />
                     <FormControl size="small">
-                      <InputLabel id="allergy-label">알레르기</InputLabel>
+                      <InputLabel id="exam-status-label">상태</InputLabel>
                       <Select
-                        labelId="allergy-label"
-                        label="알레르기"
-                        value={form.allergyYn ?? "N"}
+                        labelId="exam-status-label"
+                        label="상태"
+                        value={form.examStatusYn ?? "Y"}
                         onChange={(e) =>
                           setForm((prev) => ({
                             ...prev,
-                            allergyYn: String(e.target.value),
+                            examStatusYn: String(e.target.value),
                           }))
                         }
                       >
-                        <MenuItem value="N">N</MenuItem>
                         <MenuItem value="Y">Y</MenuItem>
+                        <MenuItem value="N">N</MenuItem>
                       </Select>
                     </FormControl>
                     <TextField
-                      label="알레르기 메모"
-                      value={form.allergyNote ?? ""}
+                      label="검사일시"
+                      type="datetime-local"
+                      value={form.examAt ?? ""}
                       onChange={(e) =>
-                        setForm((prev) => ({
-                          ...prev,
-                          allergyNote: e.target.value,
-                        }))
+                        setForm((prev) => ({ ...prev, examAt: e.target.value }))
                       }
                       size="small"
-                    />
-                    <TextField
-                      label="간호사 ID"
-                      value={form.nurseId ?? ""}
-                      onChange={(e) =>
-                        setForm((prev) => ({ ...prev, nurseId: e.target.value }))
-                      }
-                      size="small"
+                      InputLabelProps={{ shrink: true }}
                     />
 
                     <Stack direction="row" spacing={1} sx={{ pt: 1 }}>
@@ -481,45 +491,9 @@ export default function NursePage() {
                   <Typography fontWeight={800}>상태 요약</Typography>
                 </Stack>
                 <Stack spacing={1.25} sx={{ mt: 2 }}>
-                  <Box
-                    sx={{
-                      p: 1.25,
-                      borderRadius: 2,
-                      border: "1px solid var(--line)",
-                      display: "flex",
-                      justifyContent: "space-between",
-                      bgcolor: "rgba(255,255,255,0.7)",
-                    }}
-                  >
-                    <Typography>활성 문진</Typography>
-                    <Typography fontWeight={800}>{activeCount}</Typography>
-                  </Box>
-                  <Box
-                    sx={{
-                      p: 1.25,
-                      borderRadius: 2,
-                      border: "1px solid var(--line)",
-                      display: "flex",
-                      justifyContent: "space-between",
-                      bgcolor: "rgba(255,255,255,0.7)",
-                    }}
-                  >
-                    <Typography>비활성 문진</Typography>
-                    <Typography fontWeight={800}>{inactiveCount}</Typography>
-                  </Box>
-                  <Box
-                    sx={{
-                      p: 1.25,
-                      borderRadius: 2,
-                      border: "1px solid var(--line)",
-                      display: "flex",
-                      justifyContent: "space-between",
-                      bgcolor: "rgba(255,255,255,0.7)",
-                    }}
-                  >
-                    <Typography>전체 문진</Typography>
-                    <Typography fontWeight={800}>{totalCount}</Typography>
-                  </Box>
+                  <SummaryRow label="활성 항목" value={activeCount} />
+                  <SummaryRow label="비활성 항목" value={inactiveCount} />
+                  <SummaryRow label="전체 항목" value={totalCount} />
                 </Stack>
               </CardContent>
             </Card>
@@ -528,14 +502,14 @@ export default function NursePage() {
               <CardContent sx={{ p: 2.5 }}>
                 <Stack direction="row" spacing={1} alignItems="center">
                   <HelpOutlineOutlinedIcon sx={{ color: "var(--brand)" }} />
-                  <Typography fontWeight={800}>검증 가이드</Typography>
+                  <Typography fontWeight={800}>점검 가이드</Typography>
                 </Stack>
                 <Stack spacing={1} sx={{ mt: 2 }}>
                   {[
-                    "등록: 필드 입력 후 등록 버튼 클릭",
-                    "수정: 리스트 선택 후 값 변경 → 수정",
-                    "삭제: 선택 문진에서 비활성 처리",
-                    "비활성 문진은 비활성 탭에서 확인",
+                    "조회: 기본 목록은 전체 조회 API 호출",
+                    "검색: 탭(진료ID/영상종류) 선택 후 검색",
+                    "수정: 리스트 선택 후 값 변경",
+                    "삭제: 비활성 처리(N)로 동작",
                   ].map((text) => (
                     <Box
                       key={text}
@@ -569,5 +543,23 @@ function Row({ label, value }: { label: string; value: React.ReactNode }) {
         {value}
       </Typography>
     </Stack>
+  );
+}
+
+function SummaryRow({ label, value }: { label: string; value: React.ReactNode }) {
+  return (
+    <Box
+      sx={{
+        p: 1.25,
+        borderRadius: 2,
+        border: "1px solid var(--line)",
+        display: "flex",
+        justifyContent: "space-between",
+        bgcolor: "rgba(255,255,255,0.7)",
+      }}
+    >
+      <Typography>{label}</Typography>
+      <Typography fontWeight={800}>{value}</Typography>
+    </Box>
   );
 }

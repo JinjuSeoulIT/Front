@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import * as React from "react";
 import Link from "next/link";
@@ -10,41 +10,35 @@ import {
   CardContent,
   Chip,
   Divider,
-  FormControl,
-  InputLabel,
-  MenuItem,
-  Select,
   Stack,
   Tab,
   Tabs,
   TextField,
   Typography,
 } from "@mui/material";
-import AssignmentOutlinedIcon from "@mui/icons-material/AssignmentOutlined";
+import MonitorHeartOutlinedIcon from "@mui/icons-material/MonitorHeartOutlined";
 import FactCheckOutlinedIcon from "@mui/icons-material/FactCheckOutlined";
 import HelpOutlineOutlinedIcon from "@mui/icons-material/HelpOutlineOutlined";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import AddIcon from "@mui/icons-material/Add";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
-import MonitorHeartOutlinedIcon from "@mui/icons-material/MonitorHeartOutlined";
-import ScienceOutlinedIcon from "@mui/icons-material/ScienceOutlined";
 import {
-  Assessment,
-  AssessmentCreatePayload,
-  createAssessmentApi,
-  deleteAssessmentApi,
-  fetchAssessmentsApi,
-  updateAssessmentApi,
-} from "@/lib/assessmentApi";
+  Vital,
+  VitalCreatePayload,
+  createVitalApi,
+  deleteVitalApi,
+  fetchVitalsApi,
+  updateVitalApi,
+} from "@/lib/vitalApi";
 
-const emptyForm: AssessmentCreatePayload = {
+const emptyForm: VitalCreatePayload = {
   visitId: "",
-  visitReason: "",
-  medicalHistory: "",
-  allergyYn: "N",
-  allergyNote: "",
-  nurseId: "",
-  isActive: "Y",
+  temperature: "",
+  pulse: "",
+  respiration: "",
+  bloodPressure: "",
+  measuredAt: "",
+  status: "Y",
 };
 
 const safe = (value?: string | null) => {
@@ -52,54 +46,67 @@ const safe = (value?: string | null) => {
   return v ? v : "-";
 };
 
-const activeLabel = (value?: string | null) => {
-  const v = value?.trim();
-  return v ? v : "Y";
-};
-
-const activeText = (value?: string | null) =>
-  activeLabel(value) === "N" ? "비활성" : "활성";
-
 const normalize = (value?: string | null) => {
   const v = value?.trim();
   return v ? v : null;
 };
 
-export default function NursePage() {
-  const [items, setItems] = React.useState<Assessment[]>([]);
+const toDateTimeInputValue = (value?: string | null) => {
+  const v = value?.trim();
+  if (!v) return "";
+  return v.replace(" ", "T").slice(0, 16);
+};
+
+const normalizeDateTime = (value?: string | null) => {
+  const v = value?.trim();
+  if (!v) return null;
+  return v.length === 16 ? `${v}:00` : v;
+};
+
+const isInactiveStatus = (value?: string | null) => {
+  const v = value?.trim().toUpperCase();
+  return v === "N" || v === "INACTIVE";
+};
+
+const statusText = (value?: string | null) => {
+  if (isInactiveStatus(value)) return "비활성";
+  return value?.trim() || "활성";
+};
+
+export default function NurseVitalsPage() {
+  const [items, setItems] = React.useState<Vital[]>([]);
   const [selectedId, setSelectedId] = React.useState<string | null>(null);
-  const [form, setForm] = React.useState<AssessmentCreatePayload>(emptyForm);
+  const [form, setForm] = React.useState<VitalCreatePayload>(emptyForm);
   const [loading, setLoading] = React.useState(false);
   const [saving, setSaving] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [tab, setTab] = React.useState<"ACTIVE" | "INACTIVE" | "ALL">("ACTIVE");
 
   const selected = React.useMemo(
-    () => items.find((i) => i.assessmentId === selectedId) ?? null,
+    () => items.find((i) => i.vitalId === selectedId) ?? null,
     [items, selectedId]
   );
 
   const filtered = React.useMemo(() => {
     return items.filter((i) => {
-      const active = activeLabel(i.isActive);
-      if (tab === "ACTIVE" && active === "N") return false;
-      if (tab === "INACTIVE" && active !== "N") return false;
+      const inactive = isInactiveStatus(i.status);
+      if (tab === "ACTIVE" && inactive) return false;
+      if (tab === "INACTIVE" && !inactive) return false;
       return true;
     });
   }, [items, tab]);
 
   const totalCount = items.length;
-  const inactiveCount = items.filter((i) => activeLabel(i.isActive) === "N")
-    .length;
+  const inactiveCount = items.filter((i) => isInactiveStatus(i.status)).length;
   const activeCount = totalCount - inactiveCount;
 
   const load = React.useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const data = await fetchAssessmentsApi();
+      const data = await fetchVitalsApi();
       setItems(data);
-      if (selectedId && !data.find((i) => i.assessmentId === selectedId)) {
+      if (selectedId && !data.find((i) => i.vitalId === selectedId)) {
         setSelectedId(null);
       }
     } catch (err) {
@@ -120,12 +127,12 @@ export default function NursePage() {
     }
     setForm({
       visitId: selected.visitId ?? "",
-      visitReason: selected.visitReason ?? "",
-      medicalHistory: selected.medicalHistory ?? "",
-      allergyYn: selected.allergyYn ?? "N",
-      allergyNote: selected.allergyNote ?? "",
-      nurseId: selected.nurseId ?? "",
-      isActive: selected.isActive ?? "Y",
+      temperature: selected.temperature ?? "",
+      pulse: selected.pulse ?? "",
+      respiration: selected.respiration ?? "",
+      bloodPressure: selected.bloodPressure ?? "",
+      measuredAt: toDateTimeInputValue(selected.measuredAt),
+      status: selected.status ?? "Y",
     });
   }, [selected]);
 
@@ -133,20 +140,20 @@ export default function NursePage() {
     setSaving(true);
     setError(null);
     try {
-      const payload: AssessmentCreatePayload = {
+      const payload: VitalCreatePayload = {
         visitId: normalize(form.visitId),
-        visitReason: normalize(form.visitReason),
-        medicalHistory: normalize(form.medicalHistory),
-        allergyYn: normalize(form.allergyYn) ?? "N",
-        allergyNote: normalize(form.allergyNote),
-        nurseId: normalize(form.nurseId),
-        isActive: form.isActive ?? "Y",
+        temperature: normalize(form.temperature),
+        pulse: normalize(form.pulse),
+        respiration: normalize(form.respiration),
+        bloodPressure: normalize(form.bloodPressure),
+        measuredAt: normalizeDateTime(form.measuredAt),
+        status: normalize(form.status) ?? "Y",
       };
 
       if (selected) {
-        await updateAssessmentApi(selected.assessmentId, payload);
+        await updateVitalApi(selected.vitalId, payload);
       } else {
-        await createAssessmentApi(payload);
+        await createVitalApi(payload);
       }
 
       await load();
@@ -158,11 +165,11 @@ export default function NursePage() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("문진을 비활성 처리할까요?")) return;
+    if (!confirm("활력징후를 삭제할까요?")) return;
     setSaving(true);
     setError(null);
     try {
-      await deleteAssessmentApi(id);
+      await deleteVitalApi(id);
       if (selectedId === id) {
         setSelectedId(null);
       }
@@ -198,29 +205,12 @@ export default function NursePage() {
                   간호 워크스테이션
                 </Typography>
                 <Typography sx={{ color: "var(--muted)" }}>
-                  문진 관리 및 CRUD 검증을 위한 간호 화면입니다.
+                  활력징후 CRUD 점검용 화면입니다.
                 </Typography>
               </Stack>
               <Stack direction="row" spacing={1}>
-                <Button
-                  component={Link}
-                  href="/nurse/imaging"
-                  variant="contained"
-                  color="secondary"
-                  startIcon={<ScienceOutlinedIcon />}
-                  sx={{ fontWeight: 800 }}
-                >
-                  영상검사
-                </Button>
-                <Button
-                  component={Link}
-                  href="/nurse/vitals"
-                  variant="contained"
-                  color="error"
-                  startIcon={<MonitorHeartOutlinedIcon />}
-                  sx={{ fontWeight: 800 }}
-                >
-                  활력징후
+                <Button component={Link} href="/nurse" variant="outlined">
+                  문진 페이지
                 </Button>
                 <Button
                   variant="outlined"
@@ -230,11 +220,7 @@ export default function NursePage() {
                 >
                   새로고침
                 </Button>
-                <Button
-                  variant="contained"
-                  startIcon={<AddIcon />}
-                  onClick={handleNew}
-                >
+                <Button variant="contained" startIcon={<AddIcon />} onClick={handleNew}>
                   신규 작성
                 </Button>
               </Stack>
@@ -262,8 +248,8 @@ export default function NursePage() {
             <CardContent sx={{ p: 2.5 }}>
               <Stack direction="row" spacing={1} alignItems="center" justifyContent="space-between">
                 <Stack direction="row" spacing={1} alignItems="center">
-                  <AssignmentOutlinedIcon sx={{ color: "var(--brand)" }} />
-                  <Typography fontWeight={800}>문진 리스트</Typography>
+                  <MonitorHeartOutlinedIcon sx={{ color: "var(--brand)" }} />
+                  <Typography fontWeight={800}>활력징후 리스트</Typography>
                 </Stack>
                 <Chip label={`표시 ${filtered.length}`} size="small" />
               </Stack>
@@ -280,33 +266,33 @@ export default function NursePage() {
               <Stack spacing={1.25} sx={{ mt: 2 }}>
                 {filtered.map((row) => (
                   <Box
-                    key={row.assessmentId}
-                    onClick={() => setSelectedId(row.assessmentId)}
+                    key={row.vitalId}
+                    onClick={() => setSelectedId(row.vitalId)}
                     sx={{
                       p: 1.5,
                       borderRadius: 2,
                       border: "1px solid var(--line)",
                       bgcolor:
-                        selected?.assessmentId === row.assessmentId
+                        selected?.vitalId === row.vitalId
                           ? "rgba(11, 91, 143, 0.12)"
                           : "rgba(255,255,255,0.7)",
                       cursor: "pointer",
                     }}
                   >
                     <Stack direction="row" justifyContent="space-between">
-                      <Typography fontWeight={700}>{row.assessmentId}</Typography>
-                      <Chip label={activeText(row.isActive)} size="small" />
+                      <Typography fontWeight={700}>{row.vitalId}</Typography>
+                      <Chip label={statusText(row.status)} size="small" />
                     </Stack>
                     <Typography sx={{ color: "var(--muted)", fontSize: 12, mt: 0.25 }}>
-                      방문 {safe(row.visitId)} · 간호사 {safe(row.nurseId)}
+                      방문 {safe(row.visitId)} · 체온 {safe(row.temperature)}
                     </Typography>
                     <Typography sx={{ color: "var(--muted)", fontSize: 12, mt: 0.25 }}>
-                      사유 {safe(row.visitReason)}
+                      맥박 {safe(row.pulse)} · 호흡 {safe(row.respiration)}
                     </Typography>
                   </Box>
                 ))}
                 {!filtered.length && (
-                  <Typography color="text.secondary">표시할 문진이 없습니다.</Typography>
+                  <Typography color="text.secondary">표시할 활력징후가 없습니다.</Typography>
                 )}
               </Stack>
             </CardContent>
@@ -317,35 +303,32 @@ export default function NursePage() {
               <CardContent sx={{ p: 2.5 }}>
                 <Stack direction="row" spacing={1} alignItems="center" justifyContent="space-between">
                   <Stack direction="row" spacing={1} alignItems="center">
-                    <AssignmentOutlinedIcon sx={{ color: "var(--brand-strong)" }} />
-                    <Typography fontWeight={800}>선택 문진</Typography>
+                    <MonitorHeartOutlinedIcon sx={{ color: "var(--brand-strong)" }} />
+                    <Typography fontWeight={800}>선택 항목</Typography>
                   </Stack>
                   {selected && (
                     <Stack direction="row" spacing={1}>
-                      <Chip label={activeText(selected.isActive)} size="small" />
-                      {activeLabel(selected.isActive) !== "N" && (
-                        <Button
-                          variant="outlined"
-                          color="warning"
-                          size="small"
-                          startIcon={<DeleteOutlineIcon />}
-                          onClick={() => handleDelete(selected.assessmentId)}
-                          disabled={saving}
-                        >
-                          비활성
-                        </Button>
-                      )}
+                      <Chip label={statusText(selected.status)} size="small" />
+                      <Button
+                        variant="outlined"
+                        color="warning"
+                        size="small"
+                        startIcon={<DeleteOutlineIcon />}
+                        onClick={() => handleDelete(selected.vitalId)}
+                        disabled={saving}
+                      >
+                        비활성
+                      </Button>
                     </Stack>
                   )}
                 </Stack>
 
                 <Box sx={{ mt: 2, p: 2, borderRadius: 2, bgcolor: "rgba(255,255,255,0.7)" }}>
-                  <Row label="문진 ID" value={safe(selected?.assessmentId)} />
+                  <Row label="ID" value={safe(selected?.vitalId)} />
                   <Row label="방문 ID" value={safe(selected?.visitId)} />
-                  <Row label="간호사 ID" value={safe(selected?.nurseId)} />
-                  <Row label="활성 여부" value={activeText(selected?.isActive)} />
-                  <Row label="생성일" value={safe(selected?.createdAt)} />
-                  <Row label="수정일" value={safe(selected?.updatedAt)} />
+                  <Row label="측정시각" value={safe(selected?.measuredAt)} />
+                  <Row label="생성시각" value={safe(selected?.createdAt)} />
+                  <Row label="상태" value={statusText(selected?.status)} />
                 </Box>
               </CardContent>
             </Card>
@@ -353,23 +336,28 @@ export default function NursePage() {
             <Card sx={{ borderRadius: 3, border: "1px solid var(--line)" }}>
               <CardContent sx={{ p: 2.5 }}>
                 <Stack direction="row" spacing={1} alignItems="center">
-                  <AssignmentOutlinedIcon sx={{ color: "var(--brand)" }} />
-                  <Typography fontWeight={800}>문진 내용</Typography>
+                  <MonitorHeartOutlinedIcon sx={{ color: "var(--brand)" }} />
+                  <Typography fontWeight={800}>수치 상세</Typography>
                 </Stack>
                 <Box sx={{ mt: 2, p: 2, borderRadius: 2, bgcolor: "rgba(255,255,255,0.7)" }}>
-                  <Typography fontWeight={700}>방문 사유</Typography>
+                  <Typography fontWeight={700}>체온</Typography>
                   <Typography sx={{ color: "var(--muted)", mt: 0.5 }}>
-                    {safe(selected?.visitReason)}
+                    {safe(selected?.temperature)}
                   </Typography>
                   <Divider sx={{ my: 1.5 }} />
-                  <Typography fontWeight={700}>병력</Typography>
-                  <Typography sx={{ color: "var(--muted)", mt: 0.5, whiteSpace: "pre-wrap" }}>
-                    {safe(selected?.medicalHistory)}
+                  <Typography fontWeight={700}>맥박</Typography>
+                  <Typography sx={{ color: "var(--muted)", mt: 0.5 }}>
+                    {safe(selected?.pulse)}
                   </Typography>
                   <Divider sx={{ my: 1.5 }} />
-                  <Typography fontWeight={700}>알레르기</Typography>
+                  <Typography fontWeight={700}>호흡</Typography>
                   <Typography sx={{ color: "var(--muted)", mt: 0.5 }}>
-                    {safe(selected?.allergyYn)} · {safe(selected?.allergyNote)}
+                    {safe(selected?.respiration)}
+                  </Typography>
+                  <Divider sx={{ my: 1.5 }} />
+                  <Typography fontWeight={700}>혈압</Typography>
+                  <Typography sx={{ color: "var(--muted)", mt: 0.5 }}>
+                    {safe(selected?.bloodPressure)}
                   </Typography>
                 </Box>
               </CardContent>
@@ -378,8 +366,8 @@ export default function NursePage() {
             <Card sx={{ borderRadius: 3, border: "1px solid var(--line)" }}>
               <CardContent sx={{ p: 2.5 }}>
                 <Stack direction="row" spacing={1} alignItems="center">
-                  <AssignmentOutlinedIcon sx={{ color: "var(--brand)" }} />
-                  <Typography fontWeight={800}>문진 등록 / 수정</Typography>
+                  <MonitorHeartOutlinedIcon sx={{ color: "var(--brand)" }} />
+                  <Typography fontWeight={800}>활력징후 등록 / 수정</Typography>
                 </Stack>
                 <Box sx={{ maxWidth: 560, width: "100%", mt: 2 }}>
                   <Stack spacing={1.5}>
@@ -392,61 +380,46 @@ export default function NursePage() {
                       size="small"
                     />
                     <TextField
-                      label="방문 사유"
-                      value={form.visitReason ?? ""}
+                      label="체온"
+                      value={form.temperature ?? ""}
                       onChange={(e) =>
-                        setForm((prev) => ({ ...prev, visitReason: e.target.value }))
+                        setForm((prev) => ({ ...prev, temperature: e.target.value }))
                       }
                       size="small"
                     />
                     <TextField
-                      label="병력"
-                      value={form.medicalHistory ?? ""}
+                      label="맥박"
+                      value={form.pulse ?? ""}
                       onChange={(e) =>
-                        setForm((prev) => ({
-                          ...prev,
-                          medicalHistory: e.target.value,
-                        }))
-                      }
-                      size="small"
-                      multiline
-                      minRows={3}
-                    />
-                    <FormControl size="small">
-                      <InputLabel id="allergy-label">알레르기</InputLabel>
-                      <Select
-                        labelId="allergy-label"
-                        label="알레르기"
-                        value={form.allergyYn ?? "N"}
-                        onChange={(e) =>
-                          setForm((prev) => ({
-                            ...prev,
-                            allergyYn: String(e.target.value),
-                          }))
-                        }
-                      >
-                        <MenuItem value="N">N</MenuItem>
-                        <MenuItem value="Y">Y</MenuItem>
-                      </Select>
-                    </FormControl>
-                    <TextField
-                      label="알레르기 메모"
-                      value={form.allergyNote ?? ""}
-                      onChange={(e) =>
-                        setForm((prev) => ({
-                          ...prev,
-                          allergyNote: e.target.value,
-                        }))
+                        setForm((prev) => ({ ...prev, pulse: e.target.value }))
                       }
                       size="small"
                     />
                     <TextField
-                      label="간호사 ID"
-                      value={form.nurseId ?? ""}
+                      label="호흡"
+                      value={form.respiration ?? ""}
                       onChange={(e) =>
-                        setForm((prev) => ({ ...prev, nurseId: e.target.value }))
+                        setForm((prev) => ({ ...prev, respiration: e.target.value }))
                       }
                       size="small"
+                    />
+                    <TextField
+                      label="혈압"
+                      value={form.bloodPressure ?? ""}
+                      onChange={(e) =>
+                        setForm((prev) => ({ ...prev, bloodPressure: e.target.value }))
+                      }
+                      size="small"
+                    />
+                    <TextField
+                      label="측정시각"
+                      type="datetime-local"
+                      value={form.measuredAt ?? ""}
+                      onChange={(e) =>
+                        setForm((prev) => ({ ...prev, measuredAt: e.target.value }))
+                      }
+                      size="small"
+                      InputLabelProps={{ shrink: true }}
                     />
 
                     <Stack direction="row" spacing={1} sx={{ pt: 1 }}>
@@ -491,7 +464,7 @@ export default function NursePage() {
                       bgcolor: "rgba(255,255,255,0.7)",
                     }}
                   >
-                    <Typography>활성 문진</Typography>
+                    <Typography>활성 항목</Typography>
                     <Typography fontWeight={800}>{activeCount}</Typography>
                   </Box>
                   <Box
@@ -504,7 +477,7 @@ export default function NursePage() {
                       bgcolor: "rgba(255,255,255,0.7)",
                     }}
                   >
-                    <Typography>비활성 문진</Typography>
+                    <Typography>비활성 항목</Typography>
                     <Typography fontWeight={800}>{inactiveCount}</Typography>
                   </Box>
                   <Box
@@ -517,7 +490,7 @@ export default function NursePage() {
                       bgcolor: "rgba(255,255,255,0.7)",
                     }}
                   >
-                    <Typography>전체 문진</Typography>
+                    <Typography>전체 항목</Typography>
                     <Typography fontWeight={800}>{totalCount}</Typography>
                   </Box>
                 </Stack>
@@ -528,14 +501,14 @@ export default function NursePage() {
               <CardContent sx={{ p: 2.5 }}>
                 <Stack direction="row" spacing={1} alignItems="center">
                   <HelpOutlineOutlinedIcon sx={{ color: "var(--brand)" }} />
-                  <Typography fontWeight={800}>검증 가이드</Typography>
+                  <Typography fontWeight={800}>점검 가이드</Typography>
                 </Stack>
                 <Stack spacing={1} sx={{ mt: 2 }}>
                   {[
                     "등록: 필드 입력 후 등록 버튼 클릭",
-                    "수정: 리스트 선택 후 값 변경 → 수정",
-                    "삭제: 선택 문진에서 비활성 처리",
-                    "비활성 문진은 비활성 탭에서 확인",
+                    "조회: 리스트에서 항목 선택",
+                    "수정: 선택 후 값 변경 → 수정",
+                    "삭제: 선택 후 삭제 버튼 클릭",
                   ].map((text) => (
                     <Box
                       key={text}
@@ -571,3 +544,4 @@ function Row({ label, value }: { label: string; value: React.ReactNode }) {
     </Stack>
   );
 }
+
