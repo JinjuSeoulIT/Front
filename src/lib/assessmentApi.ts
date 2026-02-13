@@ -35,7 +35,7 @@ export type AssessmentUpdatePayload = {
 };
 
 const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_NURSING_API_BASE_URL ?? "http://192.168.1.66:8181",
+  baseURL: process.env.NEXT_PUBLIC_NURSING_API_BASE_URL ?? "http://localhost:8283",
 });
 
 export const fetchAssessmentsApi = async (): Promise<Assessment[]> => {
@@ -88,3 +88,4 @@ export const deleteAssessmentApi = async (
     throw new Error(res.data.message || "Delete failed");
   }
 };
+

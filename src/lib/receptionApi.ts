@@ -70,7 +70,7 @@ export type VisitUpdatePayload = {
 };
 
 const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_RECEPTION_API_BASE_URL ?? "http://localhost:8082",
+  baseURL: process.env.NEXT_PUBLIC_RECEPTION_API_BASE_URL ?? "http://localhost:8283",
 });
 
 export const fetchVisitsApi = async (): Promise<VisitRes[]> => {

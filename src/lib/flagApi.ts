@@ -1,4 +1,4 @@
-import axios from "axios";
+﻿import axios from "axios";
 import type { ApiResponse } from "../features/patients/patientTypes";
 
 export type PatientFlag = {
@@ -24,7 +24,7 @@ export type PatientFlagUpdatePayload = {
 };
 
 const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_PATIENTS_API_BASE_URL ?? "http://192.168.1.60:8181",
+  baseURL: process.env.NEXT_PUBLIC_PATIENTS_API_BASE_URL ?? "http://localhost:8283",
 });
 
 export const fetchPatientFlagsApi = async (

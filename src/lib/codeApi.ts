@@ -11,7 +11,7 @@ export type CodeItem = {
 };
 
 const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_PATIENTS_API_BASE_URL ?? "http://192.168.1.60:8181",
+  baseURL: process.env.NEXT_PUBLIC_PATIENTS_API_BASE_URL ?? "http://localhost:8283",
 });
 
 export const fetchCodesApi = async (group: string): Promise<CodeItem[]> => {
@@ -23,3 +23,4 @@ export const fetchCodesApi = async (group: string): Promise<CodeItem[]> => {
   }
   return res.data.result;
 };
+

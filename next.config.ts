@@ -5,7 +5,7 @@ const nextConfig: NextConfig = {
     return [
       {
         source: "/api/:path*",
-        destination: "http://localhost:8082/api/:path*", // ✅ adm 백엔드 주소로 변경
+        destination: "http://localhost:8283/api/:path*",
       },
     ];
   },

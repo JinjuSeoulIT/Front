@@ -1,0 +1,73 @@
+export type ReservationStatus = "RESERVED" | "CANCELED" | "COMPLETED" | "INACTIVE";
+
+export interface Reservation {
+  reservationId: number;
+  reservationNo: string;
+  patientId: number;
+  patientName?: string | null;
+  departmentId: number;
+  departmentName?: string | null;
+  doctorId?: number | null;
+  doctorName?: string | null;
+  reservedAt: string;
+  status: ReservationStatus;
+  note?: string | null;
+  isActive: boolean;
+  inactiveAt?: string | null;
+  inactiveReasonCode?: string | null;
+  inactiveReasonText?: string | null;
+  canceledAt?: string | null;
+  cancelReasonCode?: string | null;
+  cancelReasonText?: string | null;
+  createdBy?: number | null;
+  updatedBy?: number | null;
+  createdAt?: string | null;
+  updatedAt?: string | null;
+}
+
+export type ReservationForm = {
+  reservationNo: string;
+  patientId?: number | null;
+  patientName?: string | null;
+  departmentId: number;
+  departmentName?: string | null;
+  doctorId?: number | null;
+  doctorName?: string | null;
+  reservedAt: string;
+  status?: ReservationStatus;
+  note?: string | null;
+};
+
+export type PatientOption = {
+  patientId: number;
+  patientName: string;
+};
+
+export type DepartmentOption = {
+  departmentId: number;
+  departmentName: string;
+};
+
+export type DoctorOption = {
+  doctorId: number;
+  doctorName: string;
+  departmentId?: number | null;
+};
+
+export type ReservationSearchPayload = {
+  type: "reservationNo" | "patientId" | "status";
+  keyword: string;
+};
+
+export type ApiResponse<T> = {
+  success: boolean;
+  message: string;
+  result: T;
+};
+
+export interface ReservationState {
+  list: Reservation[];
+  selected: Reservation | null;
+  loading: boolean;
+  error: string | null;
+}

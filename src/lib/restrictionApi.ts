@@ -28,7 +28,7 @@ export type PatientRestrictionUpdatePayload = {
 };
 
 const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_PATIENTS_API_BASE_URL ?? "http://192.168.1.60:8181",
+  baseURL: process.env.NEXT_PUBLIC_PATIENTS_API_BASE_URL ?? "http://localhost:8283",
 });
 
 export const fetchPatientRestrictionsApi = async (
@@ -79,4 +79,5 @@ export const deletePatientRestrictionApi = async (id: number): Promise<void> => 
     throw new Error(res.data.message || "Delete failed");
   }
 };
+
 

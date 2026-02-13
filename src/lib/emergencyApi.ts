@@ -17,14 +17,14 @@ export type VisitEmergencyPayload = {
 };
 
 const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_RECEPTION_API_BASE_URL ?? "http://localhost:8082",
+  baseURL: process.env.NEXT_PUBLIC_RECEPTION_API_BASE_URL ?? "http://localhost:8283",
 });
 
 export const fetchVisitEmergencyApi = async (
   visitId: number
 ): Promise<VisitEmergency | null> => {
   const res = await api.get<ApiResponse<VisitEmergency>>(
-    `/api/visits/${visitId}/emergency`
+    `/api/emergency-receptions/${visitId}`
   );
   if (!res.data.success) return null;
   return res.data.result;
@@ -35,7 +35,7 @@ export const saveVisitEmergencyApi = async (
   payload: VisitEmergencyPayload
 ): Promise<VisitEmergency> => {
   const res = await api.put<ApiResponse<VisitEmergency>>(
-    `/api/visits/${visitId}/emergency`,
+    `/api/emergency-receptions/${visitId}`,
     payload
   );
   if (!res.data.success) {
@@ -46,9 +46,11 @@ export const saveVisitEmergencyApi = async (
 
 export const deleteVisitEmergencyApi = async (visitId: number): Promise<void> => {
   const res = await api.delete<ApiResponse<void>>(
-    `/api/visits/${visitId}/emergency`
+    `/api/emergency-receptions/${visitId}`
   );
   if (!res.data.success) {
     throw new Error(res.data.message || "응급 정보 삭제 실패");
   }
 };
+
+

@@ -17,14 +17,14 @@ export type VisitReservationPayload = {
 };
 
 const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_RECEPTION_API_BASE_URL ?? "http://localhost:8082",
+  baseURL: process.env.NEXT_PUBLIC_RECEPTION_API_BASE_URL ?? "http://localhost:8283",
 });
 
 export const fetchVisitReservationApi = async (
   visitId: number
 ): Promise<VisitReservation | null> => {
   const res = await api.get<ApiResponse<VisitReservation>>(
-    `/api/visits/${visitId}/reservations`
+    `/api/reservations/${visitId}`
   );
   if (!res.data.success) return null;
   return res.data.result;
@@ -35,7 +35,7 @@ export const saveVisitReservationApi = async (
   payload: VisitReservationPayload
 ): Promise<VisitReservation> => {
   const res = await api.put<ApiResponse<VisitReservation>>(
-    `/api/visits/${visitId}/reservations`,
+    `/api/reservations/${visitId}`,
     payload
   );
   if (!res.data.success) {
@@ -46,9 +46,11 @@ export const saveVisitReservationApi = async (
 
 export const deleteVisitReservationApi = async (visitId: number): Promise<void> => {
   const res = await api.delete<ApiResponse<void>>(
-    `/api/visits/${visitId}/reservations`
+    `/api/reservations/${visitId}`
   );
   if (!res.data.success) {
     throw new Error(res.data.message || "예약 삭제 실패");
   }
 };
+
+
