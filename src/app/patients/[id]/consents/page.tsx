@@ -94,12 +94,6 @@ function normalizeAgreedAtForSubmit(value: string) {
   return v.length === 16 ? `${v}:00` : v;
 }
 
-function consentTypeKey(t: ConsentType, index?: number) {
-  if (t.code) return `${t.code}:${t.id ?? "no-id"}`;
-  if (t.id != null) return `id:${t.id}`;
-  return `idx:${index ?? 0}`;
-}
-
 export default function PatientConsentsPage() {
   const params = useParams<{ id: string }>();
   const dispatch = useDispatch<AppDispatch>();
@@ -287,7 +281,7 @@ export default function PatientConsentsPage() {
           sortOrder: sortOrder ? Number(sortOrder) : undefined,
         });
       } else if (editingType) {
-        await updateConsentTypeApi(editingType.id, {
+        await updateConsentTypeApi(editingType.code, {
           code,
           name,
           sortOrder: sortOrder ? Number(sortOrder) : undefined,
@@ -304,7 +298,7 @@ export default function PatientConsentsPage() {
   const onDeactivateType = async (item: ConsentType) => {
     if (!confirm("해당 유형을 비활성 처리할까요?")) return;
     try {
-      await deactivateConsentTypeApi(item.id);
+      await deactivateConsentTypeApi(item.code);
       await loadConsentTypes();
     } catch (err) {
       setTypeError(err instanceof Error ? err.message : "동의서 유형 비활성 실패");
@@ -612,32 +606,25 @@ export default function PatientConsentsPage() {
                 fullWidth
                 disabled={typeLoading}
               >
-                {consentTypes.map((t, index) => (
-                  <MenuItem key={consentTypeKey(t, index)} value={t.code}>
+                {consentTypes.map((t) => (
+                  <MenuItem key={t.code} value={t.code}>
                     {t.name}
                   </MenuItem>
                 ))}
               </TextField>
             ) : (
-              <Stack spacing={1}>
-                <TextField
-                  label="동의서 유형"
-                  value={consentForm.consentType}
-                  onChange={(e) =>
-                    setConsentForm((prev) => ({
-                      ...prev,
-                      consentType: e.target.value,
-                    }))
-                  }
-                  fullWidth
-                  disabled={consentDialogMode === "edit" || (consentDialogMode === "create" && consentTypes.length === 0)}
-                />
-                {consentDialogMode === "create" && consentTypes.length === 0 && (
-                  <Typography variant="caption" color="error">
-                    동의서 유형이 비활성화 상태입니다.
-                  </Typography>
-                )}
-              </Stack>
+              <TextField
+                label="동의서 유형"
+                value={consentForm.consentType}
+                onChange={(e) =>
+                  setConsentForm((prev) => ({
+                    ...prev,
+                    consentType: e.target.value,
+                  }))
+                }
+                fullWidth
+                disabled={consentDialogMode === "edit"}
+              />
             )}
             <TextField
               label="비고"
@@ -709,11 +696,7 @@ export default function PatientConsentsPage() {
           <Button
             variant="contained"
             onClick={onSubmitConsent}
-            disabled={
-              consentLoading ||
-              !consentForm.consentType.trim() ||
-              (consentDialogMode === "create" && consentTypes.length === 0)
-            }
+            disabled={consentLoading || !consentForm.consentType.trim()}
           >
             {consentDialogMode === "create" ? "등록" : "저장"}
           </Button>
@@ -798,8 +781,8 @@ export default function PatientConsentsPage() {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {consentTypesAll.map((t, index) => (
-                  <TableRow key={consentTypeKey(t, index)} hover>
+                {consentTypesAll.map((t) => (
+                  <TableRow key={t.code} hover>
                     <TableCell>{t.code}</TableCell>
                     <TableCell>{t.name}</TableCell>
                     <TableCell>{t.sortOrder ?? "-"}</TableCell>

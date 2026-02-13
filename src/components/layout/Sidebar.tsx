@@ -46,7 +46,6 @@ export default function Sidebar({ width = 240 }: { width?: number }) {
   const pathname = usePathname();
   const [menus, setMenus] = React.useState<MenuNode[]>([]);
   const [loading, setLoading] = React.useState(true);
-  const [loadFailed, setLoadFailed] = React.useState(false);
   const [openMap, setOpenMap] = React.useState<Record<number, boolean>>({});
 
   React.useEffect(() => {
@@ -54,21 +53,9 @@ export default function Sidebar({ width = 240 }: { width?: number }) {
     const load = async () => {
       try {
         setLoading(true);
-        setLoadFailed(false);
         const data = await fetchMenusApi();
         if (mounted) {
-          if (Array.isArray(data) && data.length > 0) {
-            setMenus(data);
-            setLoadFailed(false);
-          } else {
-            setMenus([]);
-            setLoadFailed(true);
-          }
-        }
-      } catch {
-        if (mounted) {
-          setMenus([]);
-          setLoadFailed(true);
+          setMenus(data);
         }
       } finally {
         if (mounted) {
@@ -265,17 +252,8 @@ export default function Sidebar({ width = 240 }: { width?: number }) {
       </Box>
 
       {loading ? (
-        <Box sx={{ p: 2, display: "grid", justifyItems: "center", gap: 1 }}>
-          <CircularProgress size={22} />
-          <Typography variant="caption" sx={{ color: "var(--muted)" }}>
-            메뉴를 호출합니다.
-          </Typography>
-        </Box>
-      ) : loadFailed || menus.length === 0 ? (
-        <Box sx={{ p: 2 }}>
-          <Typography variant="body2" sx={{ color: "var(--muted)", fontWeight: 700 }}>
-            메뉴를 호출하는데 실패했습니다.
-          </Typography>
+        <Box sx={{ p: 2, display: "flex", justifyContent: "center" }}>
+          <CircularProgress size={24} />
         </Box>
       ) : (
         <List disablePadding>
@@ -299,3 +277,4 @@ export default function Sidebar({ width = 240 }: { width?: number }) {
     </Box>
   );
 }
+
