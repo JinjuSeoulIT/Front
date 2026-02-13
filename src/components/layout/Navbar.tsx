@@ -13,22 +13,8 @@ import MedicalServicesOutlinedIcon from "@mui/icons-material/MedicalServicesOutl
 import NotificationsNoneOutlinedIcon from "@mui/icons-material/NotificationsNoneOutlined";
 import PersonOutlineOutlinedIcon from "@mui/icons-material/PersonOutlineOutlined";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-
-const ROLE_LINKS = [
-  { key: "doctor", label: "의사", href: "/doctor" },
-  { key: "nurse", label: "간호", href: "/nurse" },
-  { key: "reception", label: "접수", href: "/reception" },
-  { key: "billing", label: "수납", href: "/billing" },
-  { key: "patients", label: "환자", href: "/patients" },
-  { key: "staff", label: "스탭", href: "/staff" },
-  { key: "admin", label: "관리자", href: "/admin" },
-];
 
 export default function Navbar() {
-  const pathname = usePathname();
-  const activeRole = ROLE_LINKS.find((role) => pathname.startsWith(role.href));
-
   return (
     <AppBar
       position="fixed"
@@ -44,12 +30,12 @@ export default function Navbar() {
     >
       <Toolbar sx={{ minHeight: { xs: 64, md: 76 } }}>
         <Stack
+          component={Link}
+          href="/"
           direction="row"
           spacing={1.5}
           alignItems="center"
           sx={{ mr: 3, textDecoration: "none" }}
-          component={Link}
-          href="/"
         >
           <Box
             sx={{
@@ -91,7 +77,7 @@ export default function Navbar() {
               관리자
             </Typography>
             <Typography sx={{ color: "#cbd9f5", fontSize: 12 }}>
-              운영팀
+              원무과
             </Typography>
           </Stack>
         </Stack>

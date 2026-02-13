@@ -1,36 +1,63 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Front (HIS Frontend Draft)
 
-## Getting Started
+병원 외래/진료 업무를 위한 프론트엔드 초안 프로젝트입니다.  
+환자 도메인 중심으로 시작된 화면을 유지하면서, DBML 기반으로 나머지 도메인(공통/조직/진료/오더/처방/수납/보험) 초안 페이지를 확장했습니다.
 
-First, run the development server:
+---
+
+## 기술 스택
+
+- Next.js (App Router)
+- TypeScript
+- MUI (Material UI)
+- Redux Toolkit + redux-saga
+- axios
+
+---
+
+## 프로젝트 목적
+
+- 백엔드/DB 연동 전, 도메인별 화면 구조를 먼저 검증
+- 역할 기반 병원 업무 흐름을 공통 레이아웃(상단 Navbar + 좌측 Sidebar)에서 확인
+- DBML에 맞는 화면/테이블/섹션 초안을 빠르게 공유
+
+---
+
+## 이번 반영 핵심
+
+### 1) 공통 레이아웃 통합
+- `src/app/layout.tsx`에서 앱 전체를 공통 `MainLayout`으로 감싸도록 변경
+- 모든 페이지에서 Sidebar/Navbar를 공유하도록 정리
+- 중첩 렌더링 방지를 위해 `MainLayout` nested-safe 처리
+
+### 2) Sidebar 메뉴 로딩 상태 개선
+- 메뉴 API 호출 중: `메뉴를 호출합니다.`
+- 호출 실패/빈 데이터: `메뉴를 호출하는데 실패했습니다.`
+- **주의:** `menuApi` 주소/설정값은 변경하지 않음
+
+### 3) 상단 공통 액션 정리
+- 공통 Navbar에서 `환자 등록` 버튼 제거  
+  (환자 전용 기능은 환자 도메인 내부에서 처리)
+
+### 4) DBML 기반 초안 페이지 추가 (mock 데이터)
+환자 외 주요 영역 페이지 추가:
+
+- `/admin/common` : 공통 코드/메뉴/채번
+- `/staff/organization` : 사용자/조직/의료진
+- `/reception/care-flow` : 예약/접수/진료 흐름
+- `/reception/billing` : 청구/수납/결제
+- `/doctor/clinical-records` : 문진/활력/진단/진료기록
+- `/doctor/orders-results` : 오더/결과
+- `/doctor/prescriptions` : 처방/조제
+- `/insurances/management` : 보험/보험이력
+
+### 5) 정리
+- `/admin/common/external-apis` 페이지는 제거됨
+
+---
+
+## 실행 방법
 
 ```bash
-npm run dev
-# or
+yarn install
 yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
-
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.

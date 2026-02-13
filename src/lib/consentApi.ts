@@ -117,6 +117,7 @@ export const fetchConsentWithdrawHistoryApi = async (
 };
 
 export type ConsentType = {
+  id: number;
   code: string;
   name: string;
   sortOrder: number;
@@ -160,11 +161,11 @@ export const createConsentTypeApi = async (
 };
 
 export const updateConsentTypeApi = async (
-  code: string,
+  id: number,
   payload: ConsentTypeReq
 ): Promise<ConsentType> => {
   const res = await api.put<ApiResponse<ConsentType>>(
-    `/api/consent-types/${code}`,
+    `/api/consent-types/${id}`,
     payload
   );
   if (!res.data.success) {
@@ -173,9 +174,10 @@ export const updateConsentTypeApi = async (
   return res.data.result;
 };
 
-export const deactivateConsentTypeApi = async (code: string): Promise<void> => {
-  const res = await api.delete<ApiResponse<void>>(`/api/consent-types/${code}`);
+export const deactivateConsentTypeApi = async (id: number): Promise<void> => {
+  const res = await api.delete<ApiResponse<void>>(`/api/consent-types/${id}`);
   if (!res.data.success) {
     throw new Error(res.data.message || "Consent type deactivate failed");
   }
 };
+
