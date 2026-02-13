@@ -45,7 +45,7 @@ type RestrictionFormState = {
 
 type RestrictionOption = { value: string; label: string };
 
-function restrictionLabel(type?: string | null, options: RestrictionOption[] = []) {
+function restrictionLabel(type: string | undefined | null, options: RestrictionOption[]) {
   if (!type) return "-";
   const found = options.find((opt) => opt.value === type);
   return found ? found.label : type;
@@ -109,7 +109,9 @@ export default function PatientRestrictionsPage() {
         if (!mounted) return;
         setRestrictionOptions(list.map((c) => ({ value: c.code, label: c.name })));
       } catch {
-        if (mounted) setRestrictionOptions([]);
+        if (mounted) {
+          setRestrictionOptions([]);
+        }
       }
     };
     loadRestrictionCodes();
@@ -319,6 +321,7 @@ export default function PatientRestrictionsPage() {
                 }))
               }
               fullWidth
+              disabled={restrictionOptions.length === 0}
             >
               {restrictionOptions.map((opt) => (
                 <MenuItem key={opt.value} value={opt.value}>
@@ -326,6 +329,11 @@ export default function PatientRestrictionsPage() {
                 </MenuItem>
               ))}
             </TextField>
+            {restrictionOptions.length === 0 && (
+              <Typography variant="caption" color="error">
+                제한 유형이 비활성화 상태입니다.
+              </Typography>
+            )}
             <TextField
               label="사유"
               value={form.reason}

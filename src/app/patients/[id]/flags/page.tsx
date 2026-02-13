@@ -112,10 +112,19 @@ export default function PatientFlagsPage() {
     };
   }, []);
 
+  const canCreate = options.length > 0;
+
+  const optionsForEdit =
+    dialogMode === "edit" &&
+    form.flagType &&
+    !options.some((o) => o.value === form.flagType)
+      ? [{ value: form.flagType, label: form.flagType }, ...options]
+      : options;
+
   const openCreate = () => {
     setDialogMode("create");
     setEditingFlag(null);
-    setForm({ flagType: "", note: "", activeYn: true });
+    setForm({ flagType: canCreate ? options[0].value : "", note: "", activeYn: true });
     setDialogOpen(true);
   };
 
@@ -134,6 +143,12 @@ export default function PatientFlagsPage() {
 
   const onSubmit = async () => {
     if (!patientId || !form.flagType.trim()) return;
+
+    if (dialogMode === "create" && !canCreate) {
+      setError("플래그 유형이 비활성화 상태입니다.");
+      return;
+    }
+
     try {
       if (dialogMode === "create") {
         await createPatientFlagApi({
@@ -165,7 +180,7 @@ export default function PatientFlagsPage() {
   };
 
   const onDelete = async (item: PatientFlag) => {
-    if (!confirm("이 플래그를 삭제할까요?")) return;
+    if (!confirm("해당 플래그를 삭제할까요?")) return;
     try {
       await deletePatientFlagApi(item.flagId);
       await loadFlags();
@@ -191,7 +206,7 @@ export default function PatientFlagsPage() {
             justifyContent="space-between"
             sx={{ mb: 1 }}
           >
-            <Typography fontWeight={900}>주의 플래그</Typography>
+            <Typography fontWeight={900}>환자 플래그</Typography>
             <Button size="small" variant="outlined" onClick={openCreate}>
               플래그 추가
             </Button>
@@ -217,8 +232,8 @@ export default function PatientFlagsPage() {
                 <TableCell>유형</TableCell>
                 <TableCell>메모</TableCell>
                 <TableCell>상태</TableCell>
-                <TableCell>생성</TableCell>
-                <TableCell>수정</TableCell>
+                <TableCell>생성일</TableCell>
+                <TableCell>수정일</TableCell>
                 <TableCell>관리</TableCell>
               </TableRow>
             </TableHead>
@@ -302,20 +317,21 @@ export default function PatientFlagsPage() {
                 setForm((prev) => ({ ...prev, flagType: e.target.value }))
               }
               fullWidth
-              SelectProps={{ displayEmpty: true }}
+              disabled={dialogMode === "create" && !canCreate}
             >
-              {options.length == 0 ? (
-                <MenuItem value="" disabled>
-                  유형 설정 없음
+              {optionsForEdit.map((opt) => (
+                <MenuItem key={opt.value} value={opt.value}>
+                  {opt.label}
                 </MenuItem>
-              ) : (
-                options.map((opt) => (
-                  <MenuItem key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </MenuItem>
-                ))
-              )}
+              ))}
             </TextField>
+
+            {dialogMode === "create" && !canCreate && (
+              <Typography variant="caption" color="error">
+                플래그 유형이 비활성화 상태입니다.
+              </Typography>
+            )}
+
             <TextField
               label="메모"
               value={form.note}
@@ -333,7 +349,7 @@ export default function PatientFlagsPage() {
           <Button
             variant="contained"
             onClick={onSubmit}
-            disabled={!form.flagType.trim()}
+            disabled={!form.flagType.trim() || (dialogMode === "create" && !canCreate)}
           >
             {dialogMode === "create" ? "등록" : "저장"}
           </Button>
