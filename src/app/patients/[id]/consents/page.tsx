@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import * as React from "react";
 import { useParams } from "next/navigation";
@@ -95,8 +95,7 @@ function normalizeAgreedAtForSubmit(value: string) {
 }
 
 function consentTypeKey(t: ConsentType, index?: number) {
-  if (t.code) return `${t.code}:${t.id ?? "no-id"}`;
-  if (t.id != null) return `id:${t.id}`;
+  if (t.code) return `code:${t.code}`;
   return `idx:${index ?? 0}`;
 }
 
@@ -287,7 +286,7 @@ export default function PatientConsentsPage() {
           sortOrder: sortOrder ? Number(sortOrder) : undefined,
         });
       } else if (editingType) {
-        await updateConsentTypeApi(editingType.id, {
+        await updateConsentTypeApi(editingType.code, {
           code,
           name,
           sortOrder: sortOrder ? Number(sortOrder) : undefined,
@@ -304,7 +303,7 @@ export default function PatientConsentsPage() {
   const onDeactivateType = async (item: ConsentType) => {
     if (!confirm("해당 유형을 비활성 처리할까요?")) return;
     try {
-      await deactivateConsentTypeApi(item.id);
+      await deactivateConsentTypeApi(item.code);
       await loadConsentTypes();
     } catch (err) {
       setTypeError(err instanceof Error ? err.message : "동의서 유형 비활성 실패");
