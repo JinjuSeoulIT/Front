@@ -37,7 +37,7 @@ export type CodeDetailPayload = {
 };
 
 const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_PATIENTS_API_BASE_URL ?? "http://localhost:8283",
+  baseURL: process.env.NEXT_PUBLIC_PATIENTS_API_BASE_URL ?? "http://192.168.1.60:8181",
 });
 
 function unwrap<T>(res: { data: ApiResponse<T> }): T {
