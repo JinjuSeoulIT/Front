@@ -42,8 +42,6 @@ import type { PatientFlag } from "@/lib/flagApi";
 import { fetchPatientFlagsApi } from "@/lib/flagApi";
 import { changePatientStatusApi } from "@/lib/patientApi";
 import { fetchCodesApi } from "@/lib/codeApi";
-import { createVisitApi } from "@/lib/receptionApi";
-import { saveVisitReservationApi } from "@/lib/reservationApi";
 
 function sexLabel(g?: Patient["gender"]) {
   if (g === "M") return "남(M)";
@@ -136,10 +134,6 @@ function statusLabel(code?: string | null, options?: StatusOption[]) {
   return code;
 }
 
-function toApiDateTime(value?: string) {
-  if (!value) return undefined;
-  return value.length === 16 ? `${value}:00` : value;
-}
 
 export default function PatientDetailPage() {
   const params = useParams<{ id: string }>();
@@ -164,18 +158,6 @@ export default function PatientDetailPage() {
   const [restrictionOptions, setRestrictionOptions] = React.useState<RestrictionOption[]>([]);
 
   const [vipUpdating, setVipUpdating] = React.useState(false);
-
-  const [reservationDialogOpen, setReservationDialogOpen] = React.useState(false);
-  const [reservationSaving, setReservationSaving] = React.useState(false);
-  const [reservationForm, setReservationForm] = React.useState({
-    deptCode: "내과",
-    doctorId: "김의사",
-    reservationId: "",
-    scheduledAt: "",
-    arrivalAt: "",
-    note: "",
-    memo: "",
-  });
 
   React.useEffect(() => {
     dispatch(patientActions.fetchPatientRequest({ patientId }));
@@ -320,57 +302,6 @@ export default function PatientDetailPage() {
     }
   };
 
-  const openReservationDialog = () => {
-    setReservationForm({
-      deptCode: "내과",
-      doctorId: "김의사",
-      reservationId: "",
-      scheduledAt: "",
-      arrivalAt: "",
-      note: "",
-      memo: "",
-    });
-    setReservationDialogOpen(true);
-  };
-
-  const saveReservation = async () => {
-    if (!p) return;
-    if (!reservationForm.scheduledAt) {
-      alert("예약 일시는 필수입니다.");
-      return;
-    }
-
-    try {
-      setReservationSaving(true);
-      const visit = await createVisitApi({
-        patientId: p.patientId,
-        patientNo: p.patientNo ?? null,
-        patientName: p.name,
-        patientPhone: p.phone ?? null,
-        visitType: "RESERVATION",
-        deptCode: reservationForm.deptCode,
-        doctorId: reservationForm.doctorId,
-        priorityYn: false,
-        memo: reservationForm.memo || null,
-        createdBy: "patient-detail",
-      });
-
-      await saveVisitReservationApi(visit.id, {
-        reservationId: reservationForm.reservationId || null,
-        scheduledAt: toApiDateTime(reservationForm.scheduledAt),
-        arrivalAt: toApiDateTime(reservationForm.arrivalAt),
-        note: reservationForm.note || null,
-      });
-
-      setReservationDialogOpen(false);
-      alert("예약이 등록되었습니다.");
-    } catch {
-      alert("예약 등록에 실패했습니다.");
-    } finally {
-      setReservationSaving(false);
-    }
-  };
-
   return (
     <MainLayout>
       <Stack spacing={2.5}>
@@ -477,7 +408,7 @@ export default function PatientDetailPage() {
                       variant="contained"
                       color="info"
                       startIcon={<AssignmentIndOutlinedIcon />}
-                      onClick={() => router.push(`/reception?patientId=${patientId}`)}
+                      onClick={() => router.push(`/receptions/new?patientId=${patientId}`)}
                     >
                       접수 등록
                     </Button>
@@ -485,8 +416,7 @@ export default function PatientDetailPage() {
                       variant="contained"
                       color="primary"
                       startIcon={<EventAvailableOutlinedIcon />}
-                      onClick={openReservationDialog}
-                      disabled={!p}
+                      onClick={() => router.push(`/reservations/new?patientId=${patientId}`)}
                     >
                       예약 등록
                     </Button>
@@ -620,124 +550,6 @@ export default function PatientDetailPage() {
             onClick={saveStatus}
             disabled={!statusCode || statusSaving || statusOptions.length === 0}
           >
-            저장
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      <Dialog
-        open={reservationDialogOpen}
-        onClose={() => setReservationDialogOpen(false)}
-        fullWidth
-        maxWidth="sm"
-        PaperProps={{ sx: { borderRadius: 4 } }}
-      >
-        <DialogTitle>예약 등록</DialogTitle>
-        <DialogContent>
-          <Stack spacing={2} sx={{ mt: 1 }}>
-            <TextField
-              select
-              label="진료과"
-              value={reservationForm.deptCode}
-              onChange={(e) =>
-                setReservationForm((prev) => ({
-                  ...prev,
-                  deptCode: e.target.value,
-                }))
-              }
-              fullWidth
-            >
-              <MenuItem value="내과">내과</MenuItem>
-              <MenuItem value="정형외과">정형외과</MenuItem>
-              <MenuItem value="치과">치과</MenuItem>
-              <MenuItem value="소아과">소아과</MenuItem>
-            </TextField>
-
-            <TextField
-              select
-              label="담당의"
-              value={reservationForm.doctorId}
-              onChange={(e) =>
-                setReservationForm((prev) => ({
-                  ...prev,
-                  doctorId: e.target.value,
-                }))
-              }
-              fullWidth
-            >
-              <MenuItem value="김의사">김의사</MenuItem>
-              <MenuItem value="박의사">박의사</MenuItem>
-              <MenuItem value="이의사">이의사</MenuItem>
-            </TextField>
-
-            <TextField
-              label="예약 ID"
-              value={reservationForm.reservationId}
-              onChange={(e) =>
-                setReservationForm((prev) => ({
-                  ...prev,
-                  reservationId: e.target.value,
-                }))
-              }
-              fullWidth
-            />
-
-            <TextField
-              label="예약 일시"
-              type="datetime-local"
-              value={reservationForm.scheduledAt}
-              onChange={(e) =>
-                setReservationForm((prev) => ({
-                  ...prev,
-                  scheduledAt: e.target.value,
-                }))
-              }
-              InputLabelProps={{ shrink: true }}
-              fullWidth
-            />
-
-            <TextField
-              label="내원 일시(선택)"
-              type="datetime-local"
-              value={reservationForm.arrivalAt}
-              onChange={(e) =>
-                setReservationForm((prev) => ({
-                  ...prev,
-                  arrivalAt: e.target.value,
-                }))
-              }
-              InputLabelProps={{ shrink: true }}
-              fullWidth
-            />
-
-            <TextField
-              label="예약 메모"
-              value={reservationForm.note}
-              onChange={(e) =>
-                setReservationForm((prev) => ({
-                  ...prev,
-                  note: e.target.value,
-                }))
-              }
-              fullWidth
-            />
-
-            <TextField
-              label="접수 메모(선택)"
-              value={reservationForm.memo}
-              onChange={(e) =>
-                setReservationForm((prev) => ({
-                  ...prev,
-                  memo: e.target.value,
-                }))
-              }
-              fullWidth
-            />
-          </Stack>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setReservationDialogOpen(false)}>취소</Button>
-          <Button variant="contained" onClick={saveReservation} disabled={reservationSaving}>
             저장
           </Button>
         </DialogActions>
