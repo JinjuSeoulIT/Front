@@ -2,7 +2,9 @@
 
 import * as React from "react";
 import {
+  Box,
   Button,
+  Chip,
   Divider,
   MenuItem,
   Paper,
@@ -10,6 +12,8 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
+import EventAvailableOutlinedIcon from "@mui/icons-material/EventAvailableOutlined";
+import EditNoteRoundedIcon from "@mui/icons-material/EditNoteRounded";
 import type {
   DepartmentOption,
   DoctorOption,
@@ -17,6 +21,8 @@ import type {
   ReservationForm as ReservationFormPayload,
 } from "@/features/Reservations/ReservationTypes";
 import { fetchPatientsApi } from "@/lib/masterDataApi";
+import { fetchReservationsApi } from "@/lib/reservationAdminApi";
+import { buildNextReceptionNumber } from "@/lib/receptionNumber";
 
 type ReservationFormState = {
   reservationNo: string;
@@ -37,6 +43,7 @@ type ReservationFormProps = {
   loading: boolean;
   error?: string | null;
   submitLabel: string;
+  mode?: "create" | "edit";
   onSubmit: (form: ReservationFormPayload) => void;
   onCancel: () => void;
 };
@@ -79,12 +86,35 @@ export default function ReservationForm({
   loading,
   error,
   submitLabel,
+  mode = "create",
   onSubmit,
   onCancel,
 }: ReservationFormProps) {
+  const isEditMode = mode === "edit";
+  const accent = isEditMode ? "#6d28d9" : "#7c3aed";
+  const borderTone = isEditMode ? "rgba(109,40,217,0.26)" : "rgba(124,58,237,0.24)";
+  const fieldSx = {
+    "& .MuiInputBase-root": {
+      bgcolor: "#f8f5ff",
+      borderRadius: 2,
+    },
+    "& .MuiOutlinedInput-notchedOutline": {
+      borderColor: isEditMode ? "rgba(109,40,217,0.28)" : "rgba(124,58,237,0.24)",
+    },
+    "& .MuiInputBase-root:hover .MuiOutlinedInput-notchedOutline": {
+      borderColor: isEditMode ? "rgba(109,40,217,0.48)" : "rgba(124,58,237,0.42)",
+    },
+    "& .Mui-focused .MuiOutlinedInput-notchedOutline": {
+      borderColor: accent,
+      borderWidth: "2px",
+    },
+  };
+
   const [form, setForm] = React.useState<ReservationFormState>(initial);
   const [patients, setPatients] = React.useState<PatientOption[]>([]);
   const [listError, setListError] = React.useState<string | null>(null);
+  const [numberLoading, setNumberLoading] = React.useState(false);
+  const [numberError, setNumberError] = React.useState<string | null>(null);
 
   React.useEffect(() => {
     setForm(initial);
@@ -110,6 +140,42 @@ export default function ReservationForm({
       mounted = false;
     };
   }, []);
+
+  React.useEffect(() => {
+    if (initial.reservationNo.trim()) return;
+    let mounted = true;
+
+    const generate = async () => {
+      try {
+        setNumberLoading(true);
+        setNumberError(null);
+        const list = await fetchReservationsApi();
+        const next = buildNextReceptionNumber({
+          existingNumbers: list.map((item) => item.reservationNo),
+          startSequence: 301,
+        });
+        if (!mounted) return;
+        setForm((prev) => ({ ...prev, reservationNo: next }));
+      } catch (err) {
+        if (!mounted) return;
+        const fallback = buildNextReceptionNumber({
+          existingNumbers: [],
+          startSequence: 301,
+        });
+        setForm((prev) => ({ ...prev, reservationNo: fallback }));
+        setNumberError(err instanceof Error ? err.message : "자동 채번에 실패했습니다.");
+      } finally {
+        if (mounted) {
+          setNumberLoading(false);
+        }
+      }
+    };
+
+    generate();
+    return () => {
+      mounted = false;
+    };
+  }, [initial.reservationNo]);
 
   const matchPatientId = (name: string) => {
     const trimmed = name.trim();
@@ -188,32 +254,81 @@ export default function ReservationForm({
       sx={{
         p: { xs: 3, md: 4 },
         borderRadius: 3,
-        border: "1px solid #dbe5f5",
+        border: `1px solid ${borderTone}`,
         bgcolor: "white",
-        boxShadow: "0 14px 28px rgba(23, 52, 97, 0.15)",
+        background: isEditMode
+          ? "linear-gradient(145deg, rgba(109,40,217,0.1), rgba(109,40,217,0.015) 45%)"
+          : "linear-gradient(145deg, rgba(124,58,237,0.1), rgba(124,58,237,0.015) 45%)",
+        boxShadow: "0 16px 32px rgba(38, 22, 77, 0.14)",
       }}
     >
       <Stack spacing={2.5}>
-        <Stack spacing={0.5}>
-          <Typography variant="h6" fontWeight={800}>
-            {title}
-          </Typography>
-          <Typography color="text.secondary" fontWeight={600}>
-            예약 기본 정보를 입력해 주세요.
-          </Typography>
+        <Stack
+          direction={{ xs: "column", sm: "row" }}
+          justifyContent="space-between"
+          alignItems={{ xs: "flex-start", sm: "center" }}
+          spacing={1.25}
+        >
+          <Stack spacing={0.75}>
+            <Chip
+              icon={isEditMode ? <EditNoteRoundedIcon /> : <EventAvailableOutlinedIcon />}
+              label={isEditMode ? "RESERVATION EDIT" : "RESERVATION CREATE"}
+              size="small"
+              sx={{
+                width: "fit-content",
+                bgcolor: isEditMode ? "rgba(109,40,217,0.13)" : "rgba(124,58,237,0.13)",
+                color: accent,
+                fontWeight: 800,
+                "& .MuiChip-icon": { color: accent },
+              }}
+            />
+            <Typography variant="h5" fontWeight={900} sx={{ letterSpacing: -0.2 }}>
+              {title}
+            </Typography>
+            <Typography color="text.secondary" fontWeight={700}>
+              예약 정보를 확인하고 접수 일정을 저장하세요.
+            </Typography>
+          </Stack>
+          <Box
+            sx={{
+              px: 1.25,
+              py: 0.75,
+              borderRadius: 2,
+              border: `1px solid ${borderTone}`,
+              bgcolor: "rgba(255,255,255,0.82)",
+            }}
+          >
+            <Typography sx={{ fontSize: 12, color: "#6f6a87", fontWeight: 700 }}>
+              처리 상태
+            </Typography>
+            <Typography sx={{ fontSize: 14, color: accent, fontWeight: 900 }}>
+              {isEditMode ? "예약 정보 수정" : "신규 예약 등록"}
+            </Typography>
+          </Box>
         </Stack>
         <Divider />
 
-        <Stack spacing={2}>
+        <Stack
+          spacing={2}
+          sx={{
+            p: { xs: 1.5, md: 2 },
+            borderRadius: 2.5,
+            border: "1px solid rgba(148, 163, 184, 0.2)",
+            bgcolor: "rgba(255,255,255,0.72)",
+          }}
+        >
           <TextField
             label="예약번호"
             value={form.reservationNo}
-            onChange={(e) =>
-              setForm((prev) => ({ ...prev, reservationNo: e.target.value }))
-            }
             required
             fullWidth
-            sx={{ "& .MuiInputBase-root": { bgcolor: "#f4f7fd" } }}
+            InputProps={{ readOnly: true }}
+            helperText={
+              numberError
+                ? "자동 채번 조회에 실패해 기본 번호를 넣었습니다."
+                : "예약번호는 자동 생성됩니다."
+            }
+            sx={fieldSx}
           />
           <Stack direction={{ xs: "column", sm: "row" }} spacing={1}>
             <TextField
@@ -228,7 +343,7 @@ export default function ReservationForm({
               }
               required
               fullWidth
-              sx={{ "& .MuiInputBase-root": { bgcolor: "#f4f7fd" } }}
+              sx={fieldSx}
             />
             <TextField
               select
@@ -237,7 +352,7 @@ export default function ReservationForm({
               onChange={(e) => handleDepartmentChange(e.target.value)}
               required
               fullWidth
-              sx={{ "& .MuiInputBase-root": { bgcolor: "#f4f7fd" } }}
+              sx={fieldSx}
             >
               {departmentOptions.map((d) => (
                 <MenuItem key={d.departmentId} value={String(d.departmentId)}>
@@ -253,7 +368,7 @@ export default function ReservationForm({
               value={form.doctorId}
               onChange={(e) => handleDoctorChange(e.target.value)}
               fullWidth
-              sx={{ "& .MuiInputBase-root": { bgcolor: "#f4f7fd" } }}
+              sx={fieldSx}
             >
               {getDoctorsByDepartment(form.departmentId).map((d) => (
                 <MenuItem key={d.doctorId} value={String(d.doctorId)}>
@@ -270,7 +385,7 @@ export default function ReservationForm({
                 setForm((prev) => ({ ...prev, reservedAt: e.target.value }))
               }
               fullWidth
-              sx={{ "& .MuiInputBase-root": { bgcolor: "#f4f7fd" } }}
+              sx={fieldSx}
             />
           </Stack>
           <TextField
@@ -279,7 +394,7 @@ export default function ReservationForm({
             value={form.status}
             onChange={(e) => setForm((prev) => ({ ...prev, status: e.target.value }))}
             fullWidth
-            sx={{ "& .MuiInputBase-root": { bgcolor: "#f4f7fd" } }}
+            sx={fieldSx}
           >
             {statusOptions.map((opt) => (
               <MenuItem key={opt.value} value={opt.value}>
@@ -294,7 +409,7 @@ export default function ReservationForm({
             fullWidth
             multiline
             minRows={3}
-            sx={{ "& .MuiInputBase-root": { bgcolor: "#f4f7fd" } }}
+            sx={fieldSx}
           />
         </Stack>
 
@@ -311,7 +426,18 @@ export default function ReservationForm({
         )}
 
         <Stack direction={{ xs: "column", sm: "row" }} spacing={1.25}>
-          <Button variant="outlined" onClick={onCancel} disabled={loading}>
+          <Button
+            variant="outlined"
+            onClick={onCancel}
+            disabled={loading}
+            sx={{
+              borderColor: isEditMode ? "rgba(109,40,217,0.5)" : "rgba(124,58,237,0.45)",
+              color: accent,
+              fontWeight: 800,
+              bgcolor: "rgba(255,255,255,0.86)",
+              "&:hover": { borderColor: accent, bgcolor: "rgba(124,58,237,0.06)" },
+            }}
+          >
             취소
           </Button>
           <Button
@@ -319,12 +445,22 @@ export default function ReservationForm({
             onClick={handleSubmit}
             disabled={
               loading ||
+              numberLoading ||
               !form.reservationNo.trim() ||
               !form.patientName.trim() ||
               !form.departmentId.trim() ||
               !form.reservedAt.trim()
             }
-            sx={{ bgcolor: "#2b5aa9" }}
+            sx={{
+              bgcolor: accent,
+              px: 2.25,
+              fontWeight: 900,
+              borderRadius: 2,
+              boxShadow: isEditMode
+                ? "0 10px 20px rgba(109,40,217,0.28)"
+                : "0 10px 20px rgba(124,58,237,0.28)",
+              "&:hover": { bgcolor: isEditMode ? "#5b21b6" : "#6d28d9" },
+            }}
           >
             {submitLabel}
           </Button>

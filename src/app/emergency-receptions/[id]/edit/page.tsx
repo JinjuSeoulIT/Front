@@ -54,6 +54,7 @@ export default function EditEmergencyReceptionPage() {
         }}
         loading={loading}
         error={error}
+        mode="edit"
         onSubmit={onSubmit}
         onCancel={() => router.push(`/emergency-receptions/${receptionId}`)}
       />

@@ -1,4 +1,4 @@
-﻿import axios from "axios";
+import axios from "axios";
 import type { ApiResponse } from "../features/patients/patientTypes";
 import type {
   Insurance,
@@ -8,7 +8,7 @@ import type {
 } from "../features/insurance/insuranceTypes";
 
 const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_PATIENTS_API_BASE_URL ?? "http://192.168.1.60:8181",
+  baseURL: process.env.NEXT_PUBLIC_API_BASE ?? "http://192.168.1.60:8181",
 });
 
 
@@ -87,5 +87,6 @@ export const deleteInsuranceApi = async (insuranceId: number): Promise<void> => 
     throw new Error(res.data.message || "보험 삭제 실패");
   }
 };
+
 
 

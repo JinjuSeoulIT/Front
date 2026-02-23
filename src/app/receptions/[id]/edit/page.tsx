@@ -53,6 +53,8 @@ export default function ReceptionEditPage() {
         }}
         loading={loading}
         error={error}
+        mode="edit"
+        showScheduledAt={false}
         onSubmit={onSubmit}
         onCancel={() => router.push(`/receptions/${receptionId}`)}
       />

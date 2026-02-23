@@ -47,6 +47,7 @@ export default function EditInpatientReceptionPage() {
         }}
         loading={loading}
         error={error}
+        mode="edit"
         onSubmit={onSubmit}
         onCancel={() => router.push(`/inpatient-receptions/${receptionId}`)}
       />

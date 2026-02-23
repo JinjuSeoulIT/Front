@@ -175,6 +175,14 @@ export default function InpatientReceptionList({
               >
                 초기화
               </Button>
+              <Button
+                variant="contained"
+                component={Link}
+                href="/inpatient-receptions/new"
+                sx={{ bgcolor: "#1f7a3f" }}
+              >
+                신규 입원 접수
+              </Button>
             </Stack>
             <Box sx={{ flex: 1 }} />
             <Chip label={`전체 ${list.length}`} color="primary" />
@@ -251,12 +259,13 @@ export default function InpatientReceptionList({
                   상세 보기
                 </Button>
                 <Button
-                  variant="outlined"
-                  sx={{ color: "#2b5aa9" }}
+                  variant="contained"
+                  sx={{ bgcolor: "#2b5aa9" }}
                   component={Link}
-                  href="/inpatient-receptions/new"
+                  href={primary ? `/inpatient-receptions/${primary.receptionId}/edit` : "#"}
+                  disabled={!primary}
                 >
-                  신규 입원 접수
+                  입원 접수 수정
                 </Button>
               </Stack>
             </CardContent>

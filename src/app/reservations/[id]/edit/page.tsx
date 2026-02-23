@@ -46,6 +46,7 @@ export default function EditReservationPage() {
         }}
         loading={loading}
         error={error}
+        mode="edit"
         onSubmit={onSubmit}
         onCancel={() => router.push(`/reservations/${reservationId}`)}
       />

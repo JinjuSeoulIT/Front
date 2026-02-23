@@ -174,6 +174,14 @@ export default function EmergencyReceptionList({
               >
                 초기화
               </Button>
+              <Button
+                variant="contained"
+                component={Link}
+                href="/emergency-receptions/new"
+                sx={{ bgcolor: "#1f7a3f" }}
+              >
+                신규 응급 접수
+              </Button>
             </Stack>
             <Box sx={{ flex: 1 }} />
             <Chip label={`전체 ${list.length}`} color="primary" />
@@ -250,12 +258,13 @@ export default function EmergencyReceptionList({
                   상세 보기
                 </Button>
                 <Button
-                  variant="outlined"
-                  sx={{ color: "#2b5aa9" }}
+                  variant="contained"
+                  sx={{ bgcolor: "#2b5aa9" }}
                   component={Link}
-                  href="/emergency-receptions/new"
+                  href={primary ? `/emergency-receptions/${primary.receptionId}/edit` : "#"}
+                  disabled={!primary}
                 >
-                  신규 응급 접수
+                  응급 접수 수정
                 </Button>
               </Stack>
             </CardContent>

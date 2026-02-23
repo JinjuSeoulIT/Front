@@ -42,6 +42,18 @@ const iconMap: Record<string, React.ReactNode> = {
   TaskAlt: <TaskAltIcon fontSize="small" />,
 };
 
+const legacyPathMap: Record<string, string> = {
+  "/reception/reservations": "/reservations",
+  "/reception/emergency": "/emergency-receptions",
+  "/reception/inpatient": "/inpatient-receptions",
+  "/reception/history": "/receptions/canceled",
+};
+
+const normalizeMenuPath = (path?: string | null) => {
+  if (!path) return path;
+  return legacyPathMap[path] ?? path;
+};
+
 export default function Sidebar({ width = 240 }: { width?: number }) {
   const pathname = usePathname();
   const [menus, setMenus] = React.useState<MenuNode[]>([]);
@@ -105,7 +117,9 @@ export default function Sidebar({ width = 240 }: { width?: number }) {
   } as const;
 
   const isPathActive = (path?: string | null, allowPrefix?: boolean) =>
-    !!path && (pathname === path || (allowPrefix && pathname.startsWith(path + "/")));
+    !!path &&
+    (pathname === normalizeMenuPath(path) ||
+      (allowPrefix && pathname.startsWith(`${normalizeMenuPath(path)}/`)));
 
   const isNodeActive = (node: MenuNode) =>
     isPathActive(node.path, !!node.children?.length);
@@ -188,7 +202,7 @@ export default function Sidebar({ width = 240 }: { width?: number }) {
         {node.path && !hasChildren ? (
           <ListItemButton
             component={Link as any}
-            href={node.path}
+            href={normalizeMenuPath(node.path) ?? "#"}
             selected={isActive}
             sx={{
               ...itemSx,

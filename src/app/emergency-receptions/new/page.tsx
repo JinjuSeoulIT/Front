@@ -46,6 +46,7 @@ export default function NewEmergencyReceptionPage() {
         }}
         loading={loading}
         error={error}
+        mode="create"
         onSubmit={onSubmit}
         onCancel={() => router.push("/emergency-receptions")}
       />

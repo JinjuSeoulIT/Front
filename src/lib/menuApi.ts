@@ -11,3 +11,4 @@ export const fetchMenusApi = async (): Promise<MenuNode[]> => {
 };
 
 
+// 좌측 사이드바 메뉴 데이터를 가져오는 API 유틸

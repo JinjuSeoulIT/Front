@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import * as React from "react";
 import { useParams } from "next/navigation";
@@ -59,7 +59,7 @@ function resolveFileUrl(url?: string | null) {
   if (!url) return "";
   if (url.startsWith("http://") || url.startsWith("https://")) return url;
   const base =
-    process.env.NEXT_PUBLIC_PATIENTS_API_BASE_URL ?? "http://localhost:8081";
+    process.env.NEXT_PUBLIC_API_BASE ?? "http://192.168.1.60:8181";
   return `${base}${url.startsWith("/") ? "" : "/"}${url}`;
 }
 
@@ -95,7 +95,8 @@ function normalizeAgreedAtForSubmit(value: string) {
 }
 
 function consentTypeKey(t: ConsentType, index?: number) {
-  if (t.code) return `code:${t.code}`;
+  if (t.code) return `${t.code}:${t.id ?? "no-id"}`;
+  if (t.id != null) return `id:${t.id}`;
   return `idx:${index ?? 0}`;
 }
 
@@ -286,7 +287,7 @@ export default function PatientConsentsPage() {
           sortOrder: sortOrder ? Number(sortOrder) : undefined,
         });
       } else if (editingType) {
-        await updateConsentTypeApi(editingType.code, {
+        await updateConsentTypeApi(editingType.id, {
           code,
           name,
           sortOrder: sortOrder ? Number(sortOrder) : undefined,
@@ -303,7 +304,7 @@ export default function PatientConsentsPage() {
   const onDeactivateType = async (item: ConsentType) => {
     if (!confirm("해당 유형을 비활성 처리할까요?")) return;
     try {
-      await deactivateConsentTypeApi(item.code);
+      await deactivateConsentTypeApi(item.id);
       await loadConsentTypes();
     } catch (err) {
       setTypeError(err instanceof Error ? err.message : "동의서 유형 비활성 실패");

@@ -250,6 +250,14 @@ export default function ReceptionList({
               >
                 초기화
               </Button>
+              <Button
+                variant="contained"
+                component={Link}
+                href="/receptions/new"
+                sx={{ bgcolor: "#1f7a3f" }}
+              >
+                신규 접수
+              </Button>
             </Stack>
             <Box sx={{ flex: 1 }} />
             <Stack direction="row" spacing={1} sx={{ flexWrap: "wrap" }}>
@@ -360,6 +368,15 @@ export default function ReceptionList({
                   disabled={!primary}
                 >
                   상세 보기
+                </Button>
+                <Button
+                  variant="contained"
+                  sx={{ bgcolor: "#2b5aa9" }}
+                  component={Link}
+                  href={primary ? `/receptions/${primary.receptionId}/edit` : "#"}
+                  disabled={!primary}
+                >
+                  접수 수정
                 </Button>
                 <Button
                   variant="outlined"

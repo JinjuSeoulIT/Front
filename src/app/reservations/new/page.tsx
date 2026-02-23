@@ -38,6 +38,7 @@ export default function NewReservationPage() {
         }}
         loading={loading}
         error={error}
+        mode="create"
         onSubmit={onSubmit}
         onCancel={() => router.push("/reservations")}
       />

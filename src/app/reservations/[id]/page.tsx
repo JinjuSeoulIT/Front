@@ -6,7 +6,11 @@ import MainLayout from "@/components/layout/MainLayout";
 import { useDispatch, useSelector } from "react-redux";
 import type { RootState, AppDispatch } from "@/store/store";
 import { reservationActions } from "@/features/Reservations/ReservationSlice";
-import type { Reservation, ReservationStatus } from "@/features/Reservations/ReservationTypes";
+import type {
+  Reservation,
+  ReservationForm,
+  ReservationStatus,
+} from "@/features/Reservations/ReservationTypes";
 import { Box, Button, Card, CardContent, Divider, Stack, Typography } from "@mui/material";
 
 export default function ReservationDetailPage() {
@@ -23,6 +27,36 @@ export default function ReservationDetailPage() {
 
   const p: Reservation | null =
     selected && String(selected.reservationId) === reservationId ? selected : null;
+
+  const toUpdateForm = (
+    value: Reservation,
+    nextStatus?: ReservationStatus
+  ): ReservationForm => ({
+    reservationNo: value.reservationNo,
+    patientId: value.patientId ?? null,
+    patientName: value.patientName ?? null,
+    departmentId: value.departmentId,
+    departmentName: value.departmentName ?? null,
+    doctorId: value.doctorId ?? null,
+    doctorName: value.doctorName ?? null,
+    reservedAt: value.reservedAt,
+    status: nextStatus ?? value.status,
+    note: value.note ?? null,
+  });
+
+  const onChangeStatus = (nextStatus: ReservationStatus) => {
+    if (!p) return;
+    if (p.status === nextStatus) return;
+    if (!confirm(`상태를 ${nextStatus}로 변경하시겠습니까?`)) return;
+
+    dispatch(
+      reservationActions.updateReservationRequest({
+        reservationId,
+        form: toUpdateForm(p, nextStatus),
+      })
+    );
+    router.push("/reservations");
+  };
 
   const statusLabel = (value?: ReservationStatus | string | null) => {
     switch ((value ?? "").toUpperCase()) {
@@ -60,10 +94,7 @@ export default function ReservationDetailPage() {
                 <Row label="예약 ID" value={String(p.reservationId)} />
                 <Row label="예약번호" value={p.reservationNo} />
                 <Row label="환자" value={p.patientName ?? String(p.patientId)} />
-                <Row
-                  label="진료과"
-                  value={p.departmentName ?? String(p.departmentId)}
-                />
+                <Row label="진료과" value={p.departmentName ?? String(p.departmentId)} />
                 <Row
                   label="의사"
                   value={p.doctorName ?? (p.doctorId ? String(p.doctorId) : "-")}
@@ -76,7 +107,7 @@ export default function ReservationDetailPage() {
               <Typography color="text.secondary">선택된 예약이 없습니다.</Typography>
             )}
 
-            <Stack direction="row" spacing={1}>
+            <Stack direction="row" spacing={1} flexWrap="wrap">
               <Button variant="outlined" onClick={() => router.push("/reservations")}>
                 뒤로
               </Button>
@@ -86,6 +117,30 @@ export default function ReservationDetailPage() {
                 disabled={!p}
               >
                 수정
+              </Button>
+              <Button
+                variant="outlined"
+                color="success"
+                disabled={!p}
+                onClick={() => onChangeStatus("COMPLETED")}
+              >
+                완료
+              </Button>
+              <Button
+                variant="outlined"
+                color="warning"
+                disabled={!p}
+                onClick={() => onChangeStatus("INACTIVE")}
+              >
+                비활성
+              </Button>
+              <Button
+                variant="outlined"
+                color="error"
+                disabled={!p}
+                onClick={() => onChangeStatus("CANCELED")}
+              >
+                취소
               </Button>
             </Stack>
           </Stack>

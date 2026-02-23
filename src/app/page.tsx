@@ -136,7 +136,7 @@ export default function HomePage() {
                   variant="contained"
                   sx={{ bgcolor: "var(--brand)", px: 2.5 }}
                 >
-                  접수 대시보드
+                  접수 업무
                 </Button>
                 <Button
                   component={Link}
@@ -236,7 +236,7 @@ export default function HomePage() {
                   {role.desc}
                 </Typography>
                 <Button component={Link} href={role.href} size="small" sx={{ mt: 2 }}>
-                  가기
+                  바로가기
                 </Button>
               </CardContent>
             </Card>

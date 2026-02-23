@@ -37,6 +37,8 @@ export default function NewReceptionPage() {
         }}
         loading={loading}
         error={error}
+        mode="create"
+        showScheduledAt={false}
         onSubmit={onSubmit}
         onCancel={() => router.push("/receptions")}
       />

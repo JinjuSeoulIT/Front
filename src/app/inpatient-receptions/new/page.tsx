@@ -39,6 +39,7 @@ export default function NewInpatientReceptionPage() {
         }}
         loading={loading}
         error={error}
+        mode="create"
         onSubmit={onSubmit}
         onCancel={() => router.push("/inpatient-receptions")}
       />

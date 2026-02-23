@@ -6,7 +6,11 @@ import MainLayout from "@/components/layout/MainLayout";
 import { useDispatch, useSelector } from "react-redux";
 import type { RootState, AppDispatch } from "@/store/store";
 import { inpatientReceptionActions } from "@/features/InpatientReceptions/InpatientReceptionSlice";
-import type { InpatientReception, ReceptionStatus } from "@/features/InpatientReceptions/InpatientReceptionTypes";
+import type {
+  InpatientReception,
+  InpatientReceptionForm,
+  ReceptionStatus,
+} from "@/features/InpatientReceptions/InpatientReceptionTypes";
 import { Box, Button, Card, CardContent, Divider, Stack, Typography } from "@mui/material";
 
 export default function InpatientReceptionDetailPage() {
@@ -23,6 +27,37 @@ export default function InpatientReceptionDetailPage() {
 
   const p: InpatientReception | null =
     selected && String(selected.receptionId) === receptionId ? selected : null;
+
+  const toUpdateForm = (
+    value: InpatientReception,
+    nextStatus?: ReceptionStatus
+  ): InpatientReceptionForm => ({
+    receptionNo: value.receptionNo,
+    patientId: value.patientId,
+    departmentId: value.departmentId,
+    doctorId: value.doctorId ?? null,
+    scheduledAt: value.scheduledAt ?? null,
+    arrivedAt: value.arrivedAt ?? null,
+    status: nextStatus ?? value.status,
+    note: value.note ?? null,
+    admissionPlanAt: value.admissionPlanAt,
+    wardId: value.wardId ?? null,
+    roomId: value.roomId ?? null,
+  });
+
+  const onChangeStatus = (nextStatus: ReceptionStatus) => {
+    if (!p) return;
+    if (p.status === nextStatus) return;
+    if (!confirm(`상태를 ${nextStatus}로 변경하시겠습니까?`)) return;
+
+    dispatch(
+      inpatientReceptionActions.updateInpatientReceptionRequest({
+        receptionId,
+        form: toUpdateForm(p, nextStatus),
+      })
+    );
+    router.push("/inpatient-receptions");
+  };
 
   const statusLabel = (value?: ReceptionStatus | string | null) => {
     switch ((value ?? "").toUpperCase()) {
@@ -70,7 +105,7 @@ export default function InpatientReceptionDetailPage() {
                 <Row label="환자 ID" value={String(p.patientId)} />
                 <Row label="진료과 ID" value={String(p.departmentId)} />
                 <Row label="의사 ID" value={p.doctorId ? String(p.doctorId) : "-"} />
-                <Row label="입원 예정" value={p.admissionPlanAt} />
+                <Row label="입원 예정" value={p.admissionPlanAt ?? "-"} />
                 <Row label="병동 ID" value={p.wardId ? String(p.wardId) : "-"} />
                 <Row label="병실 ID" value={p.roomId ? String(p.roomId) : "-"} />
                 <Row label="상태" value={statusLabel(p.status)} />
@@ -80,7 +115,7 @@ export default function InpatientReceptionDetailPage() {
               <Typography color="text.secondary">선택된 입원 접수가 없습니다.</Typography>
             )}
 
-            <Stack direction="row" spacing={1}>
+            <Stack direction="row" spacing={1} flexWrap="wrap">
               <Button variant="outlined" onClick={() => router.push("/inpatient-receptions")}>
                 뒤로
               </Button>
@@ -90,6 +125,30 @@ export default function InpatientReceptionDetailPage() {
                 disabled={!p}
               >
                 수정
+              </Button>
+              <Button
+                variant="outlined"
+                color="success"
+                disabled={!p}
+                onClick={() => onChangeStatus("COMPLETED")}
+              >
+                완료
+              </Button>
+              <Button
+                variant="outlined"
+                color="warning"
+                disabled={!p}
+                onClick={() => onChangeStatus("INACTIVE")}
+              >
+                비활성
+              </Button>
+              <Button
+                variant="outlined"
+                color="error"
+                disabled={!p}
+                onClick={() => onChangeStatus("CANCELED")}
+              >
+                취소
               </Button>
             </Stack>
           </Stack>

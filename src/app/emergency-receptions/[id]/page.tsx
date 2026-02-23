@@ -6,7 +6,11 @@ import MainLayout from "@/components/layout/MainLayout";
 import { useDispatch, useSelector } from "react-redux";
 import type { RootState, AppDispatch } from "@/store/store";
 import { emergencyReceptionActions } from "@/features/EmergencyReceptions/EmergencyReceptionSlice";
-import type { EmergencyReception, ReceptionStatus } from "@/features/EmergencyReceptions/EmergencyReceptionTypes";
+import type {
+  EmergencyReception,
+  EmergencyReceptionForm,
+  ReceptionStatus,
+} from "@/features/EmergencyReceptions/EmergencyReceptionTypes";
 import { Box, Button, Card, CardContent, Divider, Stack, Typography } from "@mui/material";
 
 export default function EmergencyReceptionDetailPage() {
@@ -23,6 +27,44 @@ export default function EmergencyReceptionDetailPage() {
 
   const p: EmergencyReception | null =
     selected && String(selected.receptionId) === receptionId ? selected : null;
+
+  const toUpdateForm = (
+    value: EmergencyReception,
+    nextStatus?: ReceptionStatus
+  ): EmergencyReceptionForm => ({
+    receptionNo: value.receptionNo,
+    patientId: value.patientId,
+    departmentId: value.departmentId,
+    doctorId: value.doctorId ?? null,
+    scheduledAt: value.scheduledAt ?? null,
+    arrivedAt: value.arrivedAt ?? null,
+    status: nextStatus ?? value.status,
+    note: value.note ?? null,
+    triageLevel: value.triageLevel,
+    chiefComplaint: value.chiefComplaint,
+    vitalTemp: value.vitalTemp ?? null,
+    vitalBpSystolic: value.vitalBpSystolic ?? null,
+    vitalBpDiastolic: value.vitalBpDiastolic ?? null,
+    vitalHr: value.vitalHr ?? null,
+    vitalRr: value.vitalRr ?? null,
+    vitalSpo2: value.vitalSpo2 ?? null,
+    arrivalMode: value.arrivalMode ?? null,
+    triageNote: value.triageNote ?? null,
+  });
+
+  const onChangeStatus = (nextStatus: ReceptionStatus) => {
+    if (!p) return;
+    if (p.status === nextStatus) return;
+    if (!confirm(`상태를 ${nextStatus}로 변경하시겠습니까?`)) return;
+
+    dispatch(
+      emergencyReceptionActions.updateEmergencyReceptionRequest({
+        receptionId,
+        form: toUpdateForm(p, nextStatus),
+      })
+    );
+    router.push("/emergency-receptions");
+  };
 
   const statusLabel = (value?: ReceptionStatus | string | null) => {
     switch ((value ?? "").toUpperCase()) {
@@ -72,14 +114,14 @@ export default function EmergencyReceptionDetailPage() {
                 <Row label="의사 ID" value={p.doctorId ? String(p.doctorId) : "-"} />
                 <Row label="상태" value={statusLabel(p.status)} />
                 <Row label="중증도" value={String(p.triageLevel)} />
-                <Row label="주호소" value={p.chiefComplaint} />
+                <Row label="주호소" value={p.chiefComplaint ?? "-"} />
                 <Row label="메모" value={p.note ?? "-"} />
               </Stack>
             ) : (
               <Typography color="text.secondary">선택된 응급 접수가 없습니다.</Typography>
             )}
 
-            <Stack direction="row" spacing={1}>
+            <Stack direction="row" spacing={1} flexWrap="wrap">
               <Button variant="outlined" onClick={() => router.push("/emergency-receptions")}>
                 뒤로
               </Button>
@@ -89,6 +131,30 @@ export default function EmergencyReceptionDetailPage() {
                 disabled={!p}
               >
                 수정
+              </Button>
+              <Button
+                variant="outlined"
+                color="success"
+                disabled={!p}
+                onClick={() => onChangeStatus("COMPLETED")}
+              >
+                완료
+              </Button>
+              <Button
+                variant="outlined"
+                color="warning"
+                disabled={!p}
+                onClick={() => onChangeStatus("INACTIVE")}
+              >
+                비활성
+              </Button>
+              <Button
+                variant="outlined"
+                color="error"
+                disabled={!p}
+                onClick={() => onChangeStatus("CANCELED")}
+              >
+                취소
               </Button>
             </Stack>
           </Stack>

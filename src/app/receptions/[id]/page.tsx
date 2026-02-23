@@ -6,7 +6,7 @@ import MainLayout from "@/components/layout/MainLayout";
 import { useDispatch, useSelector } from "react-redux";
 import type { RootState, AppDispatch } from "@/store/store";
 import { receptionActions } from "@/features/Receptions/ReceptionSlice";
-import type { Reception, ReceptionStatus } from "@/features/Receptions/ReceptionTypes";
+import type { Reception, ReceptionForm, ReceptionStatus } from "@/features/Receptions/ReceptionTypes";
 import { fetchReceptionStatusHistoryApi } from "@/lib/receptionHistoryApi";
 import { fetchAuditLogsByReceptionApi } from "@/lib/auditLogApi";
 import {
@@ -61,6 +61,40 @@ export default function ReceptionDetailPage() {
   }, [receptionId]);
 
   const p: Reception | null = selected && String(selected.receptionId) === receptionId ? selected : null;
+
+  const toUpdateForm = (value: Reception, nextStatus?: ReceptionStatus): ReceptionForm => ({
+    receptionNo: value.receptionNo,
+    patientId: value.patientId ?? null,
+    patientName: value.patientName ?? null,
+    visitType: value.visitType,
+    departmentId: value.departmentId ?? null,
+    departmentName: value.departmentName ?? null,
+    doctorId: value.doctorId ?? null,
+    doctorName: value.doctorName ?? null,
+    reservationId: value.reservationId ?? null,
+    scheduledAt: value.scheduledAt ?? null,
+    arrivedAt: value.arrivedAt ?? null,
+    status: nextStatus ?? value.status,
+    note: value.note ?? null,
+  });
+
+  const onChangeStatus = (nextStatus: ReceptionStatus) => {
+    if (!p) return;
+    if (p.status === nextStatus) return;
+    if (!confirm(`상태를 ${nextStatus}로 변경하시겠습니까?`)) return;
+
+    if (nextStatus === "CANCELED") {
+      dispatch(receptionActions.cancelReceptionRequest({ receptionId }));
+    } else {
+      dispatch(
+        receptionActions.updateReceptionRequest({
+          receptionId,
+          form: toUpdateForm(p, nextStatus),
+        })
+      );
+    }
+    router.push("/receptions");
+  };
 
   const visitTypeLabel = (value?: string | null) => {
     switch ((value ?? "").toUpperCase()) {
@@ -129,7 +163,7 @@ export default function ReceptionDetailPage() {
               <Typography color="text.secondary">선택된 접수가 없습니다.</Typography>
             )}
 
-            <Stack direction="row" spacing={1}>
+            <Stack direction="row" spacing={1} flexWrap="wrap">
               <Button variant="outlined" onClick={() => router.push("/receptions")}>뒤로</Button>
               <Button
                 variant="contained"
@@ -137,6 +171,30 @@ export default function ReceptionDetailPage() {
                 disabled={!p}
               >
                 수정
+              </Button>
+              <Button
+                variant="outlined"
+                color="success"
+                onClick={() => onChangeStatus("COMPLETED")}
+                disabled={!p}
+              >
+                완료
+              </Button>
+              <Button
+                variant="outlined"
+                color="warning"
+                onClick={() => onChangeStatus("INACTIVE")}
+                disabled={!p}
+              >
+                비활성
+              </Button>
+              <Button
+                variant="outlined"
+                color="error"
+                onClick={() => onChangeStatus("CANCELED")}
+                disabled={!p}
+              >
+                취소
               </Button>
             </Stack>
 
