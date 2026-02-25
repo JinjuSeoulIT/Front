@@ -26,11 +26,15 @@ import type { RootState, AppDispatch } from "@/store/store";
 import { receptionActions } from "@/features/Receptions/ReceptionSlice";
 import type { Reception, ReceptionSearchPayload } from "@/features/Receptions/ReceptionTypes";
 import { formatDepartmentName } from "@/lib/departmentLabel";
+import type { Patient } from "@/features/patients/patientTypes";
+import { fetchPatientsApi, searchPatientsApi } from "@/lib/patientApi";
+import { fetchReservationsApi } from "@/lib/reservationAdminApi";
+import { buildNextReceptionNumber } from "@/lib/receptionNumber";
+import { createReceptionApi, fetchReceptionsApi } from "@/lib/receptionsCrudApi";
 
 const SEARCH_OPTIONS: { label: string; value: ReceptionSearchPayload["type"] }[] = [
   { label: "접수번호", value: "receptionNo" },
-  { label: "환자ID", value: "patientId" },
-  { label: "상태", value: "status" },
+  { label: "환자이름", value: "patientName" },
 ];
 
 const TAB_LABELS = ["기본정보", "진료기록", "검사", "처방", "입원"];
@@ -96,6 +100,62 @@ const normalizeStatus = (value?: string | null) => {
   }
 };
 
+const resolveErrorMessage = (err: unknown, fallback: string) => {
+  if (err instanceof Error && err.message) return err.message;
+  return fallback;
+};
+
+const toLocalDateKey = (date: Date) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
+const extractDateKeyFromDateTime = (value?: string | null) => {
+  if (!value) return null;
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  const head = trimmed.slice(0, 10);
+  if (/^\d{4}-\d{2}-\d{2}$/.test(head)) return head;
+  return null;
+};
+
+const normalizeReservationStatus = (value?: string | null) => {
+  if (!value) return value;
+  const trimmed = value.trim();
+  switch (trimmed) {
+    case "예약":
+      return "RESERVED";
+    case "완료":
+      return "COMPLETED";
+    case "취소":
+      return "CANCELED";
+    case "비활성":
+      return "INACTIVE";
+    default:
+      return trimmed;
+  }
+};
+
+const extractDateKeyFromReceptionNo = (value?: string | null) => {
+  if (!value) return null;
+  const match = value.trim().match(/^(\d{4})(\d{2})(\d{2})-/);
+  if (!match) return null;
+  return `${match[1]}-${match[2]}-${match[3]}`;
+};
+
+const isTodayReception = (item: Reception, todayKey: string) => {
+  const candidates = [
+    extractDateKeyFromDateTime(item.arrivedAt),
+    extractDateKeyFromDateTime(item.scheduledAt),
+    extractDateKeyFromDateTime(item.createdAt),
+    extractDateKeyFromDateTime(item.updatedAt),
+    extractDateKeyFromReceptionNo(item.receptionNo),
+  ];
+  return candidates.some((dateKey) => dateKey === todayKey);
+};
+
 type ReceptionListProps = {
   initialSearchType?: ReceptionSearchPayload["type"];
   initialKeyword?: string;
@@ -117,27 +177,155 @@ export default function ReceptionList({
   >(initialSearchType);
   const [keyword, setKeyword] = React.useState(initialKeyword);
   const [tab, setTab] = React.useState(0);
+  const [patientSuggestions, setPatientSuggestions] = React.useState<Patient[]>([]);
+  const [openSuggestion, setOpenSuggestion] = React.useState(false);
+  const [patientNameById, setPatientNameById] = React.useState<Record<number, string>>({});
+  const [todayKey, setTodayKey] = React.useState(() => toLocalDateKey(new Date()));
+
+  const syncTodayReservationsToWaitingReceptions = React.useCallback(async () => {
+    const [reservations, receptions] = await Promise.all([
+      fetchReservationsApi(),
+      fetchReceptionsApi(),
+    ]);
+    const today = toLocalDateKey(new Date());
+    const linkedReservationIds = new Set(
+      receptions
+        .map((item) => item.reservationId)
+        .filter((value): value is number => typeof value === "number")
+    );
+    const receptionNumbers = receptions.map((item) => item.receptionNo);
+
+    const targets = reservations
+      .filter((item) => normalizeReservationStatus(item.status) === "RESERVED")
+      .filter((item) => extractDateKeyFromDateTime(item.reservedAt) === today)
+      .filter((item) => !linkedReservationIds.has(item.reservationId))
+      .sort((a, b) => a.reservationId - b.reservationId);
+
+    if (targets.length === 0) return;
+
+    for (const reservation of targets) {
+      const nextReceptionNo = buildNextReceptionNumber({
+        existingNumbers: receptionNumbers,
+        startSequence: 1,
+      });
+      receptionNumbers.push(nextReceptionNo);
+
+      await createReceptionApi({
+        receptionNo: nextReceptionNo,
+        patientId: reservation.patientId,
+        patientName: reservation.patientName ?? null,
+        visitType: "OUTPATIENT",
+        departmentId: reservation.departmentId,
+        departmentName: reservation.departmentName ?? null,
+        doctorId: reservation.doctorId ?? null,
+        doctorName: reservation.doctorName ?? null,
+        reservationId: reservation.reservationId,
+        scheduledAt: reservation.reservedAt,
+        arrivedAt: null,
+        status: "WAITING",
+        note: reservation.note ?? "예약 당일 자동 접수 생성",
+      });
+    }
+  }, []);
   const isCanceledView = initialSearchType === "status" && initialKeyword === "CANCELED";
   const filteredList = React.useMemo(
     () =>
-      isCanceledView
+      (isCanceledView
         ? list
-        : list.filter((p) => normalizeStatus(p.status) !== "CANCELED"),
-    [isCanceledView, list]
+        : list.filter((p) => normalizeStatus(p.status) !== "CANCELED")
+      ).filter((p) => isTodayReception(p, todayKey)),
+    [isCanceledView, list, todayKey]
   );
 
   React.useEffect(() => {
-    if (autoSearch && initialKeyword.trim()) {
-      dispatch(
-        receptionActions.searchReceptionsRequest({
-          type: initialSearchType,
-          keyword: initialKeyword.trim(),
-        })
-      );
-      return;
-    }
-    dispatch(receptionActions.fetchReceptionsRequest());
-  }, [dispatch, autoSearch, initialKeyword, initialSearchType]);
+    const initialize = async () => {
+      if (autoSearch && initialKeyword.trim()) {
+        dispatch(
+          receptionActions.searchReceptionsRequest({
+            type: initialSearchType,
+            keyword: initialKeyword.trim(),
+          })
+        );
+        return;
+      }
+      try {
+        await syncTodayReservationsToWaitingReceptions();
+      } catch (err: unknown) {
+        dispatch(
+          receptionActions.fetchReceptionsFailure(
+            resolveErrorMessage(err, "예약 당일 자동 접수 생성 실패")
+          )
+        );
+      } finally {
+        dispatch(receptionActions.fetchReceptionsRequest());
+      }
+    };
+
+    void initialize();
+  }, [
+    dispatch,
+    autoSearch,
+    initialKeyword,
+    initialSearchType,
+    syncTodayReservationsToWaitingReceptions,
+  ]);
+
+  React.useEffect(() => {
+    const now = new Date();
+    const nextMidnight = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate() + 1,
+      0,
+      0,
+      1
+    );
+    const delay = Math.max(1000, nextMidnight.getTime() - now.getTime());
+
+    const timer = window.setTimeout(() => {
+      const runAtMidnight = async () => {
+        setTodayKey(toLocalDateKey(new Date()));
+        try {
+          await syncTodayReservationsToWaitingReceptions();
+        } catch (err: unknown) {
+          dispatch(
+            receptionActions.fetchReceptionsFailure(
+              resolveErrorMessage(err, "예약 당일 자동 접수 생성 실패")
+            )
+          );
+        } finally {
+          dispatch(receptionActions.fetchReceptionsRequest());
+        }
+      };
+      void runAtMidnight();
+    }, delay);
+
+    return () => window.clearTimeout(timer);
+  }, [todayKey, dispatch, syncTodayReservationsToWaitingReceptions]);
+
+  React.useEffect(() => {
+    let active = true;
+    const loadPatients = async () => {
+      try {
+        const patients = await fetchPatientsApi();
+        if (!active) return;
+        const byId = patients.reduce<Record<number, string>>((acc, item) => {
+          if (item.patientId && item.name?.trim()) {
+            acc[item.patientId] = item.name.trim();
+          }
+          return acc;
+        }, {});
+        setPatientNameById(byId);
+      } catch {
+        if (!active) return;
+        setPatientNameById({});
+      }
+    };
+    loadPatients();
+    return () => {
+      active = false;
+    };
+  }, []);
 
 
   React.useEffect(() => {
@@ -157,9 +345,38 @@ export default function ReceptionList({
     }
   }, [filteredList, selected, dispatch]);
 
+  const resolveReceptionPatientName = React.useCallback(
+    (item: Reception) =>
+      (item.patientId ? patientNameById[item.patientId] : "") ||
+      item.patientName?.trim() ||
+      "",
+    [patientNameById]
+  );
+
   const onSearch = () => {
     const kw = keyword.trim();
     if (!kw) return alert("검색어는 필수입니다.");
+    setOpenSuggestion(false);
+    if (searchType === "patientName") {
+      const run = async () => {
+        try {
+          const all = await fetchReceptionsApi();
+          const lowered = kw.toLowerCase();
+          const filtered = all.filter((item) =>
+            resolveReceptionPatientName(item).toLowerCase().includes(lowered)
+          );
+          dispatch(receptionActions.fetchReceptionsSuccess(filtered));
+        } catch (err: unknown) {
+          dispatch(
+            receptionActions.fetchReceptionsFailure(
+              resolveErrorMessage(err, "접수 검색 실패")
+            )
+          );
+        }
+      };
+      void run();
+      return;
+    }
     dispatch(receptionActions.searchReceptionsRequest({ type: searchType, keyword: kw }));
   };
 
@@ -179,11 +396,67 @@ export default function ReceptionList({
     dispatch(receptionActions.cancelReceptionRequest({ receptionId }));
   };
 
+  React.useEffect(() => {
+    const kw = keyword.trim();
+    if (!kw || searchType !== "patientName") {
+      setPatientSuggestions([]);
+      setOpenSuggestion(false);
+      return;
+    }
+
+    let active = true;
+    const timer = setTimeout(async () => {
+      try {
+        const byName = await searchPatientsApi("name", kw);
+        if (!active) return;
+        setPatientSuggestions(byName.slice(0, 8));
+        setOpenSuggestion(byName.length > 0);
+      } catch {
+        if (!active) return;
+        setPatientSuggestions([]);
+        setOpenSuggestion(false);
+      }
+    }, 250);
+
+    return () => {
+      active = false;
+      clearTimeout(timer);
+    };
+  }, [keyword, searchType]);
+
+  const onPickPatientSuggestion = (patient: Patient) => {
+    const nextKeyword = patient.name?.trim() ?? "";
+    if (!nextKeyword) return;
+    setSearchType("patientName");
+    setKeyword(nextKeyword);
+    setOpenSuggestion(false);
+    const run = async () => {
+      try {
+        const all = await fetchReceptionsApi();
+        const lowered = nextKeyword.toLowerCase();
+        const filtered = all.filter((item) =>
+          resolveReceptionPatientName(item).toLowerCase().includes(lowered)
+        );
+        dispatch(receptionActions.fetchReceptionsSuccess(filtered));
+      } catch (err: unknown) {
+        dispatch(
+          receptionActions.fetchReceptionsFailure(
+            resolveErrorMessage(err, "접수 검색 실패")
+          )
+        );
+      }
+    };
+    void run();
+  };
+
   const primary =
     selected && filteredList.some((p) => p.receptionId === selected.receptionId)
       ? selected
       : filteredList[0];
-  const primaryName = primary?.patientName?.trim() || "";
+  const primaryName =
+    (primary?.patientId ? patientNameById[primary.patientId] : "") ||
+    primary?.patientName?.trim() ||
+    "";
   const primaryDepartment = formatDepartmentName(
     primary?.departmentName,
     primary?.departmentId
@@ -214,7 +487,9 @@ export default function ReceptionList({
               select
               size="small"
               value={searchType}
-              onChange={(e) => setSearchType(e.target.value as any)}
+              onChange={(e) =>
+                setSearchType(e.target.value as ReceptionSearchPayload["type"])
+              }
               sx={{ width: { xs: "100%", md: 180 } }}
             >
               {SEARCH_OPTIONS.map((o) => (
@@ -223,14 +498,64 @@ export default function ReceptionList({
                 </MenuItem>
               ))}
             </TextField>
-            <TextField
-              size="small"
-              placeholder="검색어 입력"
-              value={keyword}
-              onChange={(e) => setKeyword(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && onSearch()}
-              sx={{ width: { xs: "100%", md: 360 } }}
-            />
+            <Box sx={{ width: { xs: "100%", md: 360 }, position: "relative" }}>
+              <TextField
+                size="small"
+                placeholder="검색어 입력"
+                value={keyword}
+                onChange={(e) => setKeyword(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && onSearch()}
+                onFocus={() => {
+                  if (patientSuggestions.length > 0) {
+                    setOpenSuggestion(true);
+                  }
+                }}
+                sx={{ width: "100%" }}
+              />
+              {openSuggestion && patientSuggestions.length > 0 && (
+                <Card
+                  sx={{
+                    position: "absolute",
+                    top: "calc(100% + 6px)",
+                    left: 0,
+                    right: 0,
+                    zIndex: 20,
+                    borderRadius: 2,
+                    border: "1px solid #dbe5f5",
+                    boxShadow: "0 10px 24px rgba(23, 52, 97, 0.18)",
+                    maxHeight: 280,
+                    overflowY: "auto",
+                  }}
+                >
+                  <Stack spacing={0}>
+                    {patientSuggestions.map((p) => (
+                      <Button
+                        key={p.patientId}
+                        onClick={() => onPickPatientSuggestion(p)}
+                        sx={{
+                          justifyContent: "flex-start",
+                          textTransform: "none",
+                          px: 1.5,
+                          py: 1,
+                          borderRadius: 0,
+                          color: "#1f2a44",
+                          borderBottom: "1px solid #eef3fb",
+                        }}
+                      >
+                        <Box sx={{ textAlign: "left", width: "100%" }}>
+                          <Typography fontWeight={700} noWrap>
+                            {p.name} · {p.gender ?? "-"} · {p.birthDate ?? "-"}
+                          </Typography>
+                          <Typography sx={{ color: "#7b8aa9", fontSize: 12 }} noWrap>
+                            환자ID {p.patientId} · {p.phone ?? "-"} · {p.patientNo ?? "-"}
+                          </Typography>
+                        </Box>
+                      </Button>
+                    ))}
+                  </Stack>
+                </Card>
+              )}
+            </Box>
             <Stack direction="row" spacing={1} sx={{ flexWrap: "wrap" }}>
               <Button
                 variant="contained"
@@ -250,18 +575,10 @@ export default function ReceptionList({
               >
                 초기화
               </Button>
-              <Button
-                variant="contained"
-                component={Link}
-                href="/receptions/new"
-                sx={{ bgcolor: "#1f7a3f" }}
-              >
-                신규 접수
-              </Button>
             </Stack>
             <Box sx={{ flex: 1 }} />
             <Stack direction="row" spacing={1} sx={{ flexWrap: "wrap" }}>
-              <Chip label={`전체 ${totalCount}`} color="primary" />
+              <Chip label={`오늘 ${totalCount}`} color="primary" />
             </Stack>
           </Stack>
         </CardContent>
@@ -306,9 +623,25 @@ export default function ReceptionList({
                       ? primaryName || `환자 ${primary.patientId ?? "-"}`
                       : "접수 미선택"}
                   </Typography>
-                  <Typography sx={{ color: "#7b8aa9", fontSize: 13 }}>
-                    {primary?.receptionNo ?? "-"}
-                  </Typography>
+                  <Box sx={{ color: "#7b8aa9", fontSize: 13 }}>
+                    {primary ? (
+                      <Typography
+                        component={Link}
+                        href={`/receptions/${primary.receptionId}`}
+                        onClick={(e) => e.stopPropagation()}
+                        sx={{
+                          color: "#2b5aa9",
+                          textDecoration: "none",
+                          fontWeight: 700,
+                          "&:hover": { textDecoration: "underline" },
+                        }}
+                      >
+                        {primary.receptionNo}
+                      </Typography>
+                    ) : (
+                      "-"
+                    )}
+                  </Box>
                 </Box>
               </Stack>
 
@@ -408,8 +741,8 @@ export default function ReceptionList({
             <CardContent sx={{ p: 3 }}>
               <Stack spacing={2}>
                 <Stack direction="row" justifyContent="space-between" alignItems="center">
-                  <Typography fontWeight={800}>접수 목록</Typography>
-                  <Chip label={`총 ${totalCount}`} size="small" color="primary" />
+                  <Typography fontWeight={800}>환자리스트</Typography>
+                  <Chip label={`오늘 ${totalCount}`} size="small" color="primary" />
                 </Stack>
 
                 <Tabs
@@ -434,6 +767,10 @@ export default function ReceptionList({
                 <Stack spacing={1}>
                   {filteredList.map((p) => {
                     const isSelected = selected?.receptionId === p.receptionId;
+                    const displayPatientName =
+                      (p.patientId ? patientNameById[p.patientId] : "") ||
+                      p.patientName?.trim() ||
+                      `환자 ${p.patientId ?? "-"}`;
                     return (
                       <Box
                         key={p.receptionId}
@@ -452,16 +789,28 @@ export default function ReceptionList({
                         }}
                       >
                         <Avatar sx={{ width: 40, height: 40, bgcolor: "#d7e6ff", color: "#2b5aa9" }}>
-                          {p.patientName?.trim()
-                            ? p.patientName.trim().slice(0, 1)
+                          {displayPatientName
+                            ? displayPatientName.slice(0, 1)
                             : String(p.patientId ?? "?").slice(-2)}
                         </Avatar>
                         <Box sx={{ minWidth: 0 }}>
-                          <Typography fontWeight={700} noWrap>
+                          <Typography
+                            component={Link}
+                            href={`/receptions/${p.receptionId}`}
+                            onClick={(e) => e.stopPropagation()}
+                            fontWeight={700}
+                            noWrap
+                            sx={{
+                              color: "#2b5aa9",
+                              textDecoration: "none",
+                              "&:hover": { textDecoration: "underline" },
+                            }}
+                          >
                             {p.receptionNo}
                           </Typography>
                           <Typography sx={{ color: "#7b8aa9", fontSize: 12 }} noWrap>
-                            {p.patientName?.trim() || `환자 ${p.patientId ?? "-"}`} ·{" "}
+                            {displayPatientName}{" "}
+                            ·{" "}
                             {formatDepartmentName(p.departmentName, p.departmentId)} ·{" "}
                             {statusLabel(p.status)}
                           </Typography>

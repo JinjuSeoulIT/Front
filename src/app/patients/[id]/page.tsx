@@ -1,6 +1,7 @@
 ﻿"use client";
 
 import * as React from "react";
+import axios from "axios";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import MainLayout from "@/components/layout/MainLayout";
@@ -42,8 +43,9 @@ import type { PatientFlag } from "@/lib/flagApi";
 import { fetchPatientFlagsApi } from "@/lib/flagApi";
 import { changePatientStatusApi } from "@/lib/patientApi";
 import { fetchCodesApi } from "@/lib/codeApi";
-import { createVisitApi } from "@/lib/receptionApi";
-import { saveVisitReservationApi } from "@/lib/reservationApi";
+import { createReservationApi, fetchReservationsApi } from "@/lib/reservationAdminApi";
+import { createReceptionApi, fetchReceptionsApi } from "@/lib/receptionsCrudApi";
+import { buildNextReceptionNumber } from "@/lib/receptionNumber";
 
 function sexLabel(g?: Patient["gender"]) {
   if (g === "M") return "남(M)";
@@ -55,7 +57,7 @@ function resolveFileUrl(url?: string | null) {
   if (!url) return "";
   if (url.startsWith("http://") || url.startsWith("https://")) return url;
   const base =
-    process.env.NEXT_PUBLIC_API_BASE ?? "http://192.168.1.60:8181";
+    process.env.NEXT_PUBLIC_PATIENTS_API_BASE_URL ?? "http://192.168.1.60:8181";
   return `${base}${url.startsWith("/") ? "" : "/"}${url}`;
 }
 
@@ -141,6 +143,30 @@ function toApiDateTime(value?: string) {
   return value.length === 16 ? `${value}:00` : value;
 }
 
+function resolveErrorMessage(err: unknown, fallback: string) {
+  if (axios.isAxiosError(err)) {
+    const data = err.response?.data as
+      | { message?: string; error?: string; detail?: string }
+      | undefined;
+    if (data?.message) return data.message;
+    if (data?.error) return data.error;
+    if (data?.detail) return data.detail;
+    if (err.message) return err.message;
+  }
+  if (err instanceof Error && err.message) return err.message;
+  if (typeof err === "string" && err.trim()) return err;
+  return fallback;
+}
+
+const departments = [
+  { id: 1, name: "내과", doctor: "송태민", doctorId: 1 },
+  { id: 2, name: "외과", doctor: "이현석", doctorId: 2 },
+  { id: 3, name: "정형외과", doctor: "성숙희", doctorId: 3 },
+  { id: 4, name: "신경외과", doctor: "최효정", doctorId: 4 },
+];
+
+const defaultDepartment = departments[0];
+
 export default function PatientDetailPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
@@ -164,12 +190,21 @@ export default function PatientDetailPage() {
   const [restrictionOptions, setRestrictionOptions] = React.useState<RestrictionOption[]>([]);
 
   const [vipUpdating, setVipUpdating] = React.useState(false);
+  const [receptionDialogOpen, setReceptionDialogOpen] = React.useState(false);
+  const [receptionSaving, setReceptionSaving] = React.useState(false);
+  const [receptionForm, setReceptionForm] = React.useState({
+    deptCode: defaultDepartment.name,
+    doctorId: String(defaultDepartment.doctorId),
+    visitType: "OUTPATIENT",
+    arrivedAt: "",
+    note: "",
+  });
 
   const [reservationDialogOpen, setReservationDialogOpen] = React.useState(false);
   const [reservationSaving, setReservationSaving] = React.useState(false);
   const [reservationForm, setReservationForm] = React.useState({
-    deptCode: "내과",
-    doctorId: "김의사",
+    deptCode: defaultDepartment.name,
+    doctorId: String(defaultDepartment.doctorId),
     reservationId: "",
     scheduledAt: "",
     arrivalAt: "",
@@ -322,8 +357,8 @@ export default function PatientDetailPage() {
 
   const openReservationDialog = () => {
     setReservationForm({
-      deptCode: "내과",
-      doctorId: "김의사",
+      deptCode: defaultDepartment.name,
+      doctorId: String(defaultDepartment.doctorId),
       reservationId: "",
       scheduledAt: "",
       arrivalAt: "",
@@ -331,6 +366,17 @@ export default function PatientDetailPage() {
       memo: "",
     });
     setReservationDialogOpen(true);
+  };
+
+  const openReceptionDialog = () => {
+    setReceptionForm({
+      deptCode: defaultDepartment.name,
+      doctorId: String(defaultDepartment.doctorId),
+      visitType: "OUTPATIENT",
+      arrivedAt: "",
+      note: "",
+    });
+    setReceptionDialogOpen(true);
   };
 
   const saveReservation = async () => {
@@ -342,32 +388,82 @@ export default function PatientDetailPage() {
 
     try {
       setReservationSaving(true);
-      const visit = await createVisitApi({
-        patientId: p.patientId,
-        patientNo: p.patientNo ?? null,
-        patientName: p.name,
-        patientPhone: p.phone ?? null,
-        visitType: "RESERVATION",
-        deptCode: reservationForm.deptCode,
-        doctorId: reservationForm.doctorId,
-        priorityYn: false,
-        memo: reservationForm.memo || null,
-        createdBy: "patient-detail",
-      });
+      const reservedAt = toApiDateTime(reservationForm.scheduledAt);
+      if (!reservedAt) {
+        alert("예약 일시 형식이 올바르지 않습니다.");
+        return;
+      }
 
-      await saveVisitReservationApi(visit.id, {
-        reservationId: reservationForm.reservationId || null,
-        scheduledAt: toApiDateTime(reservationForm.scheduledAt),
-        arrivalAt: toApiDateTime(reservationForm.arrivalAt),
-        note: reservationForm.note || null,
+      const list = await fetchReservationsApi();
+      const reservationNo = buildNextReceptionNumber({
+        existingNumbers: list.map((item) => item.reservationNo),
+        startSequence: 301,
+      });
+      const selectedDept = departments.find((dept) => dept.name === reservationForm.deptCode);
+      const selectedByDoctor = departments.find(
+        (dept) => String(dept.doctorId) === reservationForm.doctorId
+      );
+      const resolvedDept = selectedDept ?? selectedByDoctor ?? defaultDepartment;
+
+      await createReservationApi({
+        reservationNo,
+        patientId: p.patientId,
+        patientName: p.name,
+        departmentId: resolvedDept.id,
+        departmentName: resolvedDept.name,
+        doctorId: Number(reservationForm.doctorId || resolvedDept.doctorId),
+        doctorName: resolvedDept.doctor,
+        reservedAt,
+        status: "RESERVED",
+        note: reservationForm.note?.trim() || reservationForm.memo?.trim() || null,
       });
 
       setReservationDialogOpen(false);
       alert("예약이 등록되었습니다.");
-    } catch {
-      alert("예약 등록에 실패했습니다.");
+    } catch (err: unknown) {
+      console.error("saveReservation failed", err);
+      alert(`예약 등록에 실패했습니다.\n원인: ${resolveErrorMessage(err, "알 수 없는 오류")}`);
     } finally {
       setReservationSaving(false);
+    }
+  };
+
+  const saveReception = async () => {
+    if (!p) return;
+
+    try {
+      setReceptionSaving(true);
+      const list = await fetchReceptionsApi();
+      const nextReceptionNo = buildNextReceptionNumber({
+        existingNumbers: list.map((item) => item.receptionNo),
+        startSequence: 1,
+      });
+      const selectedDept = departments.find((dept) => dept.name === receptionForm.deptCode);
+      const selectedByDoctor = departments.find(
+        (dept) => String(dept.doctorId) === receptionForm.doctorId
+      );
+      const resolvedDept = selectedDept ?? selectedByDoctor ?? defaultDepartment;
+
+      await createReceptionApi({
+        receptionNo: nextReceptionNo,
+        patientId: p.patientId,
+        patientName: p.name,
+        visitType: receptionForm.visitType,
+        departmentId: resolvedDept.id,
+        departmentName: resolvedDept.name,
+        doctorId: Number(receptionForm.doctorId || resolvedDept.doctorId),
+        doctorName: resolvedDept.doctor,
+        arrivedAt: toApiDateTime(receptionForm.arrivedAt) ?? new Date().toISOString().slice(0, 19),
+        status: "WAITING",
+        note: receptionForm.note?.trim() || "환자 상세 화면에서 접수 등록",
+      });
+
+      setReceptionDialogOpen(false);
+      router.push("/receptions");
+    } catch (err: unknown) {
+      alert(`접수 등록에 실패했습니다.\n원인: ${resolveErrorMessage(err, "알 수 없는 오류")}`);
+    } finally {
+      setReceptionSaving(false);
     }
   };
 
@@ -477,7 +573,8 @@ export default function PatientDetailPage() {
                       variant="contained"
                       color="info"
                       startIcon={<AssignmentIndOutlinedIcon />}
-                      onClick={() => router.push(`/reception?patientId=${patientId}`)}
+                      onClick={openReceptionDialog}
+                      disabled={!p}
                     >
                       접수 등록
                     </Button>
@@ -626,6 +723,118 @@ export default function PatientDetailPage() {
       </Dialog>
 
       <Dialog
+        open={receptionDialogOpen}
+        onClose={() => setReceptionDialogOpen(false)}
+        fullWidth
+        maxWidth="sm"
+        PaperProps={{ sx: { borderRadius: 4 } }}
+      >
+        <DialogTitle>접수 등록</DialogTitle>
+        <DialogContent>
+          <Stack spacing={2} sx={{ mt: 1 }}>
+            <TextField
+              select
+              label="진료과"
+              value={receptionForm.deptCode}
+              onChange={(e) =>
+                setReceptionForm((prev) => {
+                  const nextDeptName = e.target.value;
+                  const nextDept = departments.find((d) => d.name === nextDeptName);
+                  return {
+                    ...prev,
+                    deptCode: nextDeptName,
+                    doctorId: nextDept ? String(nextDept.doctorId) : prev.doctorId,
+                  };
+                })
+              }
+              fullWidth
+            >
+              {departments.map((dept) => (
+                <MenuItem key={dept.id} value={dept.name}>
+                  {dept.name}
+                </MenuItem>
+              ))}
+            </TextField>
+
+            <TextField
+              select
+              label="담당의"
+              value={receptionForm.doctorId}
+              onChange={(e) =>
+                setReceptionForm((prev) => {
+                  const nextDoctorId = e.target.value;
+                  const nextDept = departments.find(
+                    (dept) => String(dept.doctorId) === nextDoctorId
+                  );
+                  return {
+                    ...prev,
+                    doctorId: nextDoctorId,
+                    deptCode: nextDept?.name ?? prev.deptCode,
+                  };
+                })
+              }
+              fullWidth
+            >
+              {departments.map((dept) => (
+                <MenuItem key={dept.doctorId} value={String(dept.doctorId)}>
+                  {dept.doctor}
+                </MenuItem>
+              ))}
+            </TextField>
+
+            <TextField
+              select
+              label="내원유형"
+              value={receptionForm.visitType}
+              onChange={(e) =>
+                setReceptionForm((prev) => ({
+                  ...prev,
+                  visitType: e.target.value,
+                }))
+              }
+              fullWidth
+            >
+              <MenuItem value="OUTPATIENT">외래</MenuItem>
+              <MenuItem value="EMERGENCY">응급</MenuItem>
+              <MenuItem value="INPATIENT">입원</MenuItem>
+            </TextField>
+
+            <TextField
+              label="내원 일시(선택)"
+              type="datetime-local"
+              value={receptionForm.arrivedAt}
+              onChange={(e) =>
+                setReceptionForm((prev) => ({
+                  ...prev,
+                  arrivedAt: e.target.value,
+                }))
+              }
+              InputLabelProps={{ shrink: true }}
+              fullWidth
+            />
+
+            <TextField
+              label="접수 메모(선택)"
+              value={receptionForm.note}
+              onChange={(e) =>
+                setReceptionForm((prev) => ({
+                  ...prev,
+                  note: e.target.value,
+                }))
+              }
+              fullWidth
+            />
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setReceptionDialogOpen(false)}>취소</Button>
+          <Button variant="contained" onClick={saveReception} disabled={receptionSaving}>
+            저장
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog
         open={reservationDialogOpen}
         onClose={() => setReservationDialogOpen(false)}
         fullWidth
@@ -640,17 +849,23 @@ export default function PatientDetailPage() {
               label="진료과"
               value={reservationForm.deptCode}
               onChange={(e) =>
-                setReservationForm((prev) => ({
-                  ...prev,
-                  deptCode: e.target.value,
-                }))
+                setReservationForm((prev) => {
+                  const nextDeptName = e.target.value;
+                  const nextDept = departments.find((d) => d.name === nextDeptName);
+                  return {
+                    ...prev,
+                    deptCode: nextDeptName,
+                    doctorId: nextDept ? String(nextDept.doctorId) : prev.doctorId,
+                  };
+                })
               }
               fullWidth
             >
-              <MenuItem value="내과">내과</MenuItem>
-              <MenuItem value="정형외과">정형외과</MenuItem>
-              <MenuItem value="치과">치과</MenuItem>
-              <MenuItem value="소아과">소아과</MenuItem>
+              {departments.map((dept) => (
+                <MenuItem key={dept.id} value={dept.name}>
+                  {dept.name}
+                </MenuItem>
+              ))}
             </TextField>
 
             <TextField
@@ -658,16 +873,25 @@ export default function PatientDetailPage() {
               label="담당의"
               value={reservationForm.doctorId}
               onChange={(e) =>
-                setReservationForm((prev) => ({
-                  ...prev,
-                  doctorId: e.target.value,
-                }))
+                setReservationForm((prev) => {
+                  const nextDoctorId = e.target.value;
+                  const nextDept = departments.find(
+                    (dept) => String(dept.doctorId) === nextDoctorId
+                  );
+                  return {
+                    ...prev,
+                    doctorId: nextDoctorId,
+                    deptCode: nextDept?.name ?? prev.deptCode,
+                  };
+                })
               }
               fullWidth
             >
-              <MenuItem value="김의사">김의사</MenuItem>
-              <MenuItem value="박의사">박의사</MenuItem>
-              <MenuItem value="이의사">이의사</MenuItem>
+              {departments.map((dept) => (
+                <MenuItem key={dept.doctorId} value={String(dept.doctorId)}>
+                  {dept.doctor}
+                </MenuItem>
+              ))}
             </TextField>
 
             <TextField

@@ -7,7 +7,7 @@ import type {
 } from "../features/patients/patientTypes";
 
 const api = axios.create({  
-  baseURL: process.env.NEXT_PUBLIC_API_BASE ?? "http://192.168.1.60:8181",
+  baseURL: process.env.NEXT_PUBLIC_PATIENTS_API_BASE_URL ?? "http://192.168.1.60:8181",
 });
 
 api.interceptors.request.use((config) => {
@@ -67,15 +67,16 @@ export const fetchPatientApi = async (patientId: number): Promise<Patient> => {
 };
 
 // Create (multipart)
-export const createPatientApi = async (form: PatientForm): Promise<void> => {
+export const createPatientApi = async (form: PatientForm): Promise<Patient> => {
   const { photoFile, ...payload } = form;
-  const res = await api.post<ApiResponse<void>>(
+  const res = await api.post<ApiResponse<Patient>>(
     "/api/patients",
     buildFormData(payload, photoFile ?? null)
   );
   if (!res.data.success) {
     throw new Error(res.data.message || "Create failed");
   }
+  return res.data.result;
 };
 
 // Update

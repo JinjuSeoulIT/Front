@@ -15,7 +15,13 @@ import {
 import BedOutlinedIcon from "@mui/icons-material/BedOutlined";
 import EditNoteRoundedIcon from "@mui/icons-material/EditNoteRounded";
 import type { InpatientReceptionForm as InpatientReceptionFormPayload } from "@/features/InpatientReceptions/InpatientReceptionTypes";
+import type {
+  DepartmentOption,
+  DoctorOption,
+  PatientOption,
+} from "@/features/Reservations/ReservationTypes";
 import { fetchInpatientReceptionsApi } from "@/lib/inpatientReceptionApi";
+import { fetchPatientsApi } from "@/lib/masterDataApi";
 import { buildNextReceptionNumber } from "@/lib/receptionNumber";
 
 type InpatientReceptionFormState = {
@@ -52,6 +58,20 @@ const statusOptions = [
   { value: "ON_HOLD", label: "보류" },
   { value: "CANCELED", label: "취소" },
   { value: "INACTIVE", label: "비활성" },
+];
+
+const departmentOptions: DepartmentOption[] = [
+  { departmentId: 1, departmentName: "내과" },
+  { departmentId: 2, departmentName: "외과" },
+  { departmentId: 3, departmentName: "정형외과" },
+  { departmentId: 4, departmentName: "신경외과" },
+];
+
+const doctorOptions: DoctorOption[] = [
+  { doctorId: 1, doctorName: "송태민", departmentId: 1 },
+  { doctorId: 2, doctorName: "이현석", departmentId: 2 },
+  { doctorId: 3, doctorName: "성숙희", departmentId: 3 },
+  { doctorId: 4, doctorName: "최효정", departmentId: 4 },
 ];
 
 function toOptionalNumber(value: string) {
@@ -97,12 +117,35 @@ export default function InpatientReceptionForm({
   };
 
   const [form, setForm] = React.useState<InpatientReceptionFormState>(initial);
+  const [patients, setPatients] = React.useState<PatientOption[]>([]);
+  const [listError, setListError] = React.useState<string | null>(null);
   const [numberLoading, setNumberLoading] = React.useState(false);
   const [numberError, setNumberError] = React.useState<string | null>(null);
 
   React.useEffect(() => {
     setForm(initial);
   }, [initial]);
+
+  React.useEffect(() => {
+    let mounted = true;
+    const load = async () => {
+      try {
+        setListError(null);
+        const patientList = await fetchPatientsApi();
+        if (!mounted) return;
+        setPatients(patientList);
+      } catch (err) {
+        if (!mounted) return;
+        const message =
+          err instanceof Error ? err.message : "목록을 불러오지 못했습니다.";
+        setListError(message);
+      }
+    };
+    load();
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   React.useEffect(() => {
     if (initial.receptionNo.trim()) return;
@@ -140,6 +183,31 @@ export default function InpatientReceptionForm({
     };
   }, [initial.receptionNo]);
 
+  const getDoctorsByDepartment = (departmentId: string) => {
+    const deptId = Number(departmentId);
+    if (Number.isNaN(deptId)) return doctorOptions;
+    return doctorOptions.filter((d) => (d.departmentId ?? null) === deptId);
+  };
+
+  const handleDepartmentChange = (value: string) => {
+    const candidates = getDoctorsByDepartment(value);
+    const autoDoctor = candidates[0];
+    setForm((prev) => ({
+      ...prev,
+      departmentId: value,
+      doctorId: autoDoctor ? String(autoDoctor.doctorId) : "",
+    }));
+  };
+
+  const handleDoctorChange = (value: string) => {
+    const selected = doctorOptions.find((d) => String(d.doctorId) === value);
+    setForm((prev) => ({
+      ...prev,
+      doctorId: value,
+      departmentId: selected?.departmentId ? String(selected.departmentId) : prev.departmentId,
+    }));
+  };
+
   const handleSubmit = () => {
     if (!form.receptionNo.trim()) return;
     const patientId = toOptionalNumber(form.patientId);
@@ -154,7 +222,7 @@ export default function InpatientReceptionForm({
       doctorId: toOptionalNumber(form.doctorId) ?? null,
       scheduledAt: toOptionalString(form.scheduledAt),
       arrivedAt: toOptionalString(form.arrivedAt),
-      status: (form.status || "WAITING") as any,
+      status: (form.status || "WAITING") as InpatientReceptionFormPayload["status"],
       note: toOptionalString(form.note) ?? null,
       admissionPlanAt: form.admissionPlanAt,
       wardId: toOptionalNumber(form.wardId),
@@ -246,30 +314,51 @@ export default function InpatientReceptionForm({
           />
           <Stack direction={{ xs: "column", sm: "row" }} spacing={1}>
             <TextField
-              label="환자 ID"
+              select
+              label="환자 이름"
               value={form.patientId}
               onChange={(e) => setForm((prev) => ({ ...prev, patientId: e.target.value }))}
               required
               fullWidth
               sx={fieldSx}
-            />
+            >
+              {patients.map((p) => (
+                <MenuItem key={p.patientId} value={String(p.patientId)}>
+                  {p.patientName}
+                </MenuItem>
+              ))}
+            </TextField>
             <TextField
-              label="진료과 ID"
+              select
+              label="진료과"
               value={form.departmentId}
-              onChange={(e) => setForm((prev) => ({ ...prev, departmentId: e.target.value }))}
+              onChange={(e) => handleDepartmentChange(e.target.value)}
               required
               fullWidth
               sx={fieldSx}
-            />
+            >
+              {departmentOptions.map((d) => (
+                <MenuItem key={d.departmentId} value={String(d.departmentId)}>
+                  {d.departmentName}
+                </MenuItem>
+              ))}
+            </TextField>
           </Stack>
           <Stack direction={{ xs: "column", sm: "row" }} spacing={1}>
             <TextField
-              label="의사 ID"
+              select
+              label="의사 이름"
               value={form.doctorId}
-              onChange={(e) => setForm((prev) => ({ ...prev, doctorId: e.target.value }))}
+              onChange={(e) => handleDoctorChange(e.target.value)}
               fullWidth
               sx={fieldSx}
-            />
+            >
+              {getDoctorsByDepartment(form.departmentId).map((d) => (
+                <MenuItem key={d.doctorId} value={String(d.doctorId)}>
+                  {d.doctorName}
+                </MenuItem>
+              ))}
+            </TextField>
             <TextField
               select
               label="상태"
@@ -342,6 +431,12 @@ export default function InpatientReceptionForm({
           />
         </Stack>
 
+        {listError && (
+          <Typography color="error" fontWeight={800}>
+            {listError}
+          </Typography>
+        )}
+
         {error && (
           <Typography color="error" fontWeight={800}>
             {error}
@@ -392,4 +487,3 @@ export default function InpatientReceptionForm({
     </Paper>
   );
 }
-

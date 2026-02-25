@@ -59,7 +59,7 @@ function resolveFileUrl(url?: string | null) {
   if (!url) return "";
   if (url.startsWith("http://") || url.startsWith("https://")) return url;
   const base =
-    process.env.NEXT_PUBLIC_API_BASE ?? "http://192.168.1.60:8181";
+    process.env.NEXT_PUBLIC_PATIENTS_API_BASE_URL ?? "http://192.168.1.60:8181";
   return `${base}${url.startsWith("/") ? "" : "/"}${url}`;
 }
 

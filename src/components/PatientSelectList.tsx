@@ -23,7 +23,7 @@ type Props = {
 };
 
 const API_BASE =
-  process.env.NEXT_PUBLIC_API_BASE ?? "http://192.168.1.60:8181";
+  process.env.NEXT_PUBLIC_PATIENTS_API_BASE_URL ?? "http://192.168.1.60:8181";
 
 function resolvePhotoUrl(url?: string | null) {
   if (!url) return "";
