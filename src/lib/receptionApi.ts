@@ -37,7 +37,11 @@ export type CreateVisitReq = {
 };
 
 const api = axios.create({
+<<<<<<< HEAD
   baseURL: process.env.NEXT_PUBLIC_API_BASE ?? "http://192.168.1.55:8283",
+=======
+  baseURL: process.env.NEXT_PUBLIC_RECEPTION_API_BASE_URL ?? "http://192.168.1.55:8283",
+>>>>>>> 73bb2bc943d6f89d05047496f4946a0b37413316
 });
 
 function unwrap<T>(data: ApiResponse<T> | T): T {
@@ -55,6 +59,10 @@ export const fetchVisitsApi = async (): Promise<VisitRes[]> => {
 
 export const createVisitApi = async (payload: CreateVisitReq): Promise<VisitRes> => {
   const res = await api.post<ApiResponse<VisitRes> | VisitRes>("/api/receptions", payload);
+  const wrapped = res.data as ApiResponse<VisitRes>;
+  if (wrapped && typeof wrapped === "object" && wrapped.success === false) {
+    throw new Error(wrapped.message || "접수 생성 실패");
+  }
   const value = unwrap<VisitRes>(res.data);
   if (!value || typeof value !== "object") {
     throw new Error("접수 생성 응답이 비어 있습니다.");

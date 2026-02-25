@@ -7,7 +7,11 @@ import type {
 } from "@/features/Reservations/ReservationTypes";
 
 const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_BASE ?? "",
+  baseURL: process.env.NEXT_PUBLIC_PATIENTS_API_BASE_URL ?? "http://192.168.1.60:8181",
+});
+
+const receptionApi = axios.create({
+  baseURL: process.env.NEXT_PUBLIC_RECEPTION_API_BASE_URL ?? "http://192.168.1.55:8283",
 });
 
 export const fetchPatientsApi = async (): Promise<PatientOption[]> => {
@@ -19,7 +23,7 @@ export const fetchPatientsApi = async (): Promise<PatientOption[]> => {
 };
 
 export const fetchDepartmentsApi = async (): Promise<DepartmentOption[]> => {
-  const res = await api.get<ApiResponse<DepartmentOption[]>>("/api/departments");
+  const res = await receptionApi.get<ApiResponse<DepartmentOption[]>>("/api/departments");
   if (!res.data.success) {
     throw new Error(res.data.message || "Fetch departments failed");
   }
@@ -29,7 +33,7 @@ export const fetchDepartmentsApi = async (): Promise<DepartmentOption[]> => {
 export const fetchDoctorsApi = async (
   departmentId?: number | null
 ): Promise<DoctorOption[]> => {
-  const res = await api.get<ApiResponse<DoctorOption[]>>("/api/doctors", {
+  const res = await receptionApi.get<ApiResponse<DoctorOption[]>>("/api/doctors", {
     params: departmentId ? { departmentId } : undefined,
   });
   if (!res.data.success) {

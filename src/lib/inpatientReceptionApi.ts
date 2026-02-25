@@ -7,7 +7,7 @@ import type {
 } from "@/features/InpatientReceptions/InpatientReceptionTypes";
 
 const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_BASE ?? "",
+  baseURL: process.env.NEXT_PUBLIC_RECEPTION_API_BASE_URL ?? "http://192.168.1.55:8283",
 });
 
 export const fetchInpatientReceptionsApi = async (): Promise<InpatientReception[]> => {

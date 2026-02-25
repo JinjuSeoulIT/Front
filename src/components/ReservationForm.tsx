@@ -80,6 +80,21 @@ function toOptionalString(value: string) {
   return trimmed.length === 0 ? undefined : trimmed;
 }
 
+const formatDateTimeLocal = (date: Date) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  const hour = String(date.getHours()).padStart(2, "0");
+  const minute = String(date.getMinutes()).padStart(2, "0");
+  return `${year}-${month}-${day}T${hour}:${minute}`;
+};
+
+const isPastDateTime = (value: string, now: Date = new Date()) => {
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return false;
+  return parsed.getTime() < now.getTime();
+};
+
 export default function ReservationForm({
   title,
   initial,
@@ -227,6 +242,10 @@ export default function ReservationForm({
 
   const handleSubmit = () => {
     if (!form.reservationNo.trim()) return;
+    if (!isEditMode && isPastDateTime(form.reservedAt)) {
+      alert("날짜가 이미 지났습니다.");
+      return;
+    }
     const patientId = toOptionalNumber(form.patientId);
     const departmentId = toOptionalNumber(form.departmentId);
 
@@ -243,7 +262,7 @@ export default function ReservationForm({
       doctorId: doctorId ?? null,
       doctorName: toOptionalString(form.doctorName) ?? null,
       reservedAt: form.reservedAt,
-      status: (form.status || "RESERVED") as any,
+      status: (form.status || "RESERVED") as ReservationFormPayload["status"],
       note: toOptionalString(form.note) ?? null,
     });
   };
@@ -380,6 +399,7 @@ export default function ReservationForm({
               type="datetime-local"
               label="예약 시간"
               InputLabelProps={{ shrink: true }}
+              inputProps={!isEditMode ? { min: formatDateTimeLocal(new Date()) } : undefined}
               value={form.reservedAt}
               onChange={(e) =>
                 setForm((prev) => ({ ...prev, reservedAt: e.target.value }))

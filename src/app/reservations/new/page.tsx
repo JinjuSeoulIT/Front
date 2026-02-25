@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import MainLayout from "@/components/layout/MainLayout";
 import ReservationForm from "@/components/ReservationForm";
 import { useDispatch, useSelector } from "react-redux";
@@ -11,8 +11,11 @@ import type { ReservationForm as ReservationFormPayload } from "@/features/Reser
 
 export default function NewReservationPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const dispatch = useDispatch<AppDispatch>();
   const { loading, error } = useSelector((s: RootState) => s.reservations);
+  const patientName = (searchParams.get("patientName") ?? "").trim();
+  const patientIdParam = (searchParams.get("patientId") ?? "").trim();
 
   const onSubmit = (form: ReservationFormPayload) => {
     dispatch(reservationActions.createReservationRequest(form));
@@ -26,8 +29,8 @@ export default function NewReservationPage() {
         submitLabel="등록"
         initial={{
           reservationNo: "",
-          patientId: "",
-          patientName: "",
+          patientId: patientIdParam,
+          patientName,
           departmentId: "",
           departmentName: "",
           doctorId: "",

@@ -54,7 +54,7 @@ export interface ReceptionForm {
 }
 
 export interface ReceptionSearchPayload {
-  type: "receptionNo" | "patientId" | "status";
+  type: "receptionNo" | "patientId" | "patientName" | "status";
   keyword: string;
 }
 

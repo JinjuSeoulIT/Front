@@ -13,6 +13,7 @@ import {
   List,
   ListItem,
   ListItemText,
+  Menu,
   MenuItem,
   Paper,
   Stack,
@@ -49,10 +50,24 @@ type PatientFormProps = {
   error?: string | null;
   submitLabel: string;
   onSubmit: (form: PatientFormPayload) => void;
+  secondarySubmitLabel?: string;
+  onSecondarySubmit?: (form: PatientFormPayload) => void;
+  postSubmitOptions?: { label: string; onSubmit: (form: PatientFormPayload) => void }[];
   onCancel: () => void;
   onDelete?: () => void;
   showPhotoField?: boolean;
   enableDuplicateCheck?: boolean;
+};
+
+type DaumPostcodeData = { address?: string };
+type DaumPostcodeInstance = { open: () => void };
+type DaumPostcodeConstructor = new (opts: {
+  oncomplete: (data: DaumPostcodeData) => void;
+}) => DaumPostcodeInstance;
+type DaumWindow = Window & {
+  daum?: {
+    Postcode?: DaumPostcodeConstructor;
+  };
 };
 
 function toOptional(value: string) {
@@ -72,6 +87,9 @@ export default function PatientForm({
   error,
   submitLabel,
   onSubmit,
+  secondarySubmitLabel,
+  onSecondarySubmit,
+  postSubmitOptions,
   onCancel,
   onDelete,
   showPhotoField = false,
@@ -81,6 +99,8 @@ export default function PatientForm({
   const [duplicateOpen, setDuplicateOpen] = React.useState(false);
   const [duplicateLoading, setDuplicateLoading] = React.useState(false);
   const [duplicateList, setDuplicateList] = React.useState<Patient[]>([]);
+  const [postSubmitAnchorEl, setPostSubmitAnchorEl] = React.useState<null | HTMLElement>(null);
+  const hasPostSubmitOptions = Boolean(postSubmitOptions && postSubmitOptions.length > 0);
 
   React.useEffect(() => {
     setForm(initial);
@@ -99,13 +119,13 @@ export default function PatientForm({
 
   const handleAddressSearch = () => {
     if (typeof window === "undefined") return;
-    const daum = (window as any).daum;
+    const daum = (window as DaumWindow).daum;
     if (!daum || !daum.Postcode) {
       alert("주소 검색 스크립트를 불러오는 중입니다. 잠시 후 다시 시도하세요.");
       return;
     }
     new daum.Postcode({
-      oncomplete: (data: { address: string }) => {
+      oncomplete: (data) => {
         setForm((prev) => ({
           ...prev,
           address: data.address ?? "",
@@ -115,10 +135,10 @@ export default function PatientForm({
     }).open();
   };
 
-  const handleSubmit = () => {
+  const buildPayload = (): PatientFormPayload | null => {
     const name = form.name.trim();
-    if (!name) return;
-    onSubmit({
+    if (!name) return null;
+    return {
       name,
       email: toOptional(form.email),
       gender: toOptional(form.gender),
@@ -135,7 +155,38 @@ export default function PatientForm({
       note: toOptional(form.note),
 
       photoFile: form.photoFile ?? undefined,
-    });
+    };
+  };
+
+  const handleSubmit = () => {
+    const payload = buildPayload();
+    if (!payload) return;
+    onSubmit(payload);
+  };
+
+  const handleSecondarySubmit = () => {
+    if (!onSecondarySubmit) return;
+    const payload = buildPayload();
+    if (!payload) return;
+    onSecondarySubmit(payload);
+  };
+
+  const onOpenPostSubmitMenu = (event: React.MouseEvent<HTMLButtonElement>) => {
+    setPostSubmitAnchorEl(event.currentTarget);
+  };
+
+  const onClosePostSubmitMenu = () => {
+    setPostSubmitAnchorEl(null);
+  };
+
+  const onSelectPostSubmitOption = (option: {
+    label: string;
+    onSubmit: (form: PatientFormPayload) => void;
+  }) => {
+    const payload = buildPayload();
+    if (!payload) return;
+    onClosePostSubmitMenu();
+    option.onSubmit(payload);
   };
 
   const handleDuplicateCheck = async () => {
@@ -397,6 +448,42 @@ export default function PatientForm({
           >
             {submitLabel}
           </Button>
+          {hasPostSubmitOptions && (
+            <>
+              <Button
+                variant="contained"
+                color="success"
+                onClick={onOpenPostSubmitMenu}
+                disabled={loading || !form.name.trim()}
+              >
+                등록 후 접수
+              </Button>
+              <Menu
+                anchorEl={postSubmitAnchorEl}
+                open={Boolean(postSubmitAnchorEl)}
+                onClose={onClosePostSubmitMenu}
+              >
+                {(postSubmitOptions ?? []).map((option) => (
+                  <MenuItem
+                    key={option.label}
+                    onClick={() => onSelectPostSubmitOption(option)}
+                  >
+                    {option.label}
+                  </MenuItem>
+                ))}
+              </Menu>
+            </>
+          )}
+          {!hasPostSubmitOptions && onSecondarySubmit && secondarySubmitLabel && (
+            <Button
+              variant="contained"
+              color="success"
+              onClick={handleSecondarySubmit}
+              disabled={loading || !form.name.trim()}
+            >
+              {secondarySubmitLabel}
+            </Button>
+          )}
         </Stack>
       </Stack>
 
