@@ -1,7 +1,6 @@
 "use client";
 
 import * as React from "react";
-import Link from "next/link";
 import MainLayout from "@/components/layout/MainLayout";
 import {
   Box,
@@ -241,12 +240,6 @@ export default function NurseImagingPage() {
                 </Typography>
               </Stack>
               <Stack direction="row" spacing={1}>
-                <Button component={Link} href="/nurse" variant="outlined">
-                  문진
-                </Button>
-                <Button component={Link} href="/nurse/vitals" variant="outlined">
-                  활력징후
-                </Button>
                 <Button
                   variant="outlined"
                   startIcon={<RefreshIcon />}

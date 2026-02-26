@@ -4,6 +4,7 @@ import emergencyReceptionsReducer from "@/features/EmergencyReceptions/Emergency
 import insuranceReducer from "@/features/insurance/insuranceSlice";
 import inpatientReceptionsReducer from "@/features/InpatientReceptions/InpatientReceptionSlice";
 import patientsReducer from "@/features/patients/patientSlice";
+import recordReducer from "@/features/Record/recordSlice";
 import receptionsReducer from "@/features/Receptions/ReceptionSlice";
 import reservationsReducer from "@/features/Reservations/ReservationSlice";
 
@@ -13,6 +14,7 @@ const rootReducer = combineReducers({
   insurance: insuranceReducer,
   inpatientReceptions: inpatientReceptionsReducer,
   patients: patientsReducer,
+  records: recordReducer,
   receptions: receptionsReducer,
   reservations: reservationsReducer,
 });
