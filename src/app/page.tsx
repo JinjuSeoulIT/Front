@@ -24,7 +24,7 @@ const ROLES = [
     key: "doctor",
     label: "의사",
     desc: "진료/차트/오더 중심 화면",
-    href: "/doctor",
+    href: "/clinical",
     icon: <LocalHospitalOutlinedIcon />,
     tone:
       "linear-gradient(135deg, rgba(40, 110, 165, 0.22), rgba(40, 110, 165, 0))",
