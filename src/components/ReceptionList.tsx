@@ -30,7 +30,12 @@ import type { Patient } from "@/features/patients/patientTypes";
 import { fetchPatientsApi, searchPatientsApi } from "@/lib/patientApi";
 import { fetchReservationsApi, updateReservationApi } from "@/lib/reservationAdminApi";
 import { buildNextReceptionNumber } from "@/lib/receptionNumber";
-import { createReceptionApi, fetchReceptionsApi } from "@/lib/receptionsCrudApi";
+import {
+  cancelReceptionApi,
+  createReceptionApi,
+  fetchReceptionsApi,
+  updateReceptionApi,
+} from "@/lib/receptionsCrudApi";
 
 const SEARCH_OPTIONS: { label: string; value: ReceptionSearchPayload["type"] }[] = [
   { label: "접수번호", value: "receptionNo" },
@@ -138,6 +143,11 @@ const normalizeReservationStatus = (value?: string | null) => {
   }
 };
 
+const isClosedReceptionStatus = (value?: string | null) => {
+  const normalized = normalizeStatus(value);
+  return normalized === "CANCELED" || normalized === "INACTIVE";
+};
+
 const extractDateKeyFromReceptionNo = (value?: string | null) => {
   if (!value) return null;
   const match = value.trim().match(/^(\d{4})(\d{2})(\d{2})-/);
@@ -147,11 +157,12 @@ const extractDateKeyFromReceptionNo = (value?: string | null) => {
 
 const isTodayReception = (item: Reception, todayKey: string) => {
   const candidates = [
+    // 진료/접수 기준 날짜만 사용하고, 수정일(updatedAt)은 제외한다.
+    // updatedAt을 포함하면 과거 접수도 오늘 수정만 되면 오늘 목록에 다시 노출될 수 있다.
+    extractDateKeyFromReceptionNo(item.receptionNo),
     extractDateKeyFromDateTime(item.arrivedAt),
     extractDateKeyFromDateTime(item.scheduledAt),
     extractDateKeyFromDateTime(item.createdAt),
-    extractDateKeyFromDateTime(item.updatedAt),
-    extractDateKeyFromReceptionNo(item.receptionNo),
   ];
   return candidates.some((dateKey) => dateKey === todayKey);
 };
@@ -193,15 +204,19 @@ export default function ReceptionList({
       fetchReceptionsApi(),
     ]);
     const today = toLocalDateKey(new Date());
+    const receptionsToday = receptions.filter((item) => isTodayReception(item, today));
     const linkedReservationIds = new Set(
-      receptions
+      receptionsToday
         .map((item) => item.reservationId)
         .filter((value): value is number => typeof value === "number")
     );
     const existingReceptionNos = new Set(
-      receptions
+      receptionsToday
         .map((item) => item.receptionNo?.trim())
         .filter((value): value is string => Boolean(value))
+    );
+    const reservationById = new Map(
+      reservations.map((item) => [item.reservationId, item] as const)
     );
     const completeReservation = async (reservation: (typeof reservations)[number]) => {
       await updateReservationApi(String(reservation.reservationId), {
@@ -217,6 +232,57 @@ export default function ReceptionList({
         note: reservation.note ?? "예약 당일 자동 접수 이관 완료",
       });
     };
+    const toReceptionForm = (item: Reception, receptionNo: string) => ({
+      receptionNo,
+      patientId: item.patientId,
+      patientName: item.patientName ?? null,
+      visitType: item.visitType,
+      departmentId: item.departmentId,
+      departmentName: item.departmentName ?? null,
+      doctorId: item.doctorId ?? null,
+      doctorName: item.doctorName ?? null,
+      reservationId: item.reservationId ?? null,
+      scheduledAt: item.scheduledAt ?? null,
+      arrivedAt: item.arrivedAt ?? null,
+      status: normalizeStatus(item.status) as Reception["status"],
+      note: item.note ?? null,
+    });
+    const activeReceptionsByReservation = new Map<number, Reception[]>();
+    for (const item of receptionsToday) {
+      if (typeof item.reservationId !== "number") continue;
+      if (isClosedReceptionStatus(item.status)) continue;
+      const current = activeReceptionsByReservation.get(item.reservationId) ?? [];
+      current.push(item);
+      activeReceptionsByReservation.set(item.reservationId, current);
+    }
+
+    for (const [reservationId, group] of activeReceptionsByReservation) {
+      if (group.length <= 1) continue;
+      const reservation = reservationById.get(reservationId);
+      const preferredNo = reservation?.reservationNo?.trim() ?? "";
+      const keeper =
+        (preferredNo && group.find((item) => item.receptionNo?.trim() === preferredNo)) ||
+        [...group].sort((a, b) => a.receptionId - b.receptionId)[0];
+      const keeperNo = keeper.receptionNo?.trim() ?? "";
+      const canRenameKeeper =
+        preferredNo.length > 0 &&
+        keeperNo !== preferredNo &&
+        !existingReceptionNos.has(preferredNo);
+
+      if (canRenameKeeper) {
+        if (keeperNo) existingReceptionNos.delete(keeperNo);
+        existingReceptionNos.add(preferredNo);
+        await updateReceptionApi(String(keeper.receptionId), toReceptionForm(keeper, preferredNo));
+      }
+
+      for (const item of group) {
+        if (item.receptionId === keeper.receptionId) continue;
+        await cancelReceptionApi(
+          String(item.receptionId),
+          "예약 자동이관 중복 데이터 자동 정리"
+        );
+      }
+    }
 
     const alreadyLinkedTargets = reservations
       .filter((item) => normalizeReservationStatus(item.status) === "RESERVED")

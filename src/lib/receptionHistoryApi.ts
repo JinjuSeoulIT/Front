@@ -18,11 +18,7 @@ type ApiResponse<T> = {
 };
 
 const api = axios.create({
-<<<<<<< HEAD
-  baseURL: process.env.NEXT_PUBLIC_API_BASE ?? "http://192.168.1.55:8283",
-=======
   baseURL: process.env.NEXT_PUBLIC_RECEPTION_API_BASE_URL ?? "http://192.168.1.55:8283",
->>>>>>> 73bb2bc943d6f89d05047496f4946a0b37413316
 });
 
 export const fetchReceptionStatusHistoryApi = async (
