@@ -39,10 +39,10 @@ const recordSlice = createSlice({
       state.error = action.payload;
     },
 
-    fetchRecordRequest(state, action: PayloadAction<FetchRecordPayload>) {
+    fetchRecordRequest(state, _action: PayloadAction<FetchRecordPayload>) {
       state.loading = true;
       state.error = null;
-      state.selected = action.payload;
+      state.selected = null;
     },
     fetchRecordSuccess(state, action: PayloadAction<RecordItem>) {
       state.loading = false;

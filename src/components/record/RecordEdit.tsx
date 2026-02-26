@@ -1,5 +1,4 @@
 "use client";
-
 import { useParams, useRouter } from "next/navigation";
 import { Card, CardContent } from "@mui/material";
 import { useDispatch, useSelector } from "react-redux";
@@ -19,15 +18,13 @@ export default function RecordEdit() {
   const { selected, loading, error } = useSelector((s: RootState) => s.records);
 
   const  {id } = useParams<{id :string}>();
+  
   const nursingId = id;
 
 
   useEffect(() => {
     dispatch(fetchRecordRequest({nursingId}));
   }, [dispatch, nursingId]);
-
-
-
 
   const onSubmit = (payload: NursingRecordCreatePayload) => {
     dispatch(updateRecordRequest({ nursingId, form: payload }));
@@ -39,7 +36,7 @@ export default function RecordEdit() {
       <CardContent sx={{ p: 2.5 }}>
         <RecordForm
           title="간호 기록 수정"
-          initial={selected}
+          initial={}
           loading={loading}
           error={error}
           submitLabel="저장"

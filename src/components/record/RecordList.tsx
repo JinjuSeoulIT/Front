@@ -20,19 +20,14 @@ import type { AppDispatch, RootState } from "@/store/store";
 import { fetchRecordsRequest } from "@/features/Record/recordSlice";
 import RecordDetail from "./RecordDetail";
 
-type ListTab = "ACTIVE" | "INACTIVE" | "ALL";
 
 export default function RecordList() {
   const router = useRouter();
   const dispatch = useDispatch<AppDispatch>();
   const { list, loading, error } = useSelector((s: RootState) => s.records);
-  const [tab, setTab] = useState<ListTab>("ACTIVE");
-  const [selectedId, setSelectedId] = useState<string | null>(null);
 
-  const selected = useMemo(
-    () => list.find((item) => item.nursingId === selectedId) ?? null,
-    [list, selectedId]
-  );
+  const [selectedId, setSelectedId] = useState<string | null>();
+
 
   useEffect(() => {
     dispatch(fetchRecordsRequest());
@@ -103,17 +98,15 @@ export default function RecordList() {
       >
         <Card sx={{ borderRadius: 3, border: "1px solid var(--line)" }}>
           <CardContent>
-            <Tabs value={tab} onChange={(_, v) => setTab(v as ListTab)}>
               <Tab label="활성" value="ACTIVE" />
               <Tab label="비활성" value="INACTIVE" />
               <Tab label="전체" value="ALL" />
-            </Tabs>
-
+            
             <Stack spacing={1} sx={{ mt: 1 }}>
               {list.map((record) => (
                 <Box
                   key={record.nursingId}
-                  onClick={() => setSelectedId(record.nursingId)}
+                 
                   sx={{
                     p: 1.25,
                     border: "1px solid var(--line)",
@@ -125,13 +118,16 @@ export default function RecordList() {
                   <Typography sx={{ fontSize: 12, color: "var(--muted)" }}>
                     방문 ID {record.visitId ?? "-"} · 기록 시각 {record.recordedAt ?? "-"}
                   </Typography>
+                  <button
+                   onClick={() => setSelectedId(record.nursingId)}
+                  >상세</button>
                 </Box>
               ))}
             </Stack>
           </CardContent>
         </Card>
 
-        <RecordDetail selected={selected} />
+        <RecordDetail selectedId={selectedId} />
       </Box>
     </Stack>
   );

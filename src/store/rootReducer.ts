@@ -1,4 +1,4 @@
-﻿import { combineReducers } from "@reduxjs/toolkit";
+﻿ 
 import consentReducer from "@/features/consent/consentSlice";
 import emergencyReceptionsReducer from "@/features/EmergencyReceptions/EmergencyReceptionSlice";
 import insuranceReducer from "@/features/insurance/insuranceSlice";
@@ -7,6 +7,7 @@ import patientsReducer from "@/features/patients/patientSlice";
 import recordReducer from "@/features/Record/recordSlice";
 import receptionsReducer from "@/features/Receptions/ReceptionSlice";
 import reservationsReducer from "@/features/Reservations/ReservationSlice";
+import { combineReducers } from "redux";
 
 const rootReducer = combineReducers({
   consent: consentReducer,

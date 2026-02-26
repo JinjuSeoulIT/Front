@@ -1,6 +1,5 @@
 "use client";
 
-import * as React from "react";
 import {
   Box,
   Button,
@@ -16,10 +15,11 @@ import type {
   RecordForm as RecordFormState,
 } from "@/features/Record/recordTypes";
 import type { NursingRecordCreatePayload } from "@/lib/recordApi";
+import { useEffect, useState } from "react";
 
 type RecordFormProps = {
   title: string;
-  initial: RecordFormState | string;
+  initial: RecordFormState;
   loading: boolean;
   error?: string | null;
   submitLabel: string;
@@ -71,9 +71,9 @@ export default function RecordForm({
   onSubmit,
   onCancel,
 }: RecordFormProps) {
-  const [form, setForm] = React.useState<RecordFormState>(initial);
+  const [form, setForm] = useState<RecordFormState>(initial);
 
-  React.useEffect(() => {
+ useEffect(() => {
     setForm(initial);
   }, [initial]);
 
