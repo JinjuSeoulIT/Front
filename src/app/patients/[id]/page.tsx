@@ -32,6 +32,8 @@ import AssignmentIndOutlinedIcon from "@mui/icons-material/AssignmentIndOutlined
 import BlockOutlinedIcon from "@mui/icons-material/BlockOutlined";
 import EventAvailableOutlinedIcon from "@mui/icons-material/EventAvailableOutlined";
 import SwapHorizOutlinedIcon from "@mui/icons-material/SwapHorizOutlined";
+import LocalHospitalOutlinedIcon from "@mui/icons-material/LocalHospitalOutlined";
+import HotelOutlinedIcon from "@mui/icons-material/HotelOutlined";
 
 import { useDispatch, useSelector } from "react-redux";
 import type { RootState, AppDispatch } from "@/store/store";
@@ -567,14 +569,40 @@ export default function PatientDetailPage() {
               </Grid>
 
               <Grid size={{ xs: 12, md: 3 }}>
-                <Stack spacing={1.5} alignItems={{ xs: "flex-start", md: "flex-end" }}>
-                  <Stack direction="row" spacing={1}>
+                <Stack spacing={1.5} alignItems={{ xs: "stretch", md: "flex-end" }}>
+                  <Paper
+                    elevation={0}
+                    sx={{
+                      p: 1.5,
+                      borderRadius: 3,
+                      border: "1px solid #d7e4fb",
+                      background: "linear-gradient(180deg, #f7fbff 0%, #eef5ff 100%)",
+                      boxShadow: "0 8px 18px rgba(43, 90, 169, 0.12)",
+                      width: "100%",
+                      maxWidth: 380,
+                    }}
+                  >
+                    <Stack spacing={1.2}>
+                      <Typography
+                        variant="caption"
+                        sx={{ color: "#5b6f96", fontWeight: 900, letterSpacing: 0.4 }}
+                      >
+                        QUICK ACTIONS
+                      </Typography>
+                      <Box
+                        sx={{
+                          display: "flex",
+                          flexWrap: "wrap",
+                          gap: 1,
+                        }}
+                      >
                     <Button
                       variant="contained"
                       color="info"
                       startIcon={<AssignmentIndOutlinedIcon />}
                       onClick={openReceptionDialog}
                       disabled={!p}
+                      sx={{ fontWeight: 800, whiteSpace: "nowrap", flex: "1 1 140px", minWidth: 140 }}
                     >
                       접수 등록
                     </Button>
@@ -584,44 +612,85 @@ export default function PatientDetailPage() {
                       startIcon={<EventAvailableOutlinedIcon />}
                       onClick={openReservationDialog}
                       disabled={!p}
+                      sx={{ fontWeight: 800, whiteSpace: "nowrap", flex: "1 1 140px", minWidth: 140 }}
                     >
                       예약 등록
                     </Button>
-                  </Stack>
-
-                  <Stack direction="row" spacing={1}>
-                    <Button variant="outlined" startIcon={<ArrowBackOutlinedIcon />} onClick={() => router.back()}>
-                      뒤로
-                    </Button>
-                    {p && (
-                      <Button
-                        variant="outlined"
-                        component={Link}
-                        href={`/patients/${p.patientId}/edit`}
-                        startIcon={<EditOutlinedIcon />}
-                      >
-                        수정
-                      </Button>
-                    )}
                     <Button
-                      variant="outlined"
-                      startIcon={<SwapHorizOutlinedIcon />}
-                      onClick={openStatusDialog}
-                      disabled={!p || statusOptions.length === 0}
+                      variant="contained"
+                      color="error"
+                      startIcon={<LocalHospitalOutlinedIcon />}
+                      component={Link}
+                      href="/emergency-receptions/new"
+                      disabled={!p}
+                      sx={{ fontWeight: 800, whiteSpace: "nowrap", flex: "1 1 140px", minWidth: 140 }}
                     >
-                      상태 변경
+                      응급 등록
                     </Button>
-                    {p && (
-                      <Button
-                        variant="outlined"
-                        color="warning"
-                        startIcon={<BlockOutlinedIcon />}
-                        onClick={onDelete}
+                    <Button
+                      variant="contained"
+                      color="secondary"
+                      startIcon={<HotelOutlinedIcon />}
+                      component={Link}
+                      href="/inpatient-receptions/new"
+                      disabled={!p}
+                      sx={{ fontWeight: 800, whiteSpace: "nowrap", flex: "1 1 140px", minWidth: 140 }}
+                    >
+                      입원 등록
+                    </Button>
+                      </Box>
+
+                      <Divider sx={{ borderColor: "#d7e4fb" }} />
+
+                      <Box
+                        sx={{
+                          display: "flex",
+                          flexWrap: "wrap",
+                          gap: 1,
+                        }}
                       >
-                        비활성
-                      </Button>
-                    )}
-                  </Stack>
+                        <Button
+                          variant="outlined"
+                          startIcon={<ArrowBackOutlinedIcon />}
+                          onClick={() => router.back()}
+                          sx={{ fontWeight: 800, whiteSpace: "nowrap", flex: "1 1 120px", minWidth: 120 }}
+                        >
+                      뒤로
+                        </Button>
+                        {p && (
+                          <Button
+                            variant="outlined"
+                            component={Link}
+                            href={`/patients/${p.patientId}/edit`}
+                            startIcon={<EditOutlinedIcon />}
+                            sx={{ fontWeight: 800, whiteSpace: "nowrap", flex: "1 1 120px", minWidth: 120 }}
+                          >
+                            수정
+                          </Button>
+                        )}
+                        <Button
+                          variant="outlined"
+                          startIcon={<SwapHorizOutlinedIcon />}
+                          onClick={openStatusDialog}
+                          disabled={!p || statusOptions.length === 0}
+                          sx={{ fontWeight: 800, whiteSpace: "nowrap", flex: "1 1 120px", minWidth: 120 }}
+                        >
+                          상태 변경
+                        </Button>
+                        {p && (
+                          <Button
+                            variant="outlined"
+                            color="warning"
+                            startIcon={<BlockOutlinedIcon />}
+                            onClick={onDelete}
+                            sx={{ fontWeight: 800, whiteSpace: "nowrap", flex: "1 1 120px", minWidth: 120 }}
+                          >
+                            비활성
+                          </Button>
+                        )}
+                      </Box>
+                    </Stack>
+                  </Paper>
                 </Stack>
               </Grid>
 

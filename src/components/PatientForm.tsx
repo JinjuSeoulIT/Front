@@ -20,6 +20,10 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
+import KeyboardArrowDownRoundedIcon from "@mui/icons-material/KeyboardArrowDownRounded";
+import LocalHospitalOutlinedIcon from "@mui/icons-material/LocalHospitalOutlined";
+import EventAvailableOutlinedIcon from "@mui/icons-material/EventAvailableOutlined";
+import MedicalServicesOutlinedIcon from "@mui/icons-material/MedicalServicesOutlined";
 import type { PatientForm as PatientFormPayload } from "@/features/patients/patientTypes";
 import type { Patient } from "@/features/patients/patientTypes";
 import { searchPatientsApi } from "@/lib/patientApi";
@@ -187,6 +191,13 @@ export default function PatientForm({
     if (!payload) return;
     onClosePostSubmitMenu();
     option.onSubmit(payload);
+  };
+
+  const optionIcon = (label: string) => {
+    if (label.includes("외래")) return <LocalHospitalOutlinedIcon sx={{ fontSize: 18 }} />;
+    if (label.includes("예약")) return <EventAvailableOutlinedIcon sx={{ fontSize: 18 }} />;
+    if (label.includes("응급")) return <MedicalServicesOutlinedIcon sx={{ fontSize: 18 }} />;
+    return <LocalHospitalOutlinedIcon sx={{ fontSize: 18 }} />;
   };
 
   const handleDuplicateCheck = async () => {
@@ -455,6 +466,20 @@ export default function PatientForm({
                 color="success"
                 onClick={onOpenPostSubmitMenu}
                 disabled={loading || !form.name.trim()}
+                endIcon={
+                  <KeyboardArrowDownRoundedIcon
+                    sx={{
+                      transform: Boolean(postSubmitAnchorEl) ? "rotate(180deg)" : "rotate(0deg)",
+                      transition: "transform .2s ease",
+                    }}
+                  />
+                }
+                sx={{
+                  px: 1.75,
+                  fontWeight: 800,
+                  letterSpacing: "-0.01em",
+                  boxShadow: "0 8px 16px rgba(25, 118, 210, 0.24)",
+                }}
               >
                 등록 후 접수
               </Button>
@@ -462,12 +487,35 @@ export default function PatientForm({
                 anchorEl={postSubmitAnchorEl}
                 open={Boolean(postSubmitAnchorEl)}
                 onClose={onClosePostSubmitMenu}
+                anchorOrigin={{ vertical: "top", horizontal: "right" }}
+                transformOrigin={{ vertical: "bottom", horizontal: "right" }}
+                slotProps={{
+                  paper: {
+                    sx: {
+                      mb: 1,
+                      minWidth: 160,
+                      p: 0.75,
+                      borderRadius: 2.5,
+                      border: "1px solid #dbe5f5",
+                      boxShadow: "0 16px 36px rgba(20, 54, 99, 0.2)",
+                    },
+                  },
+                }}
               >
                 {(postSubmitOptions ?? []).map((option) => (
                   <MenuItem
                     key={option.label}
                     onClick={() => onSelectPostSubmitOption(option)}
+                    sx={{
+                      gap: 1,
+                      borderRadius: 1.5,
+                      py: 1,
+                      px: 1.25,
+                      fontWeight: 700,
+                      "&:hover": { bgcolor: "#eef4ff" },
+                    }}
                   >
+                    {optionIcon(option.label)}
                     {option.label}
                   </MenuItem>
                 ))}

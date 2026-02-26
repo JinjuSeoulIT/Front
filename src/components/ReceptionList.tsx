@@ -28,7 +28,7 @@ import type { Reception, ReceptionSearchPayload } from "@/features/Receptions/Re
 import { formatDepartmentName } from "@/lib/departmentLabel";
 import type { Patient } from "@/features/patients/patientTypes";
 import { fetchPatientsApi, searchPatientsApi } from "@/lib/patientApi";
-import { fetchReservationsApi } from "@/lib/reservationAdminApi";
+import { fetchReservationsApi, updateReservationApi } from "@/lib/reservationAdminApi";
 import { buildNextReceptionNumber } from "@/lib/receptionNumber";
 import { createReceptionApi, fetchReceptionsApi } from "@/lib/receptionsCrudApi";
 
@@ -181,8 +181,13 @@ export default function ReceptionList({
   const [openSuggestion, setOpenSuggestion] = React.useState(false);
   const [patientNameById, setPatientNameById] = React.useState<Record<number, string>>({});
   const [todayKey, setTodayKey] = React.useState(() => toLocalDateKey(new Date()));
+  const syncingReservationRef = React.useRef(false);
 
   const syncTodayReservationsToWaitingReceptions = React.useCallback(async () => {
+    if (syncingReservationRef.current) return;
+    syncingReservationRef.current = true;
+
+    try {
     const [reservations, receptions] = await Promise.all([
       fetchReservationsApi(),
       fetchReceptionsApi(),
@@ -193,7 +198,34 @@ export default function ReceptionList({
         .map((item) => item.reservationId)
         .filter((value): value is number => typeof value === "number")
     );
-    const receptionNumbers = receptions.map((item) => item.receptionNo);
+    const existingReceptionNos = new Set(
+      receptions
+        .map((item) => item.receptionNo?.trim())
+        .filter((value): value is string => Boolean(value))
+    );
+    const completeReservation = async (reservation: (typeof reservations)[number]) => {
+      await updateReservationApi(String(reservation.reservationId), {
+        reservationNo: reservation.reservationNo,
+        patientId: reservation.patientId,
+        patientName: reservation.patientName ?? null,
+        departmentId: reservation.departmentId,
+        departmentName: reservation.departmentName ?? null,
+        doctorId: reservation.doctorId ?? null,
+        doctorName: reservation.doctorName ?? null,
+        reservedAt: reservation.reservedAt,
+        status: "COMPLETED",
+        note: reservation.note ?? "예약 당일 자동 접수 이관 완료",
+      });
+    };
+
+    const alreadyLinkedTargets = reservations
+      .filter((item) => normalizeReservationStatus(item.status) === "RESERVED")
+      .filter((item) => extractDateKeyFromDateTime(item.reservedAt) === today)
+      .filter((item) => linkedReservationIds.has(item.reservationId));
+
+    for (const reservation of alreadyLinkedTargets) {
+      await completeReservation(reservation);
+    }
 
     const targets = reservations
       .filter((item) => normalizeReservationStatus(item.status) === "RESERVED")
@@ -204,14 +236,22 @@ export default function ReceptionList({
     if (targets.length === 0) return;
 
     for (const reservation of targets) {
-      const nextReceptionNo = buildNextReceptionNumber({
-        existingNumbers: receptionNumbers,
-        startSequence: 1,
-      });
-      receptionNumbers.push(nextReceptionNo);
+      const preferredReceptionNo = reservation.reservationNo?.trim();
+      const receptionNo =
+        preferredReceptionNo && preferredReceptionNo.length > 0
+          ? preferredReceptionNo
+          : buildNextReceptionNumber({
+              existingNumbers: Array.from(existingReceptionNos),
+              startSequence: 1,
+            });
+
+      if (linkedReservationIds.has(reservation.reservationId) || existingReceptionNos.has(receptionNo)) {
+        await completeReservation(reservation);
+        continue;
+      }
 
       await createReceptionApi({
-        receptionNo: nextReceptionNo,
+        receptionNo,
         patientId: reservation.patientId,
         patientName: reservation.patientName ?? null,
         visitType: "OUTPATIENT",
@@ -225,6 +265,13 @@ export default function ReceptionList({
         status: "WAITING",
         note: reservation.note ?? "예약 당일 자동 접수 생성",
       });
+      linkedReservationIds.add(reservation.reservationId);
+      existingReceptionNos.add(receptionNo);
+
+      await completeReservation(reservation);
+    }
+    } finally {
+      syncingReservationRef.current = false;
     }
   }, []);
   const isCanceledView = initialSearchType === "status" && initialKeyword === "CANCELED";
