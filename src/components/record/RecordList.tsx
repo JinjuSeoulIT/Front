@@ -9,7 +9,6 @@ import {
   Chip,
   Stack,
   Tab,
-  Tabs,
   Typography,
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
@@ -18,15 +17,12 @@ import { useRouter } from "next/navigation";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch, RootState } from "@/store/store";
 import { fetchRecordsRequest } from "@/features/Record/recordSlice";
-import RecordDetail from "./RecordDetail";
-
 
 export default function RecordList() {
   const router = useRouter();
   const dispatch = useDispatch<AppDispatch>();
   const { list, loading, error } = useSelector((s: RootState) => s.records);
 
-  const [selectedId, setSelectedId] = useState<string | null>();
 
 
   useEffect(() => {
@@ -37,10 +33,7 @@ export default function RecordList() {
     router.push("/nurse/record/create");
   };
 
-  const handleEdit = () => {
-    if (!selectedId) return;
-    router.push(`/nurse/record/edit/${selectedId}`);
-  };
+ 
 
   return (
     <Stack spacing={2}>
@@ -75,7 +68,7 @@ export default function RecordList() {
               >
                 신규
               </Button>
-              <Button onClick={handleEdit} disabled={!selectedId}>
+              <Button>
                 수정
               </Button>
             </Stack>
@@ -118,8 +111,10 @@ export default function RecordList() {
                   <Typography sx={{ fontSize: 12, color: "var(--muted)" }}>
                     방문 ID {record.visitId ?? "-"} · 기록 시각 {record.recordedAt ?? "-"}
                   </Typography>
+
                   <button
-                   onClick={() => setSelectedId(record.nursingId)}
+                   onClick={() =>
+                    router.push(`record/${record.nursingId}`)}
                   >상세</button>
                 </Box>
               ))}
@@ -127,7 +122,7 @@ export default function RecordList() {
           </CardContent>
         </Card>
 
-        <RecordDetail selectedId={selectedId} />
+        
       </Box>
     </Stack>
   );

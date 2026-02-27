@@ -20,6 +20,7 @@ const initialState: RecordState = {
   selected: null,
   loading: false,
   error: null,
+  // deleteSucess:false
 };
 
 const recordSlice = createSlice({
