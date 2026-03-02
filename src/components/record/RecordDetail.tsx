@@ -14,10 +14,10 @@ import { useSelector, useDispatch } from "react-redux";
 import { useEffect } from "react";
 import { RootState } from "@/store/rootReducer";
 import Link from "next/link";
-import { deleteRecordRequest, fetchRecordRequest } from "@/features/Record/recordSlice";
+import { fetchRecordRequest } from "@/features/Record/recordSlice";
 
 export default function RecordDetail() {
-  const { nursingId } = useParams();
+  const { nursingId } = useParams<{nursingId:string}>();
   const dispatch = useDispatch();
 
   const { selected, loading, error} = useSelector(
@@ -26,17 +26,10 @@ export default function RecordDetail() {
 
 useEffect(() => {
   if (nursingId) {
-    dispatch(fetchRecordRequest((nursingId)));
+    dispatch(fetchRecordRequest({nursingId}));
   }
 }, [nursingId]);
 
-const router = useRouter();
-
-// useEffect(() => {
-//   if (deleteSuccess) {
-//     router.push("/record");
-//   }
-// }, [deleteSuccess, router]);
 
   if (loading)
     return (
@@ -55,7 +48,7 @@ const router = useRouter();
   if (!selected)
     return (
       <Typography p={4}>
-        데이터를 찾을 수 없습니다.
+        데이터를 찾을 수 없습니다...
       </Typography>
     );
 
@@ -74,11 +67,6 @@ const router = useRouter();
     { label: "통증 점수", value: selected.painScore },
     { label: "의식 수준", value: selected.consciousnessLevel },
   ];
-
-//   const onDelete = (nursingId) => {
-//     if(!window.confirm("정말 삭제하시겠습니까?")) return;
-//  dispatch(deleteRecordRequest(nursingId));
-//   }
 
   return (
     <Box sx={{ p: 4 }}>
@@ -120,7 +108,7 @@ const router = useRouter();
           </Grid>
            <Button
                       component={Link}
-                      href={`/record/${nursingId}/edit`}
+                      href={`/nurse/record/edit/${nursingId}`}
                       variant="outlined"
                       size="small"
                     >
@@ -130,7 +118,6 @@ const router = useRouter();
                       variant="contained"
                       color="error"
                       size="small"
-                      // onClick={() => onDelete(nursingId)}
                     >
                       삭제
                     </Button>

@@ -8,6 +8,7 @@ import { emptyRecordForm } from "@/features/Record/recordTypes";
 import type { NursingRecordCreatePayload } from "@/lib/recordApi";
 import RecordForm from "./RecordForm";
 import { createRecordRequest } from "@/features/Record/recordSlice";
+import { useState } from "react";
 
 export default function RecordCreate() {
   const router = useRouter();
@@ -19,15 +20,19 @@ export default function RecordCreate() {
     router.push("/nurse/record");
   };
 
+   const form: typeof emptyRecordForm ={
+    ...emptyRecordForm,
+   };
+
   return (
     <Card sx={{ borderRadius: 3, border: "1px solid var(--line)" }}>
       <CardContent sx={{ p: 2.5 }}>
         <RecordForm
           title="간호 기록 등록"
-          initial={emptyRecordForm}
+          initial={form}
+          mode = "create"
           loading={loading}
           error={error}
-          submitLabel="등록"
           onSubmit={onSubmit}
           onCancel={() => router.push("/nurse/record")}
         />

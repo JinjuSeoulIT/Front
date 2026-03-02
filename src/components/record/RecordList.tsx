@@ -68,9 +68,6 @@ export default function RecordList() {
               >
                 신규
               </Button>
-              <Button>
-                수정
-              </Button>
             </Stack>
           </Stack>
         </CardContent>
@@ -114,7 +111,7 @@ export default function RecordList() {
 
                   <button
                    onClick={() =>
-                    router.push(`record/${record.nursingId}`)}
+                    router.push(`/nurse/record/${record.nursingId}`)}
                   >상세</button>
                 </Box>
               ))}

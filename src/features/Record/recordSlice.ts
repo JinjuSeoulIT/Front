@@ -7,7 +7,7 @@ import type {
 } from "./recordTypes";
 
 type FetchRecordPayload = {
-  nursingId: string;
+  nursingId: string 
 };
 
 type UpdateRecordPayload = {
@@ -19,8 +19,7 @@ const initialState: RecordState = {
   list: [],
   selected: null,
   loading: false,
-  error: null,
-  // deleteSucess:false
+  error: null
 };
 
 const recordSlice = createSlice({

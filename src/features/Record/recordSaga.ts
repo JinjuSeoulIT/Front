@@ -29,7 +29,9 @@ function* fetchRecordsSaga() {
 function* fetchRecordSaga(action: PayloadAction<{ nursingId: string }>) {
   try {
     const item: RecordItem = yield call(fetchRecordApi, action.payload.nursingId);
+     console.log("하이");
     yield put(fetchRecordSuccess(item));
+    console.log(item);
   } catch (err: unknown) {
     yield put(fetchRecordFailure(errorMessage(err, "간호 기록 조회 실패")));
   }

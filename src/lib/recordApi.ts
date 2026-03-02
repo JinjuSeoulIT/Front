@@ -81,6 +81,8 @@ export const updateRecordApi = async (
   return res.data.result;
 };
 
+
+
 export const deleteRecordApi = async (id: string | number): Promise<void> => {
   const res = await api.delete<ApiResponse<void>>(`/api/record/${id}`);
   if (!res.data.success) {

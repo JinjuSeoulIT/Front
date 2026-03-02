@@ -1,46 +1,40 @@
 "use client";
-import { useParams, useRouter } from "next/navigation";
-import { Card, CardContent } from "@mui/material";
-import { useDispatch, useSelector } from "react-redux";
-import type { AppDispatch, RootState } from "@/store/store";
-import type { NursingRecordCreatePayload } from "@/lib/recordApi";
-import RecordForm from "./RecordForm";
-import { fetchRecordRequest, updateRecordRequest } from "@/features/Record/recordSlice";
+
 import { useEffect } from "react";
-
-
+import { useParams, useRouter } from "next/navigation";
+import { useDispatch, useSelector } from "react-redux";
+import { Card, CardContent, CircularProgress, Box } from "@mui/material";
+import { fetchRecordRequest, updateRecordRequest } from "@/features/Record/recordSlice";
+import type { AppDispatch, RootState } from "@/store/store";
+import RecordForm from "./RecordForm";
 
 export default function RecordEdit() {
-
   const router = useRouter();
   const dispatch = useDispatch<AppDispatch>();
-
+  const { id: nursingId } = useParams<{ id: string }>();
   const { selected, loading, error } = useSelector((s: RootState) => s.records);
 
-  const  {id } = useParams<{id :string}>();
-  
-  const nursingId = id;
-
-
   useEffect(() => {
-    dispatch(fetchRecordRequest({nursingId}));
+    if (nursingId) dispatch(fetchRecordRequest({ nursingId }));
   }, [dispatch, nursingId]);
 
-  const onSubmit = (payload: NursingRecordCreatePayload) => {
-    dispatch(updateRecordRequest({ nursingId, form: payload }));
-    router.push("/nurse/record");
-  };
-
+if (!selected) return <CircularProgress />
   return (
+    
     <Card sx={{ borderRadius: 3, border: "1px solid var(--line)" }}>
       <CardContent sx={{ p: 2.5 }}>
+        
         <RecordForm
+          key={selected.nursingId} 
           title="간호 기록 수정"
-          initial={}
+          initial={selected}
+          mode="edit"
           loading={loading}
           error={error}
-          submitLabel="저장"
-          onSubmit={onSubmit}
+          onSubmit={(payload) => {
+            dispatch(updateRecordRequest({ nursingId, form: payload }));
+            router.push("/nurse/record");
+          }}
           onCancel={() => router.push("/nurse/record")}
         />
       </CardContent>
