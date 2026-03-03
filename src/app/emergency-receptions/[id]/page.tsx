@@ -68,6 +68,8 @@ export default function EmergencyReceptionDetailPage() {
 
   const statusLabel = (value?: ReceptionStatus | string | null) => {
     switch ((value ?? "").toUpperCase()) {
+      case "REGISTERED":
+        return "응급 접수 완료";
       case "WAITING":
         return "대기";
       case "CALLED":
@@ -144,7 +146,7 @@ export default function EmergencyReceptionDetailPage() {
                 variant="outlined"
                 color="warning"
                 disabled={!p}
-                onClick={() => onChangeStatus("INACTIVE")}
+                onClick={() => onChangeStatus("TRANSFERRED")}
               >
                 비활성
               </Button>

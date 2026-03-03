@@ -35,11 +35,10 @@ export default function EditEmergencyReceptionPage() {
         initial={{
           receptionNo: current?.receptionNo ?? "",
           patientId: current?.patientId ? String(current.patientId) : "",
-          departmentId: current?.departmentId ? String(current.departmentId) : "",
-          doctorId: current?.doctorId ? String(current.doctorId) : "",
+          departmentId: "5",
           scheduledAt: current?.scheduledAt ?? "",
           arrivedAt: current?.arrivedAt ?? "",
-          status: current?.status ?? "WAITING",
+          status: current?.status ?? "REGISTERED",
           note: current?.note ?? "",
           triageLevel: current?.triageLevel ? String(current.triageLevel) : "",
           chiefComplaint: current?.chiefComplaint ?? "",

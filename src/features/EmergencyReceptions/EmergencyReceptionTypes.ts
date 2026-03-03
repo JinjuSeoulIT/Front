@@ -1,12 +1,16 @@
 export type ReceptionStatus =
+  | "REGISTERED"
   | "WAITING"
   | "CALLED"
+  | "TRIAGE"
   | "IN_PROGRESS"
   | "COMPLETED"
   | "PAYMENT_WAIT"
+  | "OBSERVATION"
   | "ON_HOLD"
   | "CANCELED"
-  | "INACTIVE";
+  | "INACTIVE"
+  | "TRANSFERRED";
 
 export interface EmergencyReception {
   receptionId: number;

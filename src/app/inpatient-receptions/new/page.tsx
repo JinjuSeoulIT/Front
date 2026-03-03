@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import MainLayout from "@/components/layout/MainLayout";
 import InpatientReceptionForm from "@/components/InpatientReceptionForm";
 import { useDispatch, useSelector } from "react-redux";
@@ -11,8 +11,10 @@ import type { InpatientReceptionForm as InpatientReceptionFormPayload } from "@/
 
 export default function NewInpatientReceptionPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const dispatch = useDispatch<AppDispatch>();
   const { loading, error } = useSelector((s: RootState) => s.inpatientReceptions);
+  const patientIdParam = (searchParams.get("patientId") ?? "").trim();
 
   const onSubmit = (form: InpatientReceptionFormPayload) => {
     dispatch(inpatientReceptionActions.createInpatientReceptionRequest(form));
@@ -26,7 +28,7 @@ export default function NewInpatientReceptionPage() {
         submitLabel="등록"
         initial={{
           receptionNo: "",
-          patientId: "",
+          patientId: patientIdParam,
           departmentId: "",
           doctorId: "",
           scheduledAt: "",

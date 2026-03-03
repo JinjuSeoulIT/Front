@@ -39,11 +39,10 @@ export default function NewEmergencyReceptionPage() {
         initial={{
           receptionNo: "",
           patientId: patientIdParam,
-          departmentId: "",
-          doctorId: "",
+          departmentId: "5",
           scheduledAt: "",
           arrivedAt: "",
-          status: "WAITING",
+          status: "REGISTERED",
           note: "",
           triageLevel: "",
           chiefComplaint: "",

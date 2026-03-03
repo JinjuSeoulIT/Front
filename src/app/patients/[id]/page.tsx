@@ -621,7 +621,13 @@ export default function PatientDetailPage() {
                       color="error"
                       startIcon={<LocalHospitalOutlinedIcon />}
                       component={Link}
-                      href="/emergency-receptions/new"
+                      href={
+                        p
+                          ? `/emergency-receptions/new?patientId=${p.patientId}&patientName=${encodeURIComponent(
+                              p.name ?? ""
+                            )}`
+                          : "/emergency-receptions/new"
+                      }
                       disabled={!p}
                       sx={{ fontWeight: 800, whiteSpace: "nowrap", flex: "1 1 140px", minWidth: 140 }}
                     >
@@ -632,7 +638,13 @@ export default function PatientDetailPage() {
                       color="secondary"
                       startIcon={<HotelOutlinedIcon />}
                       component={Link}
-                      href="/inpatient-receptions/new"
+                      href={
+                        p
+                          ? `/inpatient-receptions/new?patientId=${p.patientId}&patientName=${encodeURIComponent(
+                              p.name ?? ""
+                            )}`
+                          : "/inpatient-receptions/new"
+                      }
                       disabled={!p}
                       sx={{ fontWeight: 800, whiteSpace: "nowrap", flex: "1 1 140px", minWidth: 140 }}
                     >

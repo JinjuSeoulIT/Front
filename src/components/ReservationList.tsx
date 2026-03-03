@@ -319,14 +319,6 @@ export default function ReservationList({
               >
                 초기화
               </Button>
-                          <Button
-                variant="contained"
-                component={Link}
-                href="/reservations/new"
-                sx={{ bgcolor: "#1f7a3f" }}
-              >
-                신규 예약
-              </Button>
             </Stack>
             <Box sx={{ flex: 1 }} />
             <Chip label={`전체 ${visibleList.length}`} color="primary" />
@@ -528,7 +520,6 @@ export default function ReservationList({
     </Box>
   );
 }
-
 
 
 
