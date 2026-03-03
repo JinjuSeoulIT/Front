@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import {
   Avatar,
   Box,
@@ -12,6 +13,7 @@ import {
   Divider,
   IconButton,
   MenuItem,
+  Pagination,
   Stack,
   Tab,
   Tabs,
@@ -43,6 +45,7 @@ const SEARCH_OPTIONS: { label: string; value: ReceptionSearchPayload["type"] }[]
 ];
 
 const TAB_LABELS = ["기본정보", "진료기록", "검사", "처방", "입원"];
+const ITEMS_PER_PAGE = 10;
 
 const visitTypeLabel = (value?: string | null) => {
   switch (value) {
@@ -178,6 +181,7 @@ export default function ReceptionList({
   initialKeyword = "",
   autoSearch = false,
 }: ReceptionListProps) {
+  const searchParams = useSearchParams();
   const dispatch = useDispatch<AppDispatch>();
   const { list, loading, error, selected } = useSelector(
     (s: RootState) => s.receptions
@@ -192,6 +196,8 @@ export default function ReceptionList({
   const [openSuggestion, setOpenSuggestion] = React.useState(false);
   const [patientNameById, setPatientNameById] = React.useState<Record<number, string>>({});
   const [todayKey, setTodayKey] = React.useState(() => toLocalDateKey(new Date()));
+  const [page, setPage] = React.useState(1);
+  const initialPageAppliedRef = React.useRef(false);
   const syncingReservationRef = React.useRef(false);
 
   const syncTodayReservationsToWaitingReceptions = React.useCallback(async () => {
@@ -469,6 +475,7 @@ export default function ReceptionList({
   const onSearch = () => {
     const kw = keyword.trim();
     if (!kw) return alert("검색어는 필수입니다.");
+    setPage(1);
     setOpenSuggestion(false);
     if (searchType === "patientName") {
       const run = async () => {
@@ -494,6 +501,7 @@ export default function ReceptionList({
   };
 
   const onReset = () => {
+    setPage(1);
     setKeyword("");
     setSearchType("receptionNo");
     dispatch(receptionActions.fetchReceptionsRequest());
@@ -542,6 +550,7 @@ export default function ReceptionList({
     if (!nextKeyword) return;
     setSearchType("patientName");
     setKeyword(nextKeyword);
+    setPage(1);
     setOpenSuggestion(false);
     const run = async () => {
       try {
@@ -562,10 +571,29 @@ export default function ReceptionList({
     void run();
   };
 
+  const totalCount = filteredList.length;
+  const totalPages = Math.max(1, Math.ceil(totalCount / ITEMS_PER_PAGE));
+  const pagedList = React.useMemo(() => {
+    const start = (page - 1) * ITEMS_PER_PAGE;
+    return filteredList.slice(start, start + ITEMS_PER_PAGE);
+  }, [filteredList, page]);
+
+  React.useEffect(() => {
+    setPage((prev) => Math.min(prev, totalPages));
+  }, [totalPages]);
+
+  React.useEffect(() => {
+    if (searchParams.get("page") !== "last") return;
+    if (initialPageAppliedRef.current) return;
+    if (totalCount === 0) return;
+    setPage(totalPages);
+    initialPageAppliedRef.current = true;
+  }, [searchParams, totalCount, totalPages]);
+
   const primary =
-    selected && filteredList.some((p) => p.receptionId === selected.receptionId)
+    selected && pagedList.some((p) => p.receptionId === selected.receptionId)
       ? selected
-      : filteredList[0];
+      : pagedList[0] ?? filteredList[0];
   const primaryName =
     (primary?.patientId ? patientNameById[primary.patientId] : "") ||
     primary?.patientName?.trim() ||
@@ -580,8 +608,6 @@ export default function ReceptionList({
     : primary?.patientId
     ? String(primary.patientId).slice(-2)
     : "R";
-  const totalCount = filteredList.length;
-
   return (
     <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
       <Card
@@ -824,14 +850,6 @@ export default function ReceptionList({
                 >
                   접수 수정
                 </Button>
-                <Button
-                  variant="outlined"
-                  sx={{ color: "#2b5aa9" }}
-                  component={Link}
-                  href="/reservations"
-                >
-                  예약 관리
-                </Button>
                 <Button variant="outlined" sx={{ color: "#2b5aa9" }}>
                   검사 기록
                 </Button>
@@ -878,7 +896,7 @@ export default function ReceptionList({
                 </Tabs>
 
                 <Stack spacing={1}>
-                  {filteredList.map((p) => {
+                  {pagedList.map((p) => {
                     const isSelected = selected?.receptionId === p.receptionId;
                     const displayPatientName =
                       (p.patientId ? patientNameById[p.patientId] : "") ||
@@ -946,6 +964,17 @@ export default function ReceptionList({
                     <Typography color="#7b8aa9">조회된 접수가 없습니다.</Typography>
                   )}
                 </Stack>
+                {filteredList.length > 0 && totalPages > 1 && (
+                  <Stack direction="row" justifyContent="center" sx={{ pt: 1 }}>
+                    <Pagination
+                      page={page}
+                      count={totalPages}
+                      onChange={(_, value) => setPage(value)}
+                      color="primary"
+                      size="small"
+                    />
+                  </Stack>
+                )}
               </Stack>
             </CardContent>
           </Card>

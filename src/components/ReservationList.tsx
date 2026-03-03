@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import {
   Avatar,
   Box,
@@ -10,13 +11,16 @@ import {
   CardContent,
   Chip,
   Divider,
+  IconButton,
   MenuItem,
+  Pagination,
   Stack,
   TextField,
   Typography,
 } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import RefreshIcon from "@mui/icons-material/Refresh";
+import BlockOutlinedIcon from "@mui/icons-material/BlockOutlined";
 import { useDispatch, useSelector } from "react-redux";
 import type { RootState, AppDispatch } from "@/store/store";
 import { reservationActions } from "@/features/Reservations/ReservationSlice";
@@ -32,6 +36,7 @@ const SEARCH_OPTIONS: { label: string; value: ReservationSearchPayload["type"] }
   { label: "환자ID", value: "patientId" },
   { label: "상태", value: "status" },
 ];
+const ITEMS_PER_PAGE = 10;
 
 const statusLabel = (value?: string | null) => {
   switch (value) {
@@ -98,6 +103,7 @@ export default function ReservationList({
   autoSearch = false,
   hideCanceled = true,
 }: ReservationListProps) {
+  const searchParams = useSearchParams();
   const dispatch = useDispatch<AppDispatch>();
   const { list, loading, error, selected } = useSelector(
     (s: RootState) => s.reservations
@@ -107,6 +113,8 @@ export default function ReservationList({
     ReservationSearchPayload["type"]
   >(initialSearchType);
   const [keyword, setKeyword] = React.useState(initialSearchType === "status" ? "" : initialKeyword);
+  const [page, setPage] = React.useState(1);
+  const initialPageAppliedRef = React.useRef(false);
   const [statusKeyword, setStatusKeyword] = React.useState<ReservationStatus>(
     (initialSearchType === "status" && initialKeyword
       ? (initialKeyword as ReservationStatus)
@@ -148,6 +156,7 @@ export default function ReservationList({
   const onSearch = () => {
     const kw = searchType === "status" ? statusKeyword : keyword.trim();
     if (!kw) return alert("검색어는 필수입니다.");
+    setPage(1);
     const normalized = searchType === "status" ? normalizeStatusKeyword(kw) : kw;
     dispatch(
       reservationActions.searchReservationsRequest({
@@ -158,6 +167,7 @@ export default function ReservationList({
   };
 
   const onReset = () => {
+    setPage(1);
     if (autoSearch && initialKeyword) {
       const normalized =
         initialSearchType === "status"
@@ -214,29 +224,28 @@ export default function ReservationList({
     );
   };
 
-  const onCompleteReservation = () => {
-    if (!primary) return;
-    const normalized = normalizeStatus(primary.status);
-    if (normalized === "COMPLETED" || normalized === "CANCELED") return;
-    const ok = window.confirm("예약을 완료 처리하시겠습니까?");
+  const onCancelReservationItem = (item: Reservation) => {
+    const normalized = normalizeStatus(item.status);
+    if (normalized === "CANCELED") return;
+    const ok = window.confirm("예약을 취소하시겠습니까?");
     if (!ok) return;
 
     const payload: ReservationForm = {
-      reservationNo: primary.reservationNo,
-      patientId: primary.patientId ?? null,
-      patientName: primary.patientName ?? null,
-      departmentId: primary.departmentId,
-      departmentName: primary.departmentName ?? null,
-      doctorId: primary.doctorId ?? null,
-      doctorName: primary.doctorName ?? null,
-      reservedAt: primary.reservedAt,
-      status: "COMPLETED",
-      note: primary.note ?? null,
+      reservationNo: item.reservationNo,
+      patientId: item.patientId ?? null,
+      patientName: item.patientName ?? null,
+      departmentId: item.departmentId,
+      departmentName: item.departmentName ?? null,
+      doctorId: item.doctorId ?? null,
+      doctorName: item.doctorName ?? null,
+      reservedAt: item.reservedAt,
+      status: "CANCELED",
+      note: item.note ?? null,
     };
 
     dispatch(
       reservationActions.updateReservationRequest({
-        reservationId: String(primary.reservationId),
+        reservationId: String(item.reservationId),
         form: payload,
       })
     );
@@ -245,9 +254,27 @@ export default function ReservationList({
   const visibleList = hideCanceled
     ? list.filter((item) => !["CANCELED", "COMPLETED"].includes(normalizeStatus(item.status) ?? ""))
     : list;
+  const totalPages = Math.max(1, Math.ceil(visibleList.length / ITEMS_PER_PAGE));
+  const pagedList = React.useMemo(() => {
+    const start = (page - 1) * ITEMS_PER_PAGE;
+    return visibleList.slice(start, start + ITEMS_PER_PAGE);
+  }, [visibleList, page]);
+
+  React.useEffect(() => {
+    setPage((prev) => Math.min(prev, totalPages));
+  }, [totalPages]);
+
+  React.useEffect(() => {
+    if (searchParams.get("page") !== "last") return;
+    if (initialPageAppliedRef.current) return;
+    if (visibleList.length === 0) return;
+    setPage(totalPages);
+    initialPageAppliedRef.current = true;
+  }, [searchParams, visibleList.length, totalPages]);
 
   const primary =
-    (selected && visibleList.find((p) => p.reservationId === selected.reservationId)) ||
+    (selected && pagedList.find((p) => p.reservationId === selected.reservationId)) ||
+    pagedList[0] ||
     visibleList[0];
 
   return (
@@ -427,18 +454,6 @@ export default function ReservationList({
                 >
                   예약 수정
                 </Button>
-                <Button
-                  variant="contained"
-                  onClick={onCompleteReservation}
-                  disabled={
-                    !primary ||
-                    ["COMPLETED", "CANCELED"].includes(normalizeStatus(primary.status) ?? "") ||
-                    loading
-                  }
-                  sx={{ bgcolor: "#2b5aa9" }}
-                >
-                  완료 처리
-                </Button>
                   <Button
                     variant="outlined"
                     color="error"
@@ -468,7 +483,7 @@ export default function ReservationList({
                 </Stack>
 
                 <Stack spacing={1}>
-                  {visibleList.map((p) => {
+                  {pagedList.map((p) => {
                     const isSelected = selected?.reservationId === p.reservationId;
                     return (
                       <Box
@@ -490,13 +505,34 @@ export default function ReservationList({
                         <Avatar sx={{ width: 40, height: 40, bgcolor: "#d7e6ff", color: "#2b5aa9" }}>
                           {p.patientName ? p.patientName.slice(0, 1) : String(p.patientId ?? "?").slice(-2)}
                         </Avatar>
-                        <Box sx={{ minWidth: 0 }}>
-                          <Typography fontWeight={700} noWrap>
-                            {p.reservationNo}
-                          </Typography>
-                          <Typography sx={{ color: "#7b8aa9", fontSize: 12 }} noWrap>
-                            환자 {p.patientName ?? p.patientId} · {p.reservedAt} · {statusLabel(p.status)}
-                          </Typography>
+                        <Box
+                          sx={{
+                            minWidth: 0,
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "space-between",
+                            gap: 1,
+                          }}
+                        >
+                          <Box sx={{ minWidth: 0 }}>
+                            <Typography fontWeight={700} noWrap>
+                              {p.reservationNo}
+                            </Typography>
+                            <Typography sx={{ color: "#7b8aa9", fontSize: 12 }} noWrap>
+                              환자 {p.patientName ?? p.patientId} · {p.reservedAt} · {statusLabel(p.status)}
+                            </Typography>
+                          </Box>
+                          <IconButton
+                            size="small"
+                            color="warning"
+                            disabled={loading || normalizeStatus(p.status) === "CANCELED"}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onCancelReservationItem(p);
+                            }}
+                          >
+                            <BlockOutlinedIcon fontSize="small" />
+                          </IconButton>
                         </Box>
                       </Box>
                     );
@@ -506,6 +542,17 @@ export default function ReservationList({
                     <Typography color="#7b8aa9">조회된 예약이 없습니다.</Typography>
                   )}
                 </Stack>
+                {visibleList.length > 0 && totalPages > 1 && (
+                  <Stack direction="row" justifyContent="center" sx={{ pt: 1 }}>
+                    <Pagination
+                      page={page}
+                      count={totalPages}
+                      onChange={(_, value) => setPage(value)}
+                      color="primary"
+                      size="small"
+                    />
+                  </Stack>
+                )}
               </Stack>
             </CardContent>
           </Card>

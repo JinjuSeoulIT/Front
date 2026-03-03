@@ -54,11 +54,11 @@ type EmergencyReceptionFormProps = {
 };
 
 const statusOptions = [
-  { value: "REGISTERED", label: "응급 접수 완료" },
+  { value: "REGISTERED", label: "접수 완료" },
   { value: "TRIAGE", label: "트리아지 진행" },
   { value: "IN_PROGRESS", label: "진료중" },
   { value: "OBSERVATION", label: "관찰중" },
-  { value: "COMPLETED", label: "완료" },
+  { value: "COMPLETED", label: "진료 완료" },
   { value: "TRANSFERRED", label: "전원" },
   { value: "ON_HOLD", label: "보류" },
   { value: "CANCELED", label: "취소" },
@@ -75,12 +75,14 @@ const EMERGENCY_DEPARTMENT_ID = 5;
 const EMERGENCY_DEPARTMENT_NAME = "응급의학과";
 
 const statusLabelToCode: Record<string, string> = {
+  "접수 완료": "REGISTERED",
   "응급 접수 완료": "REGISTERED",
   대기: "WAITING",
   호출: "CALLED",
   "트리아지 진행": "TRIAGE",
   진료중: "IN_PROGRESS",
   관찰중: "OBSERVATION",
+  "진료 완료": "COMPLETED",
   완료: "COMPLETED",
   전원: "TRANSFERRED",
   보류: "ON_HOLD",
@@ -180,6 +182,14 @@ export default function EmergencyReceptionForm({
   }, [form.status, isEditMode]);
 
   React.useEffect(() => {
+    if (!isEditMode) return;
+    const initialPatientId = initial.patientId.trim();
+    if (!initialPatientId) return;
+    if (form.patientId.trim()) return;
+    setForm((prev) => ({ ...prev, patientId: initialPatientId }));
+  }, [isEditMode, initial.patientId, form.patientId]);
+
+  React.useEffect(() => {
     if (!form.note.trim() && form.triageNote.trim()) {
       setForm((prev) => ({ ...prev, note: prev.triageNote }));
     }
@@ -206,6 +216,10 @@ export default function EmergencyReceptionForm({
   }, []);
 
   React.useEffect(() => {
+    if (isEditMode) {
+      setNumberLoading(false);
+      return;
+    }
     if (initial.receptionNo.trim()) return;
     let mounted = true;
 
@@ -239,7 +253,7 @@ export default function EmergencyReceptionForm({
     return () => {
       mounted = false;
     };
-  }, [initial.receptionNo]);
+  }, [initial.receptionNo, isEditMode]);
 
   React.useEffect(() => {
     setSubmitError(null);
@@ -247,7 +261,8 @@ export default function EmergencyReceptionForm({
 
   const handleSubmit = () => {
     if (!form.receptionNo.trim()) return;
-    const patientId = toOptionalNumber(form.patientId);
+    const effectivePatientId = form.patientId.trim() || (isEditMode ? initial.patientId.trim() : "");
+    const patientId = toOptionalNumber(effectivePatientId);
     const departmentId = toOptionalNumber(form.departmentId);
     const triageLevel = toOptionalNumber(form.triageLevel);
 
@@ -441,13 +456,18 @@ export default function EmergencyReceptionForm({
                 options={patients}
                 value={selectedPatient}
                 inputValue={patientKeyword}
+                disableClearable={isEditMode}
                 onInputChange={(_, value, reason) => {
                   setPatientKeyword(value);
-                  if (reason === "input") {
+                  if (reason === "input" && !isEditMode) {
                     setForm((prev) => ({ ...prev, patientId: "" }));
                   }
                 }}
                 onChange={(_, value) => {
+                  if (isEditMode) {
+                    setPatientKeyword(getPatientDisplayName(selectedPatient));
+                    return;
+                  }
                   setForm((prev) => ({
                     ...prev,
                     patientId: value ? String(value.patientId) : "",
@@ -519,7 +539,7 @@ export default function EmergencyReceptionForm({
           )}
           {!isEditMode && (
             <Typography variant="body2" sx={{ color: "#9a3412", fontWeight: 700 }}>
-              등록 시 상태는 자동으로 &apos;응급 접수 완료&apos;로 시작됩니다.
+              등록 시 상태는 자동으로 &apos;접수 완료&apos;로 시작됩니다.
             </Typography>
           )}
 
@@ -555,21 +575,21 @@ export default function EmergencyReceptionForm({
           </Stack>
           <Stack direction={{ xs: "column", sm: "row" }} spacing={1}>
             <TextField
-              label="체온"
+              label="체온(℃)"
               value={form.vitalTemp}
               onChange={(e) => setForm((prev) => ({ ...prev, vitalTemp: e.target.value }))}
               fullWidth
               sx={fieldSx}
             />
             <TextField
-              label="수축기혈압"
+              label="수축기혈압(mmHg)"
               value={form.vitalBpSystolic}
               onChange={(e) => setForm((prev) => ({ ...prev, vitalBpSystolic: e.target.value }))}
               fullWidth
               sx={fieldSx}
             />
             <TextField
-              label="이완기혈압"
+              label="이완기혈압(mmHg)"
               value={form.vitalBpDiastolic}
               onChange={(e) => setForm((prev) => ({ ...prev, vitalBpDiastolic: e.target.value }))}
               fullWidth
@@ -578,21 +598,21 @@ export default function EmergencyReceptionForm({
           </Stack>
           <Stack direction={{ xs: "column", sm: "row" }} spacing={1}>
             <TextField
-              label="심박수"
+              label="심박수(bpm)"
               value={form.vitalHr}
               onChange={(e) => setForm((prev) => ({ ...prev, vitalHr: e.target.value }))}
               fullWidth
               sx={fieldSx}
             />
             <TextField
-              label="호흡수"
+              label="호흡수(회/분)"
               value={form.vitalRr}
               onChange={(e) => setForm((prev) => ({ ...prev, vitalRr: e.target.value }))}
               fullWidth
               sx={fieldSx}
             />
             <TextField
-              label="SpO2(동맥혈산소포화도)"
+              label="SpO2(동맥혈산소포화도)(%)"
               value={form.vitalSpo2}
               onChange={(e) => setForm((prev) => ({ ...prev, vitalSpo2: e.target.value }))}
               fullWidth
@@ -663,9 +683,9 @@ export default function EmergencyReceptionForm({
             onClick={handleSubmit}
             disabled={
               loading ||
-              numberLoading ||
+              (!isEditMode && numberLoading) ||
               !form.receptionNo.trim() ||
-              !form.patientId.trim() ||
+              !(form.patientId.trim() || (isEditMode ? initial.patientId.trim() : "")) ||
               !form.departmentId.trim() ||
               !form.arrivedAt.trim() ||
               !form.triageLevel.trim() ||

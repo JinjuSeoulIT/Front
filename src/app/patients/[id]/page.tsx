@@ -145,6 +145,33 @@ function toApiDateTime(value?: string) {
   return value.length === 16 ? `${value}:00` : value;
 }
 
+function toTodayDateTime(value?: string) {
+  if (!value) return undefined;
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+  const timeWithSeconds = value.length === 5 ? `${value}:00` : value;
+  return `${year}-${month}-${day}T${timeWithSeconds}`;
+}
+
+function toLocalDateTime(date = new Date()) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  const hours = String(date.getHours()).padStart(2, "0");
+  const minutes = String(date.getMinutes()).padStart(2, "0");
+  const seconds = String(date.getSeconds()).padStart(2, "0");
+  return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`;
+}
+
+function toLocalDate(date = new Date()) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
 function resolveErrorMessage(err: unknown, fallback: string) {
   if (axios.isAxiosError(err)) {
     const data = err.response?.data as
@@ -177,6 +204,7 @@ export default function PatientDetailPage() {
 
   const { selected, loading, error } = useSelector((s: RootState) => s.patients);
   const p = selected;
+  const todayDateLabel = toLocalDate();
 
   const [restrictions, setRestrictions] = React.useState<PatientRestriction[]>([]);
   const [flags, setFlags] = React.useState<PatientFlag[]>([]);
@@ -207,11 +235,8 @@ export default function PatientDetailPage() {
   const [reservationForm, setReservationForm] = React.useState({
     deptCode: defaultDepartment.name,
     doctorId: String(defaultDepartment.doctorId),
-    reservationId: "",
     scheduledAt: "",
-    arrivalAt: "",
     note: "",
-    memo: "",
   });
 
   React.useEffect(() => {
@@ -361,11 +386,8 @@ export default function PatientDetailPage() {
     setReservationForm({
       deptCode: defaultDepartment.name,
       doctorId: String(defaultDepartment.doctorId),
-      reservationId: "",
       scheduledAt: "",
-      arrivalAt: "",
       note: "",
-      memo: "",
     });
     setReservationDialogOpen(true);
   };
@@ -417,11 +439,11 @@ export default function PatientDetailPage() {
         doctorName: resolvedDept.doctor,
         reservedAt,
         status: "RESERVED",
-        note: reservationForm.note?.trim() || reservationForm.memo?.trim() || null,
+        note: reservationForm.note?.trim() || null,
       });
 
       setReservationDialogOpen(false);
-      alert("예약이 등록되었습니다.");
+      router.push("/reservations?page=last");
     } catch (err: unknown) {
       console.error("saveReservation failed", err);
       alert(`예약 등록에 실패했습니다.\n원인: ${resolveErrorMessage(err, "알 수 없는 오류")}`);
@@ -455,13 +477,13 @@ export default function PatientDetailPage() {
         departmentName: resolvedDept.name,
         doctorId: Number(receptionForm.doctorId || resolvedDept.doctorId),
         doctorName: resolvedDept.doctor,
-        arrivedAt: toApiDateTime(receptionForm.arrivedAt) ?? new Date().toISOString().slice(0, 19),
+        arrivedAt: toTodayDateTime(receptionForm.arrivedAt) ?? toLocalDateTime(),
         status: "WAITING",
         note: receptionForm.note?.trim() || "환자 상세 화면에서 접수 등록",
       });
 
       setReceptionDialogOpen(false);
-      router.push("/receptions");
+      router.push("/receptions?page=last");
     } catch (err: unknown) {
       alert(`접수 등록에 실패했습니다.\n원인: ${resolveErrorMessage(err, "알 수 없는 오류")}`);
     } finally {
@@ -881,8 +903,8 @@ export default function PatientDetailPage() {
             </TextField>
 
             <TextField
-              label="내원 일시(선택)"
-              type="datetime-local"
+              label="내원 시간(선택)"
+              type="time"
               value={receptionForm.arrivedAt}
               onChange={(e) =>
                 setReceptionForm((prev) => ({
@@ -890,9 +912,13 @@ export default function PatientDetailPage() {
                   arrivedAt: e.target.value,
                 }))
               }
+              inputProps={{ step: 60 }}
               InputLabelProps={{ shrink: true }}
               fullWidth
             />
+            <Typography variant="caption" color="text.secondary" sx={{ mt: -1 }}>
+              적용 날짜: {todayDateLabel} (오늘)
+            </Typography>
 
             <TextField
               label="접수 메모(선택)"
@@ -976,18 +1002,6 @@ export default function PatientDetailPage() {
             </TextField>
 
             <TextField
-              label="예약 ID"
-              value={reservationForm.reservationId}
-              onChange={(e) =>
-                setReservationForm((prev) => ({
-                  ...prev,
-                  reservationId: e.target.value,
-                }))
-              }
-              fullWidth
-            />
-
-            <TextField
               label="예약 일시"
               type="datetime-local"
               value={reservationForm.scheduledAt}
@@ -1002,38 +1016,12 @@ export default function PatientDetailPage() {
             />
 
             <TextField
-              label="내원 일시(선택)"
-              type="datetime-local"
-              value={reservationForm.arrivalAt}
-              onChange={(e) =>
-                setReservationForm((prev) => ({
-                  ...prev,
-                  arrivalAt: e.target.value,
-                }))
-              }
-              InputLabelProps={{ shrink: true }}
-              fullWidth
-            />
-
-            <TextField
-              label="예약 메모"
+              label="메모(선택)"
               value={reservationForm.note}
               onChange={(e) =>
                 setReservationForm((prev) => ({
                   ...prev,
                   note: e.target.value,
-                }))
-              }
-              fullWidth
-            />
-
-            <TextField
-              label="접수 메모(선택)"
-              value={reservationForm.memo}
-              onChange={(e) =>
-                setReservationForm((prev) => ({
-                  ...prev,
-                  memo: e.target.value,
                 }))
               }
               fullWidth

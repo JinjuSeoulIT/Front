@@ -11,6 +11,7 @@ import type {
   EmergencyReceptionForm,
   ReceptionStatus,
 } from "@/features/EmergencyReceptions/EmergencyReceptionTypes";
+import { fetchPatientApi } from "@/lib/patientApi";
 import { Box, Button, Card, CardContent, Divider, Stack, Typography } from "@mui/material";
 
 export default function EmergencyReceptionDetailPage() {
@@ -20,6 +21,7 @@ export default function EmergencyReceptionDetailPage() {
   const { selected, loading, error } = useSelector((s: RootState) => s.emergencyReceptions);
 
   const receptionId = params.id;
+  const [patientName, setPatientName] = React.useState<string>("-");
 
   React.useEffect(() => {
     dispatch(emergencyReceptionActions.fetchEmergencyReceptionRequest({ receptionId }));
@@ -27,6 +29,28 @@ export default function EmergencyReceptionDetailPage() {
 
   const p: EmergencyReception | null =
     selected && String(selected.receptionId) === receptionId ? selected : null;
+
+  React.useEffect(() => {
+    let mounted = true;
+    const loadPatientName = async () => {
+      if (!p?.patientId) {
+        if (mounted) setPatientName("-");
+        return;
+      }
+      try {
+        const patient = await fetchPatientApi(p.patientId);
+        if (!mounted) return;
+        setPatientName(patient.name?.trim() || `환자 ${p.patientId}`);
+      } catch {
+        if (!mounted) return;
+        setPatientName(`환자 ${p.patientId}`);
+      }
+    };
+    void loadPatientName();
+    return () => {
+      mounted = false;
+    };
+  }, [p?.patientId]);
 
   const toUpdateForm = (
     value: EmergencyReception,
@@ -55,7 +79,7 @@ export default function EmergencyReceptionDetailPage() {
   const onChangeStatus = (nextStatus: ReceptionStatus) => {
     if (!p) return;
     if (p.status === nextStatus) return;
-    if (!confirm(`상태를 ${nextStatus}로 변경하시겠습니까?`)) return;
+    if (!confirm(`상태를 ${statusLabel(nextStatus)}로 변경하시겠습니까?`)) return;
 
     dispatch(
       emergencyReceptionActions.updateEmergencyReceptionRequest({
@@ -74,18 +98,24 @@ export default function EmergencyReceptionDetailPage() {
         return "대기";
       case "CALLED":
         return "호출";
+      case "TRIAGE":
+        return "트리아지 진행";
       case "IN_PROGRESS":
         return "진행중";
       case "COMPLETED":
         return "완료";
       case "PAYMENT_WAIT":
         return "수납대기";
+      case "OBSERVATION":
+        return "관찰중";
       case "ON_HOLD":
         return "보류";
       case "CANCELED":
         return "취소";
       case "INACTIVE":
         return "비활성";
+      case "TRANSFERRED":
+        return "전원";
       default:
         return value ?? "-";
     }
@@ -111,9 +141,7 @@ export default function EmergencyReceptionDetailPage() {
               <Stack spacing={1}>
                 <Row label="접수 ID" value={String(p.receptionId)} />
                 <Row label="접수번호" value={p.receptionNo} />
-                <Row label="환자 ID" value={String(p.patientId)} />
-                <Row label="진료과 ID" value={String(p.departmentId)} />
-                <Row label="의사 ID" value={p.doctorId ? String(p.doctorId) : "-"} />
+                <Row label="환자 이름" value={patientName} />
                 <Row label="상태" value={statusLabel(p.status)} />
                 <Row label="중증도" value={String(p.triageLevel)} />
                 <Row label="주호소" value={p.chiefComplaint ?? "-"} />
@@ -176,3 +204,4 @@ function Row({ label, value }: { label: string; value: string }) {
     </Stack>
   );
 }
+
