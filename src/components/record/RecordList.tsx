@@ -17,13 +17,19 @@ import { useRouter } from "next/navigation";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch, RootState } from "@/store/store";
 import { fetchRecordsRequest } from "@/features/Record/recordSlice";
+import RecordSearchBar from "./RecordSearchBar";
 
 export default function RecordList() {
   const router = useRouter();
   const dispatch = useDispatch<AppDispatch>();
   const { list, loading, error } = useSelector((s: RootState) => s.records);
 
-
+const handleSearch = (type, value) => {
+  dispatch(searchRecordThunk({
+    searchType: type,
+    searchValue: value
+  }));
+};
 
   useEffect(() => {
     dispatch(fetchRecordsRequest());
@@ -86,6 +92,8 @@ export default function RecordList() {
           gridTemplateColumns: { xs: "1fr", lg: "360px minmax(0,1fr)" },
         }}
       >
+        <RecordSearchBar onSearch={handleSearch}/>
+
         <Card sx={{ borderRadius: 3, border: "1px solid var(--line)" }}>
           <CardContent>
               <Tab label="활성" value="ACTIVE" />

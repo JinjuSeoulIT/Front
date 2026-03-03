@@ -89,3 +89,10 @@ export const deleteRecordApi = async (id: string | number): Promise<void> => {
     throw new Error(res.data.message || "Delete failed");
   }
 };
+
+export const searchRecordApi = async (type: string | number, value: string|number): Promise<void> => {
+  const res = await api.get<ApiResponse<void>>(`/api/search`);
+  if (!res.data.success) {
+    throw new Error(res.data.message || "search failed");
+  }
+};
