@@ -55,7 +55,7 @@ export type DoctorOption = {
 };
 
 export type ReservationSearchPayload = {
-  type: "reservationNo" | "patientId" | "status";
+  type: "reservationNo" | "patientName";
   keyword: string;
 };
 

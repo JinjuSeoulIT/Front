@@ -1,15 +1,5 @@
-import MainLayout from "@/components/layout/MainLayout";
-import ReservationList from "@/components/ReservationList";
+import { redirect } from "next/navigation";
 
 export default function CanceledReservationsPage() {
-  return (
-    <MainLayout>
-      <ReservationList
-        initialSearchType="status"
-        initialKeyword="CANCELED"
-        autoSearch
-        hideCanceled={false}
-      />
-    </MainLayout>
-  );
+  redirect("/reservations");
 }

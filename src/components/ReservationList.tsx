@@ -28,13 +28,12 @@ import type {
   Reservation,
   ReservationForm,
   ReservationSearchPayload,
-  ReservationStatus,
 } from "@/features/Reservations/ReservationTypes";
+import { fetchReservationsApi } from "@/lib/reservationAdminApi";
 
 const SEARCH_OPTIONS: { label: string; value: ReservationSearchPayload["type"] }[] = [
   { label: "예약번호", value: "reservationNo" },
-  { label: "환자ID", value: "patientId" },
-  { label: "상태", value: "status" },
+  { label: "환자이름", value: "patientName" },
 ];
 const ITEMS_PER_PAGE = 10;
 
@@ -70,26 +69,6 @@ const normalizeStatus = (value?: string | null) => {
   }
 };
 
-const normalizeStatusKeyword = (keyword: string): string => {
-  const raw = keyword.trim();
-  if (!raw) return raw;
-  const upper = raw.toUpperCase();
-
-  const map: Record<string, ReservationStatus> = {
-    RESERVED: "RESERVED",
-    COMPLETED: "COMPLETED",
-    CANCELED: "CANCELED",
-    CANCELLED: "CANCELED",
-    INACTIVE: "INACTIVE",
-    "예약": "RESERVED",
-    "완료": "COMPLETED",
-    "취소": "CANCELED",
-    "비활성": "INACTIVE",
-  };
-
-  return map[upper] ?? map[raw] ?? raw;
-};
-
 type ReservationListProps = {
   initialSearchType?: ReservationSearchPayload["type"];
   initialKeyword?: string;
@@ -112,24 +91,36 @@ export default function ReservationList({
   const [searchType, setSearchType] = React.useState<
     ReservationSearchPayload["type"]
   >(initialSearchType);
-  const [keyword, setKeyword] = React.useState(initialSearchType === "status" ? "" : initialKeyword);
+  const [keyword, setKeyword] = React.useState(initialKeyword);
   const [page, setPage] = React.useState(1);
   const initialPageAppliedRef = React.useRef(false);
-  const [statusKeyword, setStatusKeyword] = React.useState<ReservationStatus>(
-    (initialSearchType === "status" && initialKeyword
-      ? (initialKeyword as ReservationStatus)
-      : "RESERVED") as ReservationStatus
+
+  const runPatientNameSearch = React.useCallback(
+    async (rawKeyword: string) => {
+      const kw = rawKeyword.trim().toLowerCase();
+      if (!kw) return;
+      try {
+        const all = await fetchReservationsApi();
+        const filtered = all.filter((item) =>
+          (item.patientName?.trim() ?? "").toLowerCase().includes(kw)
+        );
+        dispatch(reservationActions.fetchReservationsSuccess(filtered));
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : "예약 검색 실패";
+        dispatch(reservationActions.fetchReservationsFailure(message));
+      }
+    },
+    [dispatch]
   );
 
   React.useEffect(() => {
     if (autoSearch && initialKeyword) {
-      const normalized =
-        initialSearchType === "status"
-          ? normalizeStatusKeyword(initialKeyword)
-          : initialKeyword;
+      const normalized = initialKeyword;
       setSearchType(initialSearchType);
-      if (initialSearchType === "status") {
-        setStatusKeyword(normalized as ReservationStatus);
+      if (initialSearchType === "patientName") {
+        setKeyword(initialKeyword);
+        void runPatientNameSearch(initialKeyword);
+        return;
       } else {
         setKeyword(initialKeyword);
       }
@@ -142,7 +133,13 @@ export default function ReservationList({
       return;
     }
     dispatch(reservationActions.fetchReservationsRequest());
-  }, [autoSearch, dispatch, initialKeyword, initialSearchType]);
+  }, [
+    autoSearch,
+    dispatch,
+    initialKeyword,
+    initialSearchType,
+    runPatientNameSearch,
+  ]);
 
   React.useEffect(() => {
     if (!list.length) return;
@@ -154,14 +151,17 @@ export default function ReservationList({
   }, [list, selected, dispatch]);
 
   const onSearch = () => {
-    const kw = searchType === "status" ? statusKeyword : keyword.trim();
+    const kw = keyword.trim();
     if (!kw) return alert("검색어는 필수입니다.");
     setPage(1);
-    const normalized = searchType === "status" ? normalizeStatusKeyword(kw) : kw;
+    if (searchType === "patientName") {
+      void runPatientNameSearch(keyword);
+      return;
+    }
     dispatch(
       reservationActions.searchReservationsRequest({
         type: searchType,
-        keyword: normalized,
+        keyword: kw,
       })
     );
   };
@@ -169,13 +169,12 @@ export default function ReservationList({
   const onReset = () => {
     setPage(1);
     if (autoSearch && initialKeyword) {
-      const normalized =
-        initialSearchType === "status"
-          ? normalizeStatusKeyword(initialKeyword)
-          : initialKeyword;
+      const normalized = initialKeyword;
       setSearchType(initialSearchType);
-      if (initialSearchType === "status") {
-        setStatusKeyword(normalized as ReservationStatus);
+      if (initialSearchType === "patientName") {
+        setKeyword(initialKeyword);
+        void runPatientNameSearch(initialKeyword);
+        return;
       } else {
         setKeyword(initialKeyword);
       }
@@ -189,7 +188,6 @@ export default function ReservationList({
     }
     setKeyword("");
     setSearchType("reservationNo");
-    setStatusKeyword("RESERVED");
     dispatch(reservationActions.fetchReservationsRequest());
   };
 
@@ -295,7 +293,9 @@ export default function ReservationList({
               select
               size="small"
               value={searchType}
-              onChange={(e) => setSearchType(e.target.value as any)}
+              onChange={(e) =>
+                setSearchType(e.target.value as ReservationSearchPayload["type"])
+              }
               sx={{ width: { xs: "100%", md: 180 } }}
             >
               {SEARCH_OPTIONS.map((o) => (
@@ -304,29 +304,14 @@ export default function ReservationList({
                 </MenuItem>
               ))}
             </TextField>
-            {searchType === "status" ? (
-              <TextField
-                select
-                size="small"
-                value={statusKeyword}
-                onChange={(e) => setStatusKeyword(e.target.value as ReservationStatus)}
-                sx={{ width: { xs: "100%", md: 360 } }}
-              >
-                <MenuItem value="RESERVED">예약</MenuItem>
-                <MenuItem value="COMPLETED">완료</MenuItem>
-                <MenuItem value="CANCELED">취소</MenuItem>
-                <MenuItem value="INACTIVE">비활성</MenuItem>
-              </TextField>
-            ) : (
-              <TextField
-                size="small"
-                placeholder="검색어 입력"
-                value={keyword}
-                onChange={(e) => setKeyword(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && onSearch()}
-                sx={{ width: { xs: "100%", md: 360 } }}
-              />
-            )}
+            <TextField
+              size="small"
+              placeholder="검색어 입력"
+              value={keyword}
+              onChange={(e) => setKeyword(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && onSearch()}
+              sx={{ width: { xs: "100%", md: 360 } }}
+            />
             <Stack direction="row" spacing={1} sx={{ flexWrap: "wrap" }}>
               <Button
                 variant="contained"
