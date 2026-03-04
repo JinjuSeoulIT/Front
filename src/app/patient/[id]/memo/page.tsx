@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import * as React from "react";
 import { useParams } from "next/navigation";
@@ -64,7 +64,7 @@ export default function PatientMemosPage() {
       const res = await fetchPatientMemosApi(patientId);
       setMemos(res);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load memos");
+      setError(err instanceof Error ? err.message : "메모를 불러오지 못했습니다.");
     } finally {
       setLoading(false);
     }
@@ -106,17 +106,17 @@ export default function PatientMemosPage() {
       setMemoDialogOpen(false);
       await loadMemos();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Save failed");
+      setError(err instanceof Error ? err.message : "메모 저장에 실패했습니다.");
     }
   };
 
   const onDeleteMemo = async (item: PatientMemo) => {
-    if (!confirm("Delete this memo?")) return;
+    if (!confirm("이 메모를 삭제할까요?")) return;
     try {
       await deletePatientMemoApi(item.memoId);
       await loadMemos();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Delete failed");
+      setError(err instanceof Error ? err.message : "메모 삭제에 실패했습니다.");
     }
   };
 
@@ -137,9 +137,9 @@ export default function PatientMemosPage() {
             justifyContent="space-between"
             sx={{ mb: 1 }}
           >
-            <Typography fontWeight={900}>Patient Memos</Typography>
+            <Typography fontWeight={900}>메모</Typography>
             <Button size="small" variant="outlined" onClick={openCreateMemo}>
-              Add Memo
+              메모 추가
             </Button>
           </Stack>
 
@@ -160,17 +160,17 @@ export default function PatientMemosPage() {
                   },
                 }}
               >
-                <TableCell>Memo</TableCell>
-                <TableCell>Created By</TableCell>
-                <TableCell>Created At</TableCell>
-                <TableCell>Actions</TableCell>
+                <TableCell>내용</TableCell>
+                <TableCell>작성자</TableCell>
+                <TableCell>작성일시</TableCell>
+                <TableCell>관리</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
               {loading && (
                 <TableRow>
                   <TableCell colSpan={4}>
-                    <Typography color="text.secondary">Loading...</Typography>
+                    <Typography color="text.secondary">로딩 중...</Typography>
                   </TableCell>
                 </TableRow>
               )}
@@ -179,7 +179,7 @@ export default function PatientMemosPage() {
                 <TableRow>
                   <TableCell colSpan={4}>
                     <Typography color="text.secondary">
-                      No memos yet.
+                      등록된 메모가 없습니다.
                     </Typography>
                   </TableCell>
                 </TableRow>
@@ -221,12 +221,12 @@ export default function PatientMemosPage() {
         PaperProps={{ sx: { borderRadius: 4 } }}
       >
         <DialogTitle>
-          {memoDialogMode === "create" ? "Add Memo" : "Edit Memo"}
+          {memoDialogMode === "create" ? "메모 추가" : "메모 수정"}
         </DialogTitle>
         <DialogContent>
           <Stack spacing={2} sx={{ mt: 1 }}>
             <TextField
-              label="Memo"
+              label="메모"
               value={memoForm.memo}
               onChange={(e) =>
                 setMemoForm((prev) => ({ ...prev, memo: e.target.value }))
@@ -238,13 +238,13 @@ export default function PatientMemosPage() {
           </Stack>
         </DialogContent>
         <DialogActions>
-          <Button onClick={closeMemoDialog}>Cancel</Button>
+          <Button onClick={closeMemoDialog}>취소</Button>
           <Button
             variant="contained"
             onClick={onSubmitMemo}
             disabled={!memoForm.memo.trim()}
           >
-            {memoDialogMode === "create" ? "Create" : "Save"}
+            {memoDialogMode === "create" ? "등록" : "저장"}
           </Button>
         </DialogActions>
       </Dialog>

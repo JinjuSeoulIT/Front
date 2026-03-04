@@ -24,10 +24,55 @@ function formatDate(value?: string | null) {
   return value.slice(0, 16).replace("T", " ");
 }
 
-function truncate(value?: string | null, max = 160) {
-  if (!value) return "-";
-  if (value.length <= max) return value;
-  return `${value.slice(0, max)}...`;
+const FIELD_LABELS: Record<string, string> = {
+  patientId: "환자 ID",
+  patientNo: "환자번호",
+  name: "이름",
+  gender: "성별",
+  birthDate: "생년월일",
+  phone: "연락처",
+  email: "이메일",
+  address: "주소",
+  addressDetail: "상세주소",
+  guardianName: "보호자명",
+  guardianPhone: "보호자 연락처",
+  guardianRelation: "보호자 관계",
+  isForeigner: "외국인 여부",
+  contactPriority: "연락 우선순위",
+  note: "메모",
+  isVip: "VIP",
+  photoUrl: "사진",
+  statusCode: "상태",
+};
+
+function formatValue(val: unknown): string {
+  if (val === null || val === undefined) return "-";
+  if (typeof val === "boolean") return val ? "예" : "아니오";
+  return String(val);
+}
+
+function renderDataAsRows(value?: string | null): React.ReactNode {
+  if (!value || value.trim() === "") return "-";
+  try {
+    const parsed = JSON.parse(value) as Record<string, unknown>;
+    if (typeof parsed !== "object" || parsed === null) return value;
+    const entries = Object.entries(parsed).filter(([, v]) => v != null && v !== "");
+    if (entries.length === 0) return "-";
+    return (
+      <Stack spacing={0.5} component="ul" sx={{ m: 0, pl: 2.5 }}>
+        {entries.map(([key, val]) => (
+          <Typography key={key} component="li" color="text.secondary" sx={{ fontSize: 13 }}>
+            <Box component="span" fontWeight={800} sx={{ mr: 1 }}>
+              {FIELD_LABELS[key] ?? key}
+            </Box>
+            {formatValue(val)}
+          </Typography>
+        ))}
+      </Stack>
+    );
+  } catch {
+    return value;
+  }
 }
 
 export default function PatientInfoHistoryPage() {
@@ -46,7 +91,7 @@ export default function PatientInfoHistoryPage() {
       const res = await fetchPatientInfoHistoryApi(patientId);
       setHistory(res);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load info history");
+      setError(err instanceof Error ? err.message : "기본정보 변경 이력을 불러오지 못했습니다.");
     } finally {
       setLoading(false);
     }
@@ -75,16 +120,16 @@ export default function PatientInfoHistoryPage() {
             <Stack direction={{ xs: "column", md: "row" }} spacing={2} alignItems="center">
               <Stack spacing={0.5} sx={{ flexGrow: 1 }}>
                 <Typography fontWeight={900} sx={{ fontSize: 22 }}>
-                  Patient Info History
+                  기본정보 변경 이력
                 </Typography>
                 <Typography color="text.secondary" fontWeight={700}>
-                  Track changes to patient base info.
+                  환자 기본정보 변경 이력을 확인합니다.
                 </Typography>
               </Stack>
               <Stack direction="row" spacing={1} alignItems="center">
                 <Chip
                   icon={<EventOutlinedIcon />}
-                  label={latest ? formatDate(latest.changedAt) : "No recent record"}
+                  label={latest ? formatDate(latest.changedAt) : "최근 기록 없음"}
                   sx={{ bgcolor: "rgba(11, 91, 143, 0.12)" }}
                 />
                 <Button
@@ -93,7 +138,7 @@ export default function PatientInfoHistoryPage() {
                   startIcon={<RefreshOutlinedIcon />}
                   onClick={loadHistory}
                 >
-                  Refresh
+                  새로고침
                 </Button>
               </Stack>
             </Stack>
@@ -116,12 +161,12 @@ export default function PatientInfoHistoryPage() {
         >
           <CardContent>
             {loading && (
-              <Typography color="text.secondary">Loading...</Typography>
+              <Typography color="text.secondary">로딩 중...</Typography>
             )}
 
             {!loading && history.length === 0 && (
               <Typography color="text.secondary">
-                No change history found.
+                변경 이력이 없습니다.
               </Typography>
             )}
 
@@ -138,7 +183,7 @@ export default function PatientInfoHistoryPage() {
                 >
                   <Stack direction={{ xs: "column", md: "row" }} spacing={2} alignItems={{ md: "center" }}>
                     <Stack spacing={0.5} sx={{ minWidth: 160 }}>
-                      <Typography fontWeight={800}>Change</Typography>
+                      <Typography fontWeight={800}>변경 유형</Typography>
                       <Typography color="text.secondary">
                         {item.changeType}
                       </Typography>
@@ -147,7 +192,7 @@ export default function PatientInfoHistoryPage() {
                     <Divider flexItem orientation="vertical" sx={{ display: { xs: "none", md: "block" } }} />
 
                     <Stack spacing={0.5} sx={{ minWidth: 140 }}>
-                      <Typography fontWeight={800}>Changed By</Typography>
+                      <Typography fontWeight={800}>변경자</Typography>
                       <Typography color="text.secondary">
                         {item.changedBy ?? "-"}
                       </Typography>
@@ -156,7 +201,7 @@ export default function PatientInfoHistoryPage() {
                     <Divider flexItem orientation="vertical" sx={{ display: { xs: "none", md: "block" } }} />
 
                     <Stack spacing={0.5} sx={{ minWidth: 160 }}>
-                      <Typography fontWeight={800}>Changed At</Typography>
+                      <Typography fontWeight={800}>변경일시</Typography>
                       <Typography color="text.secondary">
                         {formatDate(item.changedAt)}
                       </Typography>
@@ -165,25 +210,19 @@ export default function PatientInfoHistoryPage() {
 
                   <Divider sx={{ my: 1.5 }} />
 
-                  <Stack spacing={1}>
-                    <Stack spacing={0.5}>
-                      <Typography fontWeight={800}>Before</Typography>
-                      <Typography
-                        color="text.secondary"
-                        sx={{ fontFamily: "Consolas, monospace", fontSize: 12 }}
-                      >
-                        {truncate(item.beforeData)}
+                  <Stack spacing={1.5} direction={{ xs: "column", md: "row" }} sx={{ gap: 2 }}>
+                    <Box sx={{ flex: 1, p: 1.5, borderRadius: 1, bgcolor: "rgba(0,0,0,0.03)" }}>
+                      <Typography fontWeight={800} sx={{ mb: 1, fontSize: 13 }}>
+                        변경 전
                       </Typography>
-                    </Stack>
-                    <Stack spacing={0.5}>
-                      <Typography fontWeight={800}>After</Typography>
-                      <Typography
-                        color="text.secondary"
-                        sx={{ fontFamily: "Consolas, monospace", fontSize: 12 }}
-                      >
-                        {truncate(item.afterData)}
+                      {renderDataAsRows(item.beforeData)}
+                    </Box>
+                    <Box sx={{ flex: 1, p: 1.5, borderRadius: 1, bgcolor: "rgba(0,0,0,0.03)" }}>
+                      <Typography fontWeight={800} sx={{ mb: 1, fontSize: 13 }}>
+                        변경 후
                       </Typography>
-                    </Stack>
+                      {renderDataAsRows(item.afterData)}
+                    </Box>
                   </Stack>
                 </Box>
               ))}
