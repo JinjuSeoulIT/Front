@@ -118,7 +118,7 @@ export default function PatientTable({
                         <IconButton
                           size="small"
                           component={Link}
-                          href={`/patients/${p.patientId}`}
+                          href={`/patient/${p.patientId}`}
                           onClick={(e) => e.stopPropagation()}
                         >
                           <OpenInNewIcon fontSize="small" />

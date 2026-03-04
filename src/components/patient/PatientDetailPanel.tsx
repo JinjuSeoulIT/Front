@@ -72,7 +72,7 @@ export default function PatientDetailPanel({ primary, onNavigateToDetail }: Prop
               variant="outlined"
               size="small"
               component={Link}
-              href={`/patients/${primary.patientId}`}
+              href={`/patient/${primary.patientId}`}
               startIcon={<OpenInNewIcon />}
             >
               상세
@@ -139,7 +139,7 @@ export default function PatientDetailPanel({ primary, onNavigateToDetail }: Prop
               <Button
                 variant="outlined"
                 component={Link}
-                href={primary ? `/patients/${primary.patientId}` : "#"}
+                href={primary ? `/patient/${primary.patientId}` : "#"}
                 disabled={!primary}
               >
                 환자 상세/수정
