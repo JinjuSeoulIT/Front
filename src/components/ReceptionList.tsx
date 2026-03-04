@@ -151,6 +151,9 @@ const isClosedReceptionStatus = (value?: string | null) => {
   return normalized === "CANCELED" || normalized === "INACTIVE";
 };
 
+const isEmergencyVisitType = (value?: string | null) =>
+  (value ?? "").trim().toUpperCase() === "EMERGENCY";
+
 const extractDateKeyFromReceptionNo = (value?: string | null) => {
   if (!value) return null;
   const match = value.trim().match(/^(\d{4})(\d{2})(\d{2})-/);
@@ -352,7 +355,9 @@ export default function ReceptionList({
       (isCanceledView
         ? list
         : list.filter((p) => normalizeStatus(p.status) !== "CANCELED")
-      ).filter((p) => isTodayReception(p, todayKey)),
+      )
+        .filter((p) => !isEmergencyVisitType(p.visitType))
+        .filter((p) => isTodayReception(p, todayKey)),
     [isCanceledView, list, todayKey]
   );
 
@@ -512,9 +517,10 @@ export default function ReceptionList({
     dispatch(receptionActions.fetchReceptionRequest({ receptionId: String(p.receptionId) }));
   };
 
-  const onCancel = (receptionId: string) => {
+  const onCancel = (reception: Reception) => {
+    if (isEmergencyVisitType(reception.visitType)) return;
     if (!confirm("접수를 취소 처리하시겠습니까?")) return;
-    dispatch(receptionActions.cancelReceptionRequest({ receptionId }));
+    dispatch(receptionActions.cancelReceptionRequest({ receptionId: String(reception.receptionId) }));
   };
 
   React.useEffect(() => {
@@ -850,12 +856,6 @@ export default function ReceptionList({
                 >
                   접수 수정
                 </Button>
-                <Button variant="outlined" sx={{ color: "#2b5aa9" }}>
-                  검사 기록
-                </Button>
-                <Button variant="outlined" sx={{ color: "#2b5aa9" }}>
-                  처방 이력
-                </Button>
               </Stack>
             </CardContent>
           </Card>
@@ -949,9 +949,10 @@ export default function ReceptionList({
                         <IconButton
                           size="small"
                           color="warning"
+                          disabled={loading || isEmergencyVisitType(p.visitType)}
                           onClick={(e) => {
                             e.stopPropagation();
-                            onCancel(String(p.receptionId));
+                            onCancel(p);
                           }}
                         >
                           <BlockOutlinedIcon fontSize="small" />
