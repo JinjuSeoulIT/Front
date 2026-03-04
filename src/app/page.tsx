@@ -22,18 +22,18 @@ import MonetizationOnOutlinedIcon from "@mui/icons-material/MonetizationOnOutlin
 const ROLES = [
   {
     key: "doctor",
-    label: "의사",
+    label: "진료",
     desc: "진료/차트/오더 중심 화면",
-    href: "/doctor",
+    href: "/treat/dashboard",
     icon: <LocalHospitalOutlinedIcon />,
     tone:
       "linear-gradient(135deg, rgba(40, 110, 165, 0.22), rgba(40, 110, 165, 0))",
   },
   {
     key: "nurse",
-    label: "간호",
+    label: "진료 지원",
     desc: "처치/바이탈/병동 모니터링",
-    href: "/nurse",
+    href: "/medical_support/dashboard",
     icon: <MedicalServicesOutlinedIcon />,
     tone:
       "linear-gradient(135deg, rgba(23, 162, 142, 0.22), rgba(23, 162, 142, 0))",
@@ -42,7 +42,7 @@ const ROLES = [
     key: "reception",
     label: "접수",
     desc: "초진 등록/접수/예약",
-    href: "/reception",
+    href: "/reception/dashboard",
     icon: <FactCheckOutlinedIcon />,
     tone:
       "linear-gradient(135deg, rgba(217, 119, 6, 0.22), rgba(217, 119, 6, 0))",
@@ -51,7 +51,7 @@ const ROLES = [
     key: "billing",
     label: "수납",
     desc: "수납/결제/보험 처리",
-    href: "/billing",
+    href: "/receipt/dashboard",
     icon: <MonetizationOnOutlinedIcon />,
     tone:
       "linear-gradient(135deg, rgba(245, 158, 11, 0.22), rgba(245, 158, 11, 0))",
@@ -60,23 +60,23 @@ const ROLES = [
     key: "patients",
     label: "환자",
     desc: "환자 목록/상세/기록",
-    href: "/patients",
+    href: "/patient/list",
     icon: <PersonSearchOutlinedIcon />,
     tone:
       "linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(59, 130, 246, 0))",
   },
   {
     key: "staff",
-    label: "스탭",
+    label: "의료진",
     desc: "직원/근무/권한 배정",
-    href: "/staff",
+    href: "/staff/dashboard",
     icon: <BadgeOutlinedIcon />,
     tone:
       "linear-gradient(135deg, rgba(24, 90, 158, 0.18), rgba(24, 90, 158, 0))",
   },
   {
     key: "admin",
-    label: "관리자",
+    label: "로그인",
     desc: "운영 KPI, 권한, 감사 로그",
     href: "/admin",
     icon: <AdminPanelSettingsOutlinedIcon />,
@@ -132,7 +132,7 @@ export default function HomePage() {
               >
                 <Button
                   component={Link}
-                  href="/reception"
+                  href="/reception/dashboard"
                   variant="contained"
                   sx={{ bgcolor: "var(--brand)", px: 2.5 }}
                 >
@@ -140,7 +140,7 @@ export default function HomePage() {
                 </Button>
                 <Button
                   component={Link}
-                  href="/patients"
+                  href="/patient/list"
                   variant="outlined"
                   sx={{ px: 2.5 }}
                 >
