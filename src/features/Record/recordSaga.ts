@@ -7,9 +7,10 @@ import {
   fetchRecordsApi,
   type NursingRecordCreatePayload,
   type NursingRecordUpdatePayload,
+  searchRecordApi,
   updateRecordApi,
 } from "@/lib/recordApi";
-import { createRecordFailure, createRecordRequest, createRecordSuccess, deleteRecordFailure, deleteRecordRequest, deleteRecordSuccess, fetchRecordFailure, fetchRecordRequest, fetchRecordsFailure, fetchRecordsRequest, fetchRecordsSuccess, fetchRecordSuccess, updateRecordFailure, updateRecordRequest, updateRecordSuccess } from "./recordSlice";
+import { createRecordFailure, createRecordRequest, createRecordSuccess, deleteRecordFailure, deleteRecordRequest, deleteRecordSuccess, fetchRecordFailure, fetchRecordRequest, fetchRecordsFailure, fetchRecordsRequest, fetchRecordsSuccess, fetchRecordSuccess, searchRecordFailure, searchRecordRequest, searchRecordSuccess, updateRecordFailure, updateRecordRequest, updateRecordSuccess } from "./recordSlice";
 import type { RecordItem } from "./recordTypes";
 
 const errorMessage = (err: unknown, fallback: string) => {
@@ -68,10 +69,21 @@ function* deleteRecordSaga(action: PayloadAction<string>) {
   }
 }
 
+function* searchRecordSaga(action: PayloadAction<{searchType:string; searchValue:string}>) {
+  try {
+    const list: RecordItem[] = yield call(searchRecordApi,searchType,searchValue);
+    yield put(searchRecordSuccess(list));
+  } catch (err: unknown) {
+    yield put(searchRecordFailure(errorMessage(err, "간호 기록 목록 조회 실패")));
+  }
+}
+
 export function* watchRecordSaga() {
   yield takeLatest(fetchRecordsRequest.type, fetchRecordsSaga);
   yield takeLatest(fetchRecordRequest.type, fetchRecordSaga);
   yield takeLatest(createRecordRequest.type, createRecordSaga);
   yield takeLatest(updateRecordRequest.type, updateRecordSaga);
   yield takeLatest(deleteRecordRequest.type, deleteRecordSaga);
+   yield takeLatest(searchRecordRequest.type, searchRecordSaga);
+
 }

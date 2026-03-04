@@ -93,6 +93,20 @@ const recordSlice = createSlice({
       state.error = action.payload;
     },
 
+    
+    searchRecordRequest(state, _action: PayloadAction<{searchType:string; searchValue:string}>) {
+      state.loading = true;
+      state.error = null;
+    },
+    searchRecordSuccess(state, action: PayloadAction<RecordItem[]>) {
+      state.loading = false;
+      state.list = action.payload;
+    },
+   searchRecordFailure(state, action: PayloadAction<string>) {
+      state.loading = false;
+      state.error = action.payload;
+    }
+
   },
 });
 
@@ -113,6 +127,10 @@ export const {
   deleteRecordRequest,
   deleteRecordSuccess,
   deleteRecordFailure,
+  searchRecordRequest,
+  searchRecordSuccess,
+  searchRecordFailure
+
 }
 
 = recordSlice.actions;

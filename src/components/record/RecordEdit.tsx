@@ -11,7 +11,7 @@ import RecordForm from "./RecordForm";
 export default function RecordEdit() {
   const router = useRouter();
   const dispatch = useDispatch<AppDispatch>();
-  const { id: nursingId } = useParams<{ id: string }>();
+  const { nursingId } = useParams<{ nursingId: string }>();
   const { selected, loading, error } = useSelector((s: RootState) => s.records);
 
   useEffect(() => {
@@ -35,7 +35,7 @@ if (!selected) return <CircularProgress />
             dispatch(updateRecordRequest({ nursingId, form: payload }));
             router.push("/nurse/record");
           }}
-          onCancel={() => router.push("/nurse/record")}
+          onCancel={() => router.push("/nurse/record/list")}
         />
       </CardContent>
     </Card>
