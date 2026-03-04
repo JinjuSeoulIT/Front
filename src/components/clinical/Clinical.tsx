@@ -1,8 +1,9 @@
-﻿"use client";
+"use client";
 
 import * as React from "react";
 import MainLayout from "@/components/layout/MainLayout";
 import {
+  Alert,
   Box,
   Card,
   CardContent,
@@ -16,7 +17,10 @@ import {
   Tabs,
   Tab,
   Avatar,
+  Pagination,
+  useMediaQuery,
 } from "@mui/material";
+import { useTheme } from "@mui/material/styles";
 import SearchOutlinedIcon from "@mui/icons-material/SearchOutlined";
 import LocalHospitalOutlinedIcon from "@mui/icons-material/LocalHospitalOutlined";
 import AssignmentOutlinedIcon from "@mui/icons-material/AssignmentOutlined";
@@ -25,8 +29,45 @@ import PhotoLibraryOutlinedIcon from "@mui/icons-material/PhotoLibraryOutlined";
 import ChecklistOutlinedIcon from "@mui/icons-material/ChecklistOutlined";
 import ChatOutlinedIcon from "@mui/icons-material/ChatOutlined";
 import { fetchPatientsApi } from "@/lib/patientApi";
-import { fetchVisitsApi, type VisitRes } from "@/lib/receptionApi";
 import type { Patient } from "@/features/patients/patientTypes";
+
+type VisitRes = {
+  id?: number;
+  visitId?: number;
+  patientId: number;
+  visitType?: string | null;
+  status?: string | null;
+  visitStatus?: string | null;
+  priorityYn?: boolean;
+};
+
+type ApiEnvelope<T> = {
+  success?: boolean;
+  message?: string | null;
+  data?: T;
+  result?: T;
+};
+
+const CLINICAL_API_BASE =
+  process.env.NEXT_PUBLIC_CLINICAL_API_BASE_URL ?? "http://localhost:8090";
+
+async function fetchClinicalVisitsApi(): Promise<VisitRes[]> {
+  const res = await fetch(`${CLINICAL_API_BASE}/api/clinicals`, { cache: "no-store" });
+  if (!res.ok) throw new Error(`진료 조회 실패 (${res.status})`);
+  const body = (await res.json()) as ApiEnvelope<VisitRes[]> | VisitRes[];
+  if (Array.isArray(body)) return body;
+  const value = body.data ?? body.result ?? [];
+  return Array.isArray(value) ? value : [];
+}
+
+async function createClinicalVisitApi(patientId: number): Promise<void> {
+  const res = await fetch(`${CLINICAL_API_BASE}/api/clinicals`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ patientId, visitType: "OUT" }),
+  });
+  if (!res.ok) throw new Error(`신규 진료 생성 실패 (${res.status})`);
+}
 
 
 const DUMMY_ORDERS = [
@@ -72,44 +113,110 @@ function sexLabel(g?: string | null) {
   return "-";
 }
 
-export default function DoctorPage() {
+function formatBirth(dateStr?: string | null) {
+  if (!dateStr) return "-";
+  const d = new Date(dateStr);
+  if (Number.isNaN(d.getTime())) return "-";
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(
+    d.getDate()
+  ).padStart(2, "0")}`;
+}
+
+function visitStatusView(status?: string | null) {
+  switch (status) {
+    case "WAITING":
+    case "READY":
+      return { label: "대기", color: "warning" as const };
+    case "CALLED":
+      return { label: "호출", color: "info" as const };
+    case "IN_PROGRESS":
+      return { label: "진료중", color: "success" as const };
+    case "DONE":
+    case "COMPLETED":
+      return { label: "완료", color: "default" as const };
+    case "CANCELLED":
+      return { label: "취소", color: "error" as const };
+    default:
+      return { label: "미분류", color: "default" as const };
+  }
+}
+
+function resolveVisitStatus(v?: VisitRes | null) {
+  return v?.status ?? v?.visitStatus ?? null;
+}
+
+export default function ClinicalPage() {
+  const LEFT_LIST_PAGE_SIZE = 5;
+  const theme = useTheme();
+  const isCompact = useMediaQuery(theme.breakpoints.down("xl"));
   const [patients, setPatients] = React.useState<Patient[]>([]);
   const [visits, setVisits] = React.useState<VisitRes[]>([]);
   const [loading, setLoading] = React.useState(false);
   const [query, setQuery] = React.useState("");
   const [tab, setTab] = React.useState<"WAIT" | "RESERVATION" | "ALL">("WAIT");
+  const [leftPage, setLeftPage] = React.useState(1);
   const [selectedPatientId, setSelectedPatientId] = React.useState<number | null>(null);
+  const [safetyChecked, setSafetyChecked] = React.useState(false);
+  const [errorMessage, setErrorMessage] = React.useState<string | null>(null);
+
+  const loadData = React.useCallback(async () => {
+    try {
+      setErrorMessage(null);
+      setLoading(true);
+      const [patientsResult, visitsResult] = await Promise.allSettled([
+        fetchPatientsApi(),
+        fetchClinicalVisitsApi(),
+      ]);
+
+      if (patientsResult.status === "fulfilled") {
+        setPatients(patientsResult.value);
+      } else {
+        setPatients([]);
+        setErrorMessage("환자 목록을 불러오지 못했습니다.");
+      }
+
+      if (visitsResult.status === "fulfilled") {
+        setVisits(visitsResult.value);
+      } else {
+        setVisits([]);
+        setErrorMessage("진료 목록 연결에 실패했습니다. 환자 목록만 표시합니다.");
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "데이터를 불러오지 못했습니다.";
+      setErrorMessage(message);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   React.useEffect(() => {
-    let mounted = true;
-    const load = async () => {
-      try {
-        setLoading(true);
-        const [p, v] = await Promise.all([
-          fetchPatientsApi().catch(() => [] as Patient[]),
-          fetchVisitsApi().catch(() => [] as VisitRes[]),
-        ]);
-        if (!mounted) return;
-        setPatients(p);
-        setVisits(v);
-      } finally {
-        if (mounted) setLoading(false);
-      }
-    };
-    load();
-    return () => {
-      mounted = false;
-    };
-  }, []);
+    loadData();
+  }, [loadData]);
+
+  React.useEffect(() => {
+    const timer = setInterval(() => {
+      loadData();
+    }, 20000);
+    return () => clearInterval(timer);
+  }, [loadData]);
 
   const queue = React.useMemo(() => {
     if (!visits.length) return [];
     return visits.filter((v) => {
-      if (tab === "WAIT") return v.status === "WAITING" || v.status === "CALLED";
+      const status = resolveVisitStatus(v);
+      if (tab === "WAIT") return status === "WAITING" || status === "CALLED" || status === "READY";
       if (tab === "RESERVATION") return v.visitType === "RESERVATION";
       return true;
     });
   }, [visits, tab]);
+
+  const visitByPatientId = React.useMemo(() => {
+    const m = new Map<number, VisitRes>();
+    for (const v of visits) {
+      if (!m.has(v.patientId)) m.set(v.patientId, v);
+    }
+    return m;
+  }, [visits]);
 
   const patientMap = React.useMemo(() => {
     const m = new Map<number, Patient>();
@@ -140,7 +247,46 @@ export default function DoctorPage() {
     return patients[0] ?? null;
   }, [selectedPatientId, listForLeft, patients, patientMap]);
 
+  const totalLeftPages = Math.max(1, Math.ceil(listForLeft.length / LEFT_LIST_PAGE_SIZE));
+
+  const paginatedLeftList = React.useMemo(() => {
+    const start = (leftPage - 1) * LEFT_LIST_PAGE_SIZE;
+    return listForLeft.slice(start, start + LEFT_LIST_PAGE_SIZE);
+  }, [listForLeft, leftPage, LEFT_LIST_PAGE_SIZE]);
+
+  const selectedVisit = selectedPatient ? visitByPatientId.get(selectedPatient.patientId) ?? null : null;
+  const selectedStatus = visitStatusView(resolveVisitStatus(selectedVisit));
   const vitals = selectedPatient ? "체온 37.5 · 맥박 90 · 혈압 118/76" : "-";
+
+  React.useEffect(() => {
+    setSafetyChecked(false);
+  }, [selectedPatientId]);
+
+  React.useEffect(() => {
+    setLeftPage(1);
+  }, [query, tab]);
+
+  React.useEffect(() => {
+    if (leftPage > totalLeftPages) {
+      setLeftPage(totalLeftPages);
+    }
+  }, [leftPage, totalLeftPages]);
+
+  const handleStartNewVisit = React.useCallback(async () => {
+    if (!selectedPatient) {
+      window.alert("환자를 먼저 선택해 주세요.");
+      return;
+    }
+    try {
+      setErrorMessage(null);
+      await createClinicalVisitApi(selectedPatient.patientId);
+      await loadData();
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "신규 진료 생성에 실패했습니다.";
+      setErrorMessage(message);
+      window.alert(message);
+    }
+  }, [selectedPatient, loadData]);
 
   return (
     <MainLayout showSidebar={false}>
@@ -155,6 +301,11 @@ export default function DoctorPage() {
           }}
         >
           <CardContent sx={{ p: 3 }}>
+            {errorMessage && (
+              <Alert severity="error" sx={{ mb: 2 }}>
+                {errorMessage}
+              </Alert>
+            )}
             <Stack direction={{ xs: "column", md: "row" }} spacing={2} alignItems="center">
               <Stack spacing={0.5} sx={{ flexGrow: 1 }}>
                 <Typography sx={{ fontSize: 22, fontWeight: 900 }}>
@@ -165,6 +316,7 @@ export default function DoctorPage() {
                 </Typography>
               </Stack>
               <TextField
+                id="clinical-patient-search"
                 size="small"
                 placeholder="환자 검색"
                 value={query}
@@ -178,7 +330,11 @@ export default function DoctorPage() {
                 }}
                 sx={{ bgcolor: "rgba(255,255,255,0.85)", borderRadius: 2, minWidth: 220 }}
               />
-              <Button variant="contained" sx={{ bgcolor: "var(--brand)" }}>
+              <Button
+                variant="contained"
+                sx={{ bgcolor: "var(--brand)" }}
+                onClick={() => void handleStartNewVisit()}
+              >
                 신규 진료 시작
               </Button>
             </Stack>
@@ -194,7 +350,14 @@ export default function DoctorPage() {
           }}
         >
           <Card sx={{ borderRadius: 3, border: "1px solid var(--line)" }}>
-            <CardContent sx={{ p: 2.5 }}>
+            <CardContent
+              sx={{
+                p: isCompact ? 2 : 2.5,
+                display: "flex",
+                flexDirection: "column",
+                minHeight: { xs: 420, lg: 620 },
+              }}
+            >
               <Stack direction="row" spacing={1} alignItems="center" justifyContent="space-between">
                 <Stack direction="row" spacing={1} alignItems="center">
                   <LocalHospitalOutlinedIcon sx={{ color: "var(--brand)" }} />
@@ -207,13 +370,13 @@ export default function DoctorPage() {
                 <Tab label="예약" value="RESERVATION" />
                 <Tab label="전체" value="ALL" />
               </Tabs>
-              <Stack spacing={1.25} sx={{ mt: 2 }}>
-                {listForLeft.map((p) => (
+              <Stack spacing={1.25} sx={{ mt: 2, flexGrow: 1 }}>
+                {paginatedLeftList.map((p) => (
                   <Box
                     key={`${p.patientId}-${p.patientNo ?? ""}`}
                     onClick={() => setSelectedPatientId(p.patientId)}
                     sx={{
-                      p: 1.5,
+                      p: isCompact ? 1.1 : 1.5,
                       borderRadius: 2,
                       border: "1px solid var(--line)",
                       bgcolor:
@@ -225,9 +388,19 @@ export default function DoctorPage() {
                   >
                     <Stack direction="row" justifyContent="space-between">
                       <Typography fontWeight={700}>{p.name}</Typography>
-                      <Chip label={sexLabel(p.gender)} size="small" />
+                      <Stack direction="row" spacing={0.75}>
+                        <Chip label={sexLabel(p.gender)} size="small" />
+                        <Chip
+                          label={visitStatusView(resolveVisitStatus(visitByPatientId.get(p.patientId))).label}
+                          color={visitStatusView(resolveVisitStatus(visitByPatientId.get(p.patientId))).color}
+                          size="small"
+                        />
+                        {visitByPatientId.get(p.patientId)?.priorityYn && (
+                          <Chip label="우선" size="small" color="error" />
+                        )}
+                      </Stack>
                     </Stack>
-                    <Typography sx={{ color: "var(--muted)", fontSize: 12 }}>
+                    <Typography sx={{ color: "var(--muted)", fontSize: isCompact ? 11 : 12 }}>
                       {p.patientNo ?? p.patientId} · {calcAge(p.birthDate)} · {p.phone ?? "-"}
                     </Typography>
                   </Box>
@@ -236,12 +409,22 @@ export default function DoctorPage() {
                   <Typography color="text.secondary">대기 환자가 없습니다.</Typography>
                 )}
               </Stack>
+              <Stack sx={{ mt: 1.5, pt: 1, borderTop: "1px solid var(--line)" }} alignItems="center">
+                <Pagination
+                  page={leftPage}
+                  count={totalLeftPages}
+                  size="small"
+                  color="primary"
+                  disabled={listForLeft.length === 0}
+                  onChange={(_, page) => setLeftPage(page)}
+                />
+              </Stack>
             </CardContent>
           </Card>
 
           <Stack spacing={2}>
             <Card sx={{ borderRadius: 3, border: "1px solid var(--line)" }}>
-              <CardContent sx={{ p: 2.5 }}>
+              <CardContent sx={{ p: isCompact ? 2 : 2.5 }}>
                 <Stack direction="row" spacing={2} alignItems="center" justifyContent="space-between">
                   <Stack direction="row" spacing={1.5} alignItems="center">
                     <Avatar sx={{ bgcolor: "var(--brand)" }}>
@@ -257,15 +440,33 @@ export default function DoctorPage() {
                     </Stack>
                   </Stack>
                   <Stack direction="row" spacing={1}>
+                    <Chip label={selectedStatus.label} color={selectedStatus.color} size="small" />
                     <Chip label="건강보험" size="small" />
                     <Chip label={vitals} size="small" />
                   </Stack>
+                </Stack>
+                <Alert severity="warning" sx={{ mt: 1.5 }}>
+                  환자안전 확인: {selectedPatient?.name ?? "-"} / {selectedPatient?.patientNo ?? "-"} /
+                  {formatBirth(selectedPatient?.birthDate)}
+                </Alert>
+                <Stack direction="row" spacing={1} sx={{ mt: 1.25 }} alignItems="center">
+                  <Button
+                    variant={safetyChecked ? "contained" : "outlined"}
+                    color={safetyChecked ? "success" : "inherit"}
+                    size="small"
+                    onClick={() => setSafetyChecked((prev) => !prev)}
+                  >
+                    {safetyChecked ? "환자 확인 완료" : "환자 확인 전"}
+                  </Button>
+                  <Typography sx={{ color: "var(--muted)", fontSize: 12 }}>
+                    저장/진료종료 전 환자 정보 이중확인을 강제합니다.
+                  </Typography>
                 </Stack>
               </CardContent>
             </Card>
 
             <Card sx={{ borderRadius: 3, border: "1px solid var(--line)" }}>
-              <CardContent sx={{ p: 2.5 }}>
+              <CardContent sx={{ p: isCompact ? 2 : 2.5 }}>
                 <Stack direction="row" spacing={1} alignItems="center">
                   <AssignmentOutlinedIcon sx={{ color: "var(--brand-strong)" }} />
                   <Typography fontWeight={800}>진료 기록</Typography>
@@ -288,16 +489,27 @@ export default function DoctorPage() {
                   </Stack>
                 </Box>
                 <Stack direction="row" spacing={1} sx={{ mt: 2 }}>
-                  <Button variant="contained" sx={{ bgcolor: "var(--brand)" }}>
+                  <Button
+                    variant="contained"
+                    sx={{ bgcolor: "var(--brand)" }}
+                    disabled={!safetyChecked}
+                    onClick={() => window.alert("처방 저장 처리 예정")}
+                  >
                     처방 저장
                   </Button>
-                  <Button variant="outlined">진료 종료</Button>
+                  <Button
+                    variant="outlined"
+                    disabled={!safetyChecked}
+                    onClick={() => window.alert("진료 종료 처리 예정")}
+                  >
+                    진료 종료
+                  </Button>
                 </Stack>
               </CardContent>
             </Card>
 
             <Card sx={{ borderRadius: 3, border: "1px solid var(--line)" }}>
-              <CardContent sx={{ p: 2.5 }}>
+              <CardContent sx={{ p: isCompact ? 2 : 2.5 }}>
                 <Stack direction="row" spacing={1} alignItems="center">
                   <ChecklistOutlinedIcon sx={{ color: "var(--brand)" }} />
                   <Typography fontWeight={800}>진단 및 처방</Typography>
@@ -327,7 +539,7 @@ export default function DoctorPage() {
 
           <Stack spacing={2}>
             <Card sx={{ borderRadius: 3, border: "1px solid var(--line)" }}>
-              <CardContent sx={{ p: 2.5 }}>
+              <CardContent sx={{ p: isCompact ? 2 : 2.5 }}>
                 <Stack direction="row" spacing={1} alignItems="center">
                   <ScienceOutlinedIcon sx={{ color: "var(--accent)" }} />
                   <Typography fontWeight={800}>오더세트 / 검사</Typography>
@@ -366,7 +578,7 @@ export default function DoctorPage() {
             </Card>
 
             <Card sx={{ borderRadius: 3, border: "1px solid var(--line)" }}>
-              <CardContent sx={{ p: 2.5 }}>
+              <CardContent sx={{ p: isCompact ? 2 : 2.5 }}>
                 <Stack direction="row" spacing={1} alignItems="center">
                   <ChatOutlinedIcon sx={{ color: "var(--brand)" }} />
                   <Typography fontWeight={800}>환자기록 / 메시지</Typography>

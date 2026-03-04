@@ -1,10 +1,10 @@
-﻿import MainLayout from "@/components/layout/MainLayout";
-import Clinic from "@/components/clinical/Clinic";
+import MainLayout from "@/components/layout/MainLayout";
+import Clinical from "@/components/clinical/Clinical";
 
 export default function PatientsPage() {
   return (
     <MainLayout>
-      <Clinic />
+      <Clinical />
     </MainLayout>
   );
 }
