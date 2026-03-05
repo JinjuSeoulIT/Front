@@ -41,14 +41,17 @@ import type { Patient } from "@/features/patients/patientTypes";
 import {
   fetchClinicalOrdersApi,
   createClinicalOrderApi,
+  updateClinicalOrderStatusApi,
   type ClinicalOrder,
   type LabOrderType,
+  type OrderStatus,
 } from "@/lib/clinicalOrderApi";
 
 type ClinicalRes = {
   id?: number;
   clinicalId?: number;
-  patientId: number;
+  patientId?: number;
+  receptionId?: number;
   clinicalType?: string | null;
   status?: string | null;
   clinicalStatus?: string | null;
@@ -65,21 +68,46 @@ type ApiEnvelope<T> = {
 const CLINICAL_API_BASE =
   process.env.NEXT_PUBLIC_CLINICAL_API_BASE_URL ?? "http://localhost:8090";
 
+function isNetworkError(e: unknown): boolean {
+  if (e instanceof TypeError && (e.message === "Failed to fetch" || e.message.includes("fetch"))) return true;
+  if (e instanceof Error && e.message.includes("ERR_CONNECTION_REFUSED")) return true;
+  return false;
+}
+
+function clinicalConnectionMessage(): string {
+  const base = process.env.NEXT_PUBLIC_CLINICAL_API_BASE_URL ?? "http://localhost:8090";
+  return `진료 서버에 연결할 수 없습니다. hospital-clinical 백엔드(${base})가 실행 중인지 확인해 주세요.`;
+}
+
 async function fetchClinicalApi(): Promise<ClinicalRes[]> {
-  const res = await fetch(`${CLINICAL_API_BASE}/api/clinicals`, { cache: "no-store" });
+  let res: Response;
+  try {
+    res = await fetch(`${CLINICAL_API_BASE}/api/clinicals`, { cache: "no-store" });
+  } catch (e) {
+    if (isNetworkError(e)) throw new Error(clinicalConnectionMessage());
+    throw e;
+  }
   if (!res.ok) throw new Error(`진료 조회 실패 (${res.status})`);
   const body = (await res.json()) as ApiEnvelope<ClinicalRes[]> | ClinicalRes[];
-  if (Array.isArray(body)) return body;
-  const value = body.data ?? body.result ?? [];
-  return Array.isArray(value) ? value : [];
+  const raw = Array.isArray(body) ? body : (body?.data ?? body?.result ?? []) as ClinicalRes[];
+  return raw.map((c) => ({
+    ...c,
+    patientId: c.patientId ?? c.receptionId,
+  }));
 }
 
 async function createClinicalApi(patientId: number): Promise<void> {
-  const res = await fetch(`${CLINICAL_API_BASE}/api/clinicals`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ patientId, clinicalType: "OUT" }),
-  });
+  let res: Response;
+  try {
+    res = await fetch(`${CLINICAL_API_BASE}/api/clinicals`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ patientId, clinicalType: "OUT" }),
+    });
+  } catch (e) {
+    if (isNetworkError(e)) throw new Error(clinicalConnectionMessage());
+    throw e;
+  }
   if (!res.ok) {
     const body = await res.json().catch(() => ({})) as { message?: string };
     const msg = body?.message ?? `신규 진료 생성 실패 (${res.status})`;
@@ -94,17 +122,23 @@ const ORDER_TYPE_LABELS: Record<LabOrderType, string> = {
   PROCEDURE: "처치",
 };
 
+const ORDER_STATUS_LABELS: Record<string, string> = {
+  REQUESTED: "요청",
+  REQUEST: "요청",
+  IN_PROGRESS: "진행",
+  COMPLETED: "완료",
+  CANCELLED: "취소",
+};
+
+function orderStatusLabel(status?: string | null) {
+  if (!status) return "미분류";
+  return ORDER_STATUS_LABELS[status] ?? status;
+}
+
 const DUMMY_MESSAGES = [
   { time: "09:54", text: "검사실: 알러지 검사 결과 확인 요청" },
   { time: "10:21", text: "원무: 재진 예약 변경 문의" },
   { time: "11:05", text: "간호: 처치 보조 필요" },
-];
-
-const DUMMY_RESULTS = [
-  "L209 아토피 피부염",
-  "알레르기 검사 10",
-  "비타민 D 25-(OH)",
-  "IgE 특이 항체 검사",
 ];
 
 const DUMMY_SOAP = {
@@ -184,6 +218,7 @@ export default function ClinicalPage() {
   const [newOrderType, setNewOrderType] = React.useState<LabOrderType>("BLOOD");
   const [newOrderName, setNewOrderName] = React.useState("");
   const [creatingOrder, setCreatingOrder] = React.useState(false);
+  const [updatingOrderId, setUpdatingOrderId] = React.useState<number | null>(null);
 
   const loadOrders = React.useCallback(async (clinicalId: number) => {
     setOrdersLoading(true);
@@ -217,7 +252,9 @@ export default function ClinicalPage() {
         setClinicals(clinicalsResult.value);
       } else {
         setClinicals([]);
-        setErrorMessage("진료 목록 연결에 실패했습니다. 환자 목록만 표시합니다.");
+        const reason = clinicalsResult.status === "rejected" ? clinicalsResult.reason : undefined;
+        const msg = reason instanceof Error ? reason.message : "진료 목록 연결에 실패했습니다. 환자 목록만 표시합니다.";
+        setErrorMessage(msg);
       }
     } catch (err) {
       const message = err instanceof Error ? err.message : "데이터를 불러오지 못했습니다.";
@@ -244,7 +281,8 @@ export default function ClinicalPage() {
   const clinicalByPatientId = React.useMemo(() => {
     const m = new Map<number, ClinicalRes>();
     for (const v of clinicals) {
-      if (!m.has(v.patientId)) m.set(v.patientId, v);
+      const key = v.patientId ?? v.receptionId;
+      if (key != null && !m.has(key)) m.set(key, v);
     }
     return m;
   }, [clinicals]);
@@ -258,7 +296,7 @@ export default function ClinicalPage() {
   const listForLeft = React.useMemo(() => {
     const k = query.trim().toLowerCase();
     const base = queue.length
-      ? (queue.map((v) => patientMap.get(v.patientId)).filter(Boolean) as Patient[])
+      ? (queue.map((v) => patientMap.get(v.patientId ?? v.receptionId ?? 0)).filter(Boolean) as Patient[])
       : patients;
     const filtered = k
       ? base.filter((p) =>
@@ -300,6 +338,11 @@ export default function ClinicalPage() {
       count: counts[type],
     }));
   }, [orders]);
+
+  const completedOrders = React.useMemo(
+    () => orders.filter((o) => o.status === "COMPLETED"),
+    [orders]
+  );
 
   React.useEffect(() => {
     if (currentClinicalId != null) loadOrders(currentClinicalId);
@@ -623,13 +666,82 @@ export default function ClinicalPage() {
                         </Box>
                       ))}
                     </Stack>
+                    <Typography fontWeight={700} sx={{ mt: 2, mb: 1 }}>검사 상태 관리 (요청/진행/완료)</Typography>
+                    <Typography sx={{ fontSize: 12, color: "var(--muted)", mb: 1 }}>
+                      현재 환자: {selectedPatient?.name ?? "-"}
+                    </Typography>
+                    <Stack spacing={1}>
+                      {orders.map((ord) => (
+                        <Box
+                          key={ord.id}
+                          sx={{
+                            p: 1.25,
+                            borderRadius: 2,
+                            border: "1px solid var(--line)",
+                            bgcolor: "rgba(255,255,255,0.7)",
+                            minWidth: 0,
+                          }}
+                        >
+                          <Stack direction="row" alignItems="center" spacing={1.5} flexWrap="nowrap" sx={{ minWidth: 0 }}>
+                            <Typography sx={{ fontWeight: 600, flexShrink: 0, minWidth: 80 }}>
+                              {ORDER_TYPE_LABELS[ord.orderType]}
+                            </Typography>
+                            <Typography sx={{ flex: 1, minWidth: 0, fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                              {ord.orderName && !["BLOOD", "IMAGING", "PROCEDURE"].includes(ord.orderName)
+                                ? ord.orderName
+                                : selectedPatient?.patientNo ?? String(selectedPatient?.patientId ?? "-")}
+                            </Typography>
+                            <Chip
+                              size="small"
+                              label={orderStatusLabel(ord.status)}
+                              sx={{ fontWeight: 600, flexShrink: 0 }}
+                            />
+                            <Select
+                              size="small"
+                              value={ord.status === "REQUEST" ? "REQUESTED" : (ord.status ?? "REQUESTED")}
+                              onChange={async (e) => {
+                                const next = e.target.value as OrderStatus;
+                                const current = ord.status === "REQUEST" ? "REQUESTED" : (ord.status ?? "REQUESTED");
+                                if (currentClinicalId == null || next === current) return;
+                                setUpdatingOrderId(ord.id);
+                                try {
+                                  await updateClinicalOrderStatusApi(currentClinicalId, ord.id, next);
+                                  setOrders((prev) =>
+                                    prev.map((o) => (o.id === ord.id ? { ...o, status: next } : o))
+                                  );
+                                  await loadOrders(currentClinicalId);
+                                } catch (err) {
+                                  window.alert(err instanceof Error ? err.message : "상태 변경에 실패했습니다.");
+                                  await loadOrders(currentClinicalId);
+                                } finally {
+                                  setUpdatingOrderId(null);
+                                }
+                              }}
+                              disabled={updatingOrderId != null}
+                              sx={{ minWidth: 100, fontSize: 12, flexShrink: 0 }}
+                            >
+                              <MenuItem value="REQUESTED">{orderStatusLabel("REQUESTED")}</MenuItem>
+                              <MenuItem value="IN_PROGRESS">{orderStatusLabel("IN_PROGRESS")}</MenuItem>
+                              <MenuItem value="COMPLETED">{orderStatusLabel("COMPLETED")}</MenuItem>
+                            </Select>
+                          </Stack>
+                        </Box>
+                      ))}
+                      {orders.length === 0 && (
+                        <Typography sx={{ color: "var(--muted)", fontSize: 13 }}>등록된 검사 오더가 없습니다.</Typography>
+                      )}
+                    </Stack>
                     <Button
                       variant="outlined"
                       size="small"
                       fullWidth
                       sx={{ mt: 2 }}
-                      disabled={currentClinicalId == null}
+                      disabled={!selectedPatient}
                       onClick={() => {
+                        if (currentClinicalId == null) {
+                          window.alert("먼저 신규 진료를 시작해 주세요.");
+                          return;
+                        }
                         setNewOrderType("BLOOD");
                         setNewOrderName("");
                         setOrderDialogOpen(true);
@@ -641,15 +753,41 @@ export default function ClinicalPage() {
                 )}
                 <Divider sx={{ my: 2 }} />
                 <Typography fontWeight={700}>검사 결과</Typography>
+                <Typography sx={{ fontSize: 12, color: "var(--muted)", mt: 0.5 }}>
+                  완료된 검사 오더 기준
+                </Typography>
                 <Stack spacing={1} sx={{ mt: 1 }}>
-                  {DUMMY_RESULTS.map((r) => (
+                  {completedOrders.map((ord) => (
                     <Box
-                      key={r}
-                      sx={{ p: 1.25, borderRadius: 2, bgcolor: "rgba(11, 91, 143, 0.08)" }}
+                      key={ord.id}
+                      sx={{
+                        p: 1.25,
+                        borderRadius: 2,
+                        bgcolor: "rgba(11, 91, 143, 0.08)",
+                        border: "1px solid var(--line)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        flexWrap: "wrap",
+                        gap: 1,
+                      }}
                     >
-                      <Typography>{r}</Typography>
+                      <Typography sx={{ fontWeight: 600 }}>
+                        {ord.orderName && !["BLOOD", "IMAGING", "PROCEDURE"].includes(ord.orderName)
+                          ? ord.orderName
+                          : ORDER_TYPE_LABELS[ord.orderType]}
+                      </Typography>
+                      <Stack direction="row" spacing={1} alignItems="center">
+                        <Chip size="small" label={ORDER_TYPE_LABELS[ord.orderType]} />
+                        <Chip size="small" color="success" label={orderStatusLabel(ord.status)} />
+                      </Stack>
                     </Box>
                   ))}
+                  {completedOrders.length === 0 && (
+                    <Typography sx={{ color: "var(--muted)", fontSize: 13, py: 1 }}>
+                      완료된 검사가 없습니다.
+                    </Typography>
+                  )}
                 </Stack>
               </CardContent>
             </Card>
@@ -707,6 +845,7 @@ export default function ClinicalPage() {
               value={newOrderName}
               onChange={(e) => setNewOrderName(e.target.value)}
               placeholder="예: CBC, 흉부 X-ray, 주사"
+              helperText="입력 시 목록에서 같은 유형도 구분됩니다."
             />
           </Stack>
         </DialogContent>
