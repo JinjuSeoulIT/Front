@@ -3,7 +3,6 @@
 import * as React from "react";
 import Link from "next/link";
 import {
-  Avatar,
   Box,
   Card,
   CardContent,
@@ -24,7 +23,7 @@ import {
 import OpenInNewIcon from "@mui/icons-material/OpenInNew";
 import BlockOutlinedIcon from "@mui/icons-material/BlockOutlined";
 import type { Patient } from "@/features/patients/patientTypes";
-import { resolvePhotoUrl, sexLabel, safe, statusChipLabel } from "./PatientListUtils";
+import { sexLabel, safe, statusChipLabel } from "./PatientListUtils";
 
 type Props = {
   list: Patient[];
@@ -86,7 +85,6 @@ export default function PatientTable({
           <Table stickyHeader size="small" aria-label="patient list">
             <TableHead>
               <TableRow>
-                <TableCell sx={{ width: 56 }}>사진</TableCell>
                 <TableCell sx={{ width: 120 }}>환자번호</TableCell>
                 <TableCell sx={{ width: 110 }}>이름</TableCell>
                 <TableCell sx={{ width: 70 }}>성별</TableCell>
@@ -112,11 +110,6 @@ export default function PatientTable({
                     onClick={() => onSelect(p)}
                     onDoubleClick={() => onNavigateToDetail(p.patientId)}
                   >
-                    <TableCell>
-                      <Avatar src={resolvePhotoUrl(p.photoUrl) || undefined} sx={{ width: 28, height: 28 }}>
-                        {p.name?.slice(0, 1) ?? "?"}
-                      </Avatar>
-                    </TableCell>
                     <TableCell>{safe(p.patientNo)}</TableCell>
                     <TableCell sx={{ fontWeight: 700 }}>{p.name}</TableCell>
                     <TableCell>{sexLabel(p.gender)}</TableCell>
@@ -168,7 +161,7 @@ export default function PatientTable({
 
               {paginatedList.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={9}>
+                  <TableCell colSpan={8}>
                     <Typography sx={{ color: "text.secondary" }}>
                       조회된 환자가 없습니다.
                     </Typography>
@@ -179,7 +172,7 @@ export default function PatientTable({
               {paginatedList.length > 0 &&
                 Array.from({ length: emptyRowCount }).map((_, idx) => (
                   <TableRow key={`empty-${idx}`} sx={{ "& td": { borderBottom: "none", height: 40 } }}>
-                    <TableCell colSpan={9} />
+                    <TableCell colSpan={8} />
                   </TableRow>
                 ))}
             </TableBody>
