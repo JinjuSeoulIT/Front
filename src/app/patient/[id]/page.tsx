@@ -8,6 +8,7 @@ import { Card, CardContent, Grid, Stack, Typography } from "@mui/material";
 import { useDispatch, useSelector } from "react-redux";
 import type { RootState, AppDispatch } from "@/store/store";
 import { patientActions } from "@/features/patients/patientSlice";
+import type { PatientForm as PatientFormPayload } from "@/features/patients/patientTypes";
 import type { PatientRestriction } from "@/lib/restrictionApi";
 import { fetchPatientRestrictionsApi } from "@/lib/restrictionApi";
 import type { PatientFlag } from "@/lib/flagApi";
@@ -33,6 +34,7 @@ import PatientDetailCards from "@/components/patient/detail/PatientDetailCards";
 import PatientStatusDialog from "@/components/patient/detail/PatientStatusDialog";
 import PatientReceptionDialog from "@/components/patient/detail/PatientReceptionDialog";
 import PatientReservationDialog from "@/components/patient/detail/PatientReservationDialog";
+import PatientFormModal from "@/components/patient/PatientFormModal";
 
 export default function PatientDetailPage() {
   const params = useParams<{ id: string }>();
@@ -77,6 +79,8 @@ export default function PatientDetailPage() {
     note: "",
     memo: "",
   });
+
+  const [editDialogOpen, setEditDialogOpen] = React.useState(false);
 
   React.useEffect(() => {
     dispatch(patientActions.fetchPatientRequest({ patientId }));
@@ -144,23 +148,11 @@ export default function PatientDetailPage() {
     };
   }, []);
 
-  const cards = p
-    ? [
-        { title: "보험", desc: "환자 보험 등록/수정", href: `/patients/${patientId}/insurances` },
-        { title: "동의서", desc: "동의서 등록/파일 관리", href: `/patients/${patientId}/consents` },
-        { title: "메모", desc: "주의사항/요청사항 기록", href: `/patients/${patientId}/memos` },
-        { title: "제한", desc: "환자 제한 상태 관리", href: `/patients/${patientId}/restrictions` },
-        { title: "플래그", desc: "환자 플래그 관리", href: `/patients/${patientId}/flags` },
-        { title: "정보 변경 이력", desc: "기본정보 변경 이력", href: `/patients/${patientId}/info-history` },
-        { title: "상태 변경 이력", desc: "환자 상태 변경 이력", href: `/patients/${patientId}/status-history` },
-      ]
-    : [];
-
   const onDelete = () => {
     if (!p) return;
     if (!confirm("환자를 비활성 처리할까요?")) return;
     dispatch(patientActions.deletePatientRequest(p.patientId));
-    router.replace("/patients");
+    router.replace("/patient/list");
   };
 
   const openStatusDialog = () => {
@@ -184,6 +176,22 @@ export default function PatientDetailPage() {
     } finally {
       setVipUpdating(false);
     }
+  };
+
+  const openEditDialog = () => {
+    if (!p) return;
+    setEditDialogOpen(true);
+  };
+
+  const closeEditDialog = () => {
+    setEditDialogOpen(false);
+  };
+
+  const saveEdit = (form: PatientFormPayload) => {
+    if (!p) return;
+    dispatch(patientActions.updatePatientRequest({ patientId: p.patientId, form }));
+    setEditDialogOpen(false);
+    dispatch(patientActions.fetchPatientRequest({ patientId: p.patientId }));
   };
 
   const saveStatus = async () => {
@@ -344,6 +352,7 @@ export default function PatientDetailPage() {
                     onOpenReceptionDialog={openReceptionDialog}
                     onOpenReservationDialog={openReservationDialog}
                     onOpenStatusDialog={openStatusDialog}
+                    onOpenEditDialog={openEditDialog}
                     onDelete={onDelete}
                   />
                 </Stack>
@@ -360,7 +369,7 @@ export default function PatientDetailPage() {
           </CardContent>
         </Card>
 
-        <PatientDetailCards patientId={patientId} cards={cards} />
+        <PatientDetailCards patientId={patientId} />
       </Stack>
 
       <PatientStatusDialog
@@ -395,6 +404,17 @@ export default function PatientDetailPage() {
         departments={departments}
         saving={reservationSaving}
         onSave={saveReservation}
+      />
+
+      <PatientFormModal
+        open={editDialogOpen}
+        onClose={closeEditDialog}
+        mode="edit"
+        patient={p}
+        loading={loading}
+        error={error}
+        onSubmit={saveEdit}
+        onDelete={p ? () => onDelete() : undefined}
       />
     </MainLayout>
   );

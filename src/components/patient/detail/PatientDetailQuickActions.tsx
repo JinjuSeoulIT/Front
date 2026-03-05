@@ -20,6 +20,7 @@ type Props = {
   onOpenReceptionDialog: () => void;
   onOpenReservationDialog: () => void;
   onOpenStatusDialog: () => void;
+  onOpenEditDialog: () => void;
   onDelete: () => void;
 };
 
@@ -30,6 +31,7 @@ export default function PatientDetailQuickActions({
   onOpenReceptionDialog,
   onOpenReservationDialog,
   onOpenStatusDialog,
+  onOpenEditDialog,
   onDelete,
 }: Props) {
   return (
@@ -108,8 +110,7 @@ export default function PatientDetailQuickActions({
           {p && (
             <Button
               variant="outlined"
-              component={Link}
-              href={`/patients/${p.patientId}/edit`}
+              onClick={onOpenEditDialog}
               startIcon={<EditOutlinedIcon />}
               sx={{ fontWeight: 800, whiteSpace: "nowrap", flex: "1 1 120px", minWidth: 120 }}
             >

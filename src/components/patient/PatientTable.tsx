@@ -19,6 +19,7 @@ import {
   TableRow,
   Tooltip,
   Typography,
+  Pagination,
 } from "@mui/material";
 import OpenInNewIcon from "@mui/icons-material/OpenInNew";
 import BlockOutlinedIcon from "@mui/icons-material/BlockOutlined";
@@ -33,6 +34,8 @@ type Props = {
   onNavigateToDetail: (patientId: number) => void;
 };
 
+const ROWS_PER_PAGE = 10;
+
 export default function PatientTable({
   list,
   selected,
@@ -40,7 +43,29 @@ export default function PatientTable({
   onDeactivate,
   onNavigateToDetail,
 }: Props) {
+  const [page, setPage] = React.useState(1); // 1-based for Pagination
+
   const primary = selected ?? list[0] ?? null;
+
+  const paginatedList = React.useMemo(() => {
+    const start = (page - 1) * ROWS_PER_PAGE;
+    return list.slice(start, start + ROWS_PER_PAGE);
+  }, [list, page]);
+
+  const emptyRowCount = Math.max(0, ROWS_PER_PAGE - paginatedList.length);
+
+  const pageCount = Math.max(1, Math.ceil(list.length / ROWS_PER_PAGE));
+
+  React.useEffect(() => {
+    setPage((prev) => {
+      const next = Math.min(prev, pageCount);
+      return next < 1 ? 1 : next;
+    });
+  }, [pageCount]);
+
+  const handleChangePage = (_: React.ChangeEvent<unknown>, newPage: number) => {
+    setPage(newPage);
+  };
 
   return (
     <Card variant="outlined" sx={{ borderRadius: 2 }}>
@@ -57,7 +82,7 @@ export default function PatientTable({
 
         <Divider />
 
-        <TableContainer sx={{ maxHeight: { xs: 420, lg: 640 } }}>
+        <TableContainer sx={{ maxHeight: { xs: 420, lg: 560 } }}>
           <Table stickyHeader size="small" aria-label="patient list">
             <TableHead>
               <TableRow>
@@ -73,7 +98,7 @@ export default function PatientTable({
               </TableRow>
             </TableHead>
             <TableBody>
-              {list.map((p) => {
+              {paginatedList.map((p) => {
                 const isSelected = primary?.patientId === p.patientId;
                 return (
                   <TableRow
@@ -141,7 +166,7 @@ export default function PatientTable({
                 );
               })}
 
-              {list.length === 0 && (
+              {paginatedList.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={9}>
                     <Typography sx={{ color: "text.secondary" }}>
@@ -150,9 +175,36 @@ export default function PatientTable({
                   </TableCell>
                 </TableRow>
               )}
+
+              {paginatedList.length > 0 &&
+                Array.from({ length: emptyRowCount }).map((_, idx) => (
+                  <TableRow key={`empty-${idx}`} sx={{ "& td": { borderBottom: "none", height: 40 } }}>
+                    <TableCell colSpan={9} />
+                  </TableRow>
+                ))}
             </TableBody>
           </Table>
         </TableContainer>
+
+        <Box
+          sx={{
+            borderTop: "1px solid",
+            borderColor: "divider",
+            display: "flex",
+            justifyContent: "center",
+            py: 1,
+          }}
+        >
+          <Pagination
+            count={pageCount}
+            page={page}
+            onChange={handleChangePage}
+            shape="rounded"
+            size="small"
+            siblingCount={4}
+            boundaryCount={1}
+          />
+        </Box>
       </CardContent>
     </Card>
   );

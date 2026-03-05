@@ -21,9 +21,10 @@ type Props = {
   title: string;
   description?: string;
   basePath: string;
+  pathSuffix?: string;
 };
 
-export default function PatientSelectList({ title, description, basePath }: Props) {
+export default function PatientSelectList({ title, description, basePath, pathSuffix = "" }: Props) {
   const router = useRouter();
   const dispatch = useDispatch<AppDispatch>();
   const { list, loading } = useSelector((s: RootState) => s.patients);
@@ -34,7 +35,7 @@ export default function PatientSelectList({ title, description, basePath }: Prop
 
   const onSelect = (p: Patient) => {
     dispatch(patientActions.fetchPatientSuccess(p));
-    router.push(`${basePath}/${p.patientId}`);
+    router.push(`${basePath}/${p.patientId}${pathSuffix}`);
   };
 
   return (

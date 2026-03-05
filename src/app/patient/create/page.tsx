@@ -10,7 +10,7 @@ export default function NewPatientRedirectPage() {
   useEffect(() => {
     const name = searchParams.get("name") ?? "";
     const query = name ? `?open=registration&name=${encodeURIComponent(name)}` : "?open=registration";
-    router.replace(`/patients${query}`);
+    router.replace(`/patient/list${query}`);
   }, [router, searchParams]);
 
   return null;

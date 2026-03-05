@@ -493,7 +493,7 @@ export default function EmergencyReceptionForm({
                   variant="outlined"
                   size="small"
                   onClick={() =>
-                    router.push(`/patients?open=registration&name=${encodeURIComponent(patientKeyword.trim())}`)
+                    router.push(`/patient/list?open=registration&name=${encodeURIComponent(patientKeyword.trim())}`)
                   }
                   sx={{
                     width: "fit-content",
