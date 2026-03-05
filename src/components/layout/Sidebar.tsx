@@ -1,5 +1,6 @@
 ﻿"use client";
 
+//여기 권한컴포넌트 경로
 import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -42,6 +43,8 @@ const iconMap: Record<string, React.ReactNode> = {
   TaskAlt: <TaskAltIcon fontSize="small" />,
 };
 
+       //🧠🧠여기가 사이드바 실제 링크 (menuAPI.ts) 백엔드에서 갈래
+       //경로보정
 const legacyPathMap: Record<string, string> = {
   "/reception/reservations": "/reservations",
   "/reception/emergency": "/emergency-receptions",
@@ -49,10 +52,14 @@ const legacyPathMap: Record<string, string> = {
   "/reception/history": "/receptions/canceled",
 };
 
+       //🧠🧠여기가 사이드바 실제 링크 (menuAPI.ts) 백엔드에서 갈래
 const normalizeMenuPath = (path?: string | null) => {
   if (!path) return path;
   return legacyPathMap[path] ?? path;
 };
+
+
+
 
 export default function Sidebar({ width = 240 }: { width?: number }) {
   const pathname = usePathname();
@@ -65,6 +72,8 @@ export default function Sidebar({ width = 240 }: { width?: number }) {
     const load = async () => {
       try {
         setLoading(true);
+
+        //🧠🧠여기가 사이드바 실제 링크 (menuAPI.ts) 백엔드에서 갈래
         const data = await fetchMenusApi();
         if (mounted) {
           setMenus(data);
@@ -198,6 +207,8 @@ export default function Sidebar({ width = 240 }: { width?: number }) {
     );
 
     return (
+
+       //🧠🧠여기가 사이드바 실제 링크 (menuAPI.ts) 백엔드에서 갈래
       <React.Fragment key={node.id}>
         {node.path && !hasChildren ? (
           <ListItemButton

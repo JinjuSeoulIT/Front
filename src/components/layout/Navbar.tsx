@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import {
   AppBar,
@@ -20,7 +20,7 @@ const ROLE_LINKS = [
   { key: "nurse", label: "간호", href: "/nurse" },
   { key: "reception", label: "접수", href: "/reception" },
   { key: "billing", label: "수납", href: "/billing" },
-  { key: "patients", label: "환자", href: "/patient/list" },
+  { key: "patients", label: "환자", href: "/patients" },
   { key: "staff", label: "스탭", href: "/staff" },
   { key: "admin", label: "관리자", href: "/admin" },
 ];

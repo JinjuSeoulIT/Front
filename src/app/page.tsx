@@ -11,38 +11,50 @@ import {
   Button,
   Chip,
 } from "@mui/material";
-import LocalHospitalOutlinedIcon from "@mui/icons-material/LocalHospitalOutlined";
+
 import MedicalServicesOutlinedIcon from "@mui/icons-material/MedicalServicesOutlined";
 import FactCheckOutlinedIcon from "@mui/icons-material/FactCheckOutlined";
 import AdminPanelSettingsOutlinedIcon from "@mui/icons-material/AdminPanelSettingsOutlined";
 import BadgeOutlinedIcon from "@mui/icons-material/BadgeOutlined";
 import PersonSearchOutlinedIcon from "@mui/icons-material/PersonSearchOutlined";
+
+
+
+//의사
+import LocalHospitalOutlinedIcon from "@mui/icons-material/LocalHospitalOutlined";
+//간호
 import MonetizationOnOutlinedIcon from "@mui/icons-material/MonetizationOnOutlined";
 
+
 const ROLES = [
+  //🧠🧠
   {
     key: "doctor",
-    label: "진료",
+    label: "의사",
     desc: "진료/차트/오더 중심 화면",
-    href: "/treat/dashboard",
+    href: "/doctor",
     icon: <LocalHospitalOutlinedIcon />,
     tone:
       "linear-gradient(135deg, rgba(40, 110, 165, 0.22), rgba(40, 110, 165, 0))",
   },
+
+  //🧠🧠
   {
     key: "nurse",
-    label: "진료 지원",
+    label: "간호",
     desc: "처치/바이탈/병동 모니터링",
-    href: "/medical_support/dashboard",
+    href: "/nurse",
     icon: <MedicalServicesOutlinedIcon />,
     tone:
       "linear-gradient(135deg, rgba(23, 162, 142, 0.22), rgba(23, 162, 142, 0))",
   },
+
+
   {
     key: "reception",
     label: "접수",
     desc: "초진 등록/접수/예약",
-    href: "/reception/dashboard",
+    href: "/reception",
     icon: <FactCheckOutlinedIcon />,
     tone:
       "linear-gradient(135deg, rgba(217, 119, 6, 0.22), rgba(217, 119, 6, 0))",
@@ -51,7 +63,7 @@ const ROLES = [
     key: "billing",
     label: "수납",
     desc: "수납/결제/보험 처리",
-    href: "/receipt/dashboard",
+    href: "/billing",
     icon: <MonetizationOnOutlinedIcon />,
     tone:
       "linear-gradient(135deg, rgba(245, 158, 11, 0.22), rgba(245, 158, 11, 0))",
@@ -60,23 +72,23 @@ const ROLES = [
     key: "patients",
     label: "환자",
     desc: "환자 목록/상세/기록",
-    href: "/patient/list",
+    href: "/patients",
     icon: <PersonSearchOutlinedIcon />,
     tone:
       "linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(59, 130, 246, 0))",
   },
   {
     key: "staff",
-    label: "의료진",
+    label: "스탭",
     desc: "직원/근무/권한 배정",
-    href: "/staff/dashboard",
+    href: "/staff",
     icon: <BadgeOutlinedIcon />,
     tone:
       "linear-gradient(135deg, rgba(24, 90, 158, 0.18), rgba(24, 90, 158, 0))",
   },
   {
     key: "admin",
-    label: "로그인",
+    label: "관리자",
     desc: "운영 KPI, 권한, 감사 로그",
     href: "/admin",
     icon: <AdminPanelSettingsOutlinedIcon />,
@@ -120,11 +132,15 @@ export default function HomePage() {
                 <Typography sx={{ fontSize: 24, fontWeight: 900 }}>
                   병원 업무 대시보드
                 </Typography>
+
+
                 <Typography sx={{ color: "var(--muted)" }}>
                   의사/간호/접수/수납/환자/스탭/관리자 역할별 화면으로 바로
                   진입하세요.
                 </Typography>
               </Stack>
+
+
               <Stack
                 direction={{ xs: "column", sm: "row" }}
                 spacing={1.5}
@@ -132,21 +148,26 @@ export default function HomePage() {
               >
                 <Button
                   component={Link}
-                  href="/reception/dashboard"
+                  href="/reception"
                   variant="contained"
                   sx={{ bgcolor: "var(--brand)", px: 2.5 }}
                 >
                   접수 업무
                 </Button>
+
+
                 <Button
                   component={Link}
-                  href="/patient/list"
+                  href="/patients"
                   variant="outlined"
                   sx={{ px: 2.5 }}
                 >
                   환자 관리
                 </Button>
+
               </Stack>
+
+
             </CardContent>
           </Card>
 
@@ -202,8 +223,11 @@ export default function HomePage() {
             },
           }}
         >
+
+
+            
           {ROLES.map((role) => (
-            <Card
+            <Card  ////🧠🧠 여기
               key={role.key}
               sx={{
                 borderRadius: 3,
@@ -212,6 +236,9 @@ export default function HomePage() {
                 background: role.tone,
               }}
             >
+
+
+
               <CardContent sx={{ p: 3 }}>
                 <Box
                   sx={{
@@ -233,11 +260,18 @@ export default function HomePage() {
                 <Typography
                   sx={{ color: "var(--muted)", mt: 0.5, minHeight: 44 }}
                 >
+                  
                   {role.desc}
+
+
+                
                 </Typography>
+
+                🧠
                 <Button component={Link} href={role.href} size="small" sx={{ mt: 2 }}>
                   바로가기
                 </Button>
+              
               </CardContent>
             </Card>
           ))}
