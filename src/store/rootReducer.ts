@@ -7,9 +7,7 @@ import patientsReducer from "@/features/patients/patientSlice";
 import recordReducer from "@/features/Record/recordSlice";
 import receptionsReducer from "@/features/Receptions/ReceptionSlice";
 import reservationsReducer from "@/features/Reservations/ReservationSlice";
-
 import nurseReducer from "@/features/nurse/nurseSlice"
-
 import { combineReducers } from "redux";
 
 const rootReducer = combineReducers({
@@ -21,10 +19,7 @@ const rootReducer = combineReducers({
   records: recordReducer,
   receptions: receptionsReducer,
   reservations: reservationsReducer,
-
-  //🧠
-  nurse:nurseReducer
-
+  nurse:nurseReducer,
 });
 
 export type RootState = ReturnType<typeof rootReducer>;

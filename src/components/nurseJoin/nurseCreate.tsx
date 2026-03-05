@@ -91,7 +91,7 @@ const NurseCreatePage=()=> {
     if (!createdSuccess) return;
     // 예: 수정 성공 후 뒤로가기 or 특정 페이지
 
-    router.replace("/nurse/join/list"); // ✅ 네 관리자 화면 라우트로
+    router.replace("/staff/join/list"); // ✅ 네 관리자 화면 라우트로
     dispatch(resetCreateSuccess()); // ✅ 성공 “소비” 후 바로 끄기
 }, [createdSuccess, router , dispatch]);
 

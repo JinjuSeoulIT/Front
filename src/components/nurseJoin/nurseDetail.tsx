@@ -23,8 +23,8 @@ export default function NurseDetail({ nurseId }: Props) {
     dispatch(DetailNurseRequest(nurseId));
   }, [dispatch, nurseId]);
 
-  const goList = () => router.replace("/nurse/join/list");
-  const goEdit = () => router.push(`/nurse/join/${nurseId}/edit`);
+  const goList = () => router.replace("/staff/join/list");
+  const goEdit = () => router.push(`/staff/join/${nurseId}/edit`);
 
   // ✅ 화면에 보여줄 상태 텍스트만 정리 (return 남발 X)
   let content: React.ReactNode = null;

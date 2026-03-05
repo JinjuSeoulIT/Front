@@ -22,9 +22,9 @@ const NurseListPage = () => {
 
 
   const handlehome  = () => router.push("/");
-  const handleCreate = () => router.push("/nurse/join/create");
-  const handleDetail = (id: number) => router.push(`/nurse/join/${id}/detail`);
-  const handleEdit = (id: number) => router.push(`/nurse/join/${id}/edit`);
+  const handleCreate = () => router.push("/staff/join/create");
+  const handleDetail = (id: number) => router.push(`/staff/join/${id}/detail`);
+  const handleEdit = (id: number) => router.push(`/staff/join/${id}/edit`);
 
   const handleDelete = (id: number) => {
     const ok = confirm("정말 삭제하시겠습니까?");
@@ -65,7 +65,7 @@ const NurseListPage = () => {
           loading: {String(loading)} 에러: {String(error)}
         </Typography> */}
 
-        <Table size="small">
+          <Table size="small">
           <TableHead>
             <TableRow>
             
@@ -74,7 +74,7 @@ const NurseListPage = () => {
               <TableCell>잭책</TableCell>
 
               <TableCell>교대근무</TableCell>
-           
+
               <TableCell>부서</TableCell>
               <TableCell>계약상태</TableCell>
               <TableCell>재직상태</TableCell>
@@ -84,7 +84,7 @@ const NurseListPage = () => {
           <TableBody>
             {nurselist.map((e) => (
               <TableRow key={e.nurseId}>
-             
+
                 <TableCell>{e.unitId}</TableCell>
                 <TableCell>{e.nurseGrade}</TableCell>
                 {/* 교대근무에 shiftType을, 부서에 department를 표기 */}
@@ -107,9 +107,9 @@ const NurseListPage = () => {
             등록
           </Button>
         </div>
-      </Paper>
+          </Paper>
       
-    </Box>
+          </Box>
     
     
 

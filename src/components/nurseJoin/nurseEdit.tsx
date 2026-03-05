@@ -69,8 +69,7 @@ if (nurseId) {
     if (!nurseupdated) return;
 
     setForm({
-      // ⚠️ 토큰 기반 업데이트면 userId는 굳이 들고 다닐 필요 없음
-      // 타입에 필수로 박혀있다면 유지하되, API payload에는 보내지 말자.
+
      
 
       nurseGrade: nurseupdated.nurseGrade ?? "",
@@ -117,7 +116,7 @@ if (nurseId) {
     if (!updateSuccess) return;
     // 예: 수정 성공 후 뒤로가기 or 특정 페이지
 
-    router.replace("/nurse/join/list"); // ✅ 네 관리자 화면 라우트로
+    router.replace("/staff/join/list"); // ✅ 네 관리자 화면 라우트로
     dispatch(resetCreateSuccess());
 }, [updateSuccess, router ,dispatch]);
 

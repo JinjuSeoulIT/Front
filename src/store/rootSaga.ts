@@ -19,6 +19,6 @@ export default function* rootSaga() {
     fork(watchRecordSaga),
     fork(watchReceptionsSaga),
     fork(watchReservationSaga),
-    fork(watchNurseSaga),
+     fork(watchNurseSaga),
   ]);
 }
