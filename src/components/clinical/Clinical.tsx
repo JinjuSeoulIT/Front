@@ -19,6 +19,14 @@ import {
   Avatar,
   Pagination,
   useMediaQuery,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
 } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import SearchOutlinedIcon from "@mui/icons-material/SearchOutlined";
@@ -30,14 +38,20 @@ import ChecklistOutlinedIcon from "@mui/icons-material/ChecklistOutlined";
 import ChatOutlinedIcon from "@mui/icons-material/ChatOutlined";
 import { fetchPatientsApi } from "@/lib/patientApi";
 import type { Patient } from "@/features/patients/patientTypes";
+import {
+  fetchClinicalOrdersApi,
+  createClinicalOrderApi,
+  type ClinicalOrder,
+  type LabOrderType,
+} from "@/lib/clinicalOrderApi";
 
-type VisitRes = {
+type ClinicalRes = {
   id?: number;
-  visitId?: number;
+  clinicalId?: number;
   patientId: number;
-  visitType?: string | null;
+  clinicalType?: string | null;
   status?: string | null;
-  visitStatus?: string | null;
+  clinicalStatus?: string | null;
   priorityYn?: boolean;
 };
 
@@ -51,30 +65,34 @@ type ApiEnvelope<T> = {
 const CLINICAL_API_BASE =
   process.env.NEXT_PUBLIC_CLINICAL_API_BASE_URL ?? "http://localhost:8090";
 
-async function fetchClinicalVisitsApi(): Promise<VisitRes[]> {
+async function fetchClinicalApi(): Promise<ClinicalRes[]> {
   const res = await fetch(`${CLINICAL_API_BASE}/api/clinicals`, { cache: "no-store" });
   if (!res.ok) throw new Error(`진료 조회 실패 (${res.status})`);
-  const body = (await res.json()) as ApiEnvelope<VisitRes[]> | VisitRes[];
+  const body = (await res.json()) as ApiEnvelope<ClinicalRes[]> | ClinicalRes[];
   if (Array.isArray(body)) return body;
   const value = body.data ?? body.result ?? [];
   return Array.isArray(value) ? value : [];
 }
 
-async function createClinicalVisitApi(patientId: number): Promise<void> {
+async function createClinicalApi(patientId: number): Promise<void> {
   const res = await fetch(`${CLINICAL_API_BASE}/api/clinicals`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ patientId, visitType: "OUT" }),
+    body: JSON.stringify({ patientId, clinicalType: "OUT" }),
   });
-  if (!res.ok) throw new Error(`신규 진료 생성 실패 (${res.status})`);
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({})) as { message?: string };
+    const msg = body?.message ?? `신규 진료 생성 실패 (${res.status})`;
+    throw new Error(msg);
+  }
 }
 
 
-const DUMMY_ORDERS = [
-  { label: "혈액검사", count: 6 },
-  { label: "영상검사", count: 3 },
-  { label: "처치", count: 2 },
-];
+const ORDER_TYPE_LABELS: Record<LabOrderType, string> = {
+  BLOOD: "혈액검사",
+  IMAGING: "영상검사",
+  PROCEDURE: "처치",
+};
 
 const DUMMY_MESSAGES = [
   { time: "09:54", text: "검사실: 알러지 검사 결과 확인 요청" },
@@ -122,7 +140,7 @@ function formatBirth(dateStr?: string | null) {
   ).padStart(2, "0")}`;
 }
 
-function visitStatusView(status?: string | null) {
+function clinicalStatusView(status?: string | null) {
   switch (status) {
     case "WAITING":
     case "READY":
@@ -141,8 +159,8 @@ function visitStatusView(status?: string | null) {
   }
 }
 
-function resolveVisitStatus(v?: VisitRes | null) {
-  return v?.status ?? v?.visitStatus ?? null;
+function resolveClinicalStatus(v?: ClinicalRes | null) {
+  return v?.status ?? v?.clinicalStatus ?? null;
 }
 
 export default function ClinicalPage() {
@@ -150,7 +168,7 @@ export default function ClinicalPage() {
   const theme = useTheme();
   const isCompact = useMediaQuery(theme.breakpoints.down("xl"));
   const [patients, setPatients] = React.useState<Patient[]>([]);
-  const [visits, setVisits] = React.useState<VisitRes[]>([]);
+  const [clinicals, setClinicals] = React.useState<ClinicalRes[]>([]);
   const [loading, setLoading] = React.useState(false);
   const [query, setQuery] = React.useState("");
   const [tab, setTab] = React.useState<"WAIT" | "RESERVATION" | "ALL">("WAIT");
@@ -158,14 +176,34 @@ export default function ClinicalPage() {
   const [selectedPatientId, setSelectedPatientId] = React.useState<number | null>(null);
   const [safetyChecked, setSafetyChecked] = React.useState(false);
   const [errorMessage, setErrorMessage] = React.useState<string | null>(null);
+  const [creatingClinical, setCreatingClinical] = React.useState(false);
+  const creatingClinicalRef = React.useRef(false);
+  const [orders, setOrders] = React.useState<ClinicalOrder[]>([]);
+  const [ordersLoading, setOrdersLoading] = React.useState(false);
+  const [orderDialogOpen, setOrderDialogOpen] = React.useState(false);
+  const [newOrderType, setNewOrderType] = React.useState<LabOrderType>("BLOOD");
+  const [newOrderName, setNewOrderName] = React.useState("");
+  const [creatingOrder, setCreatingOrder] = React.useState(false);
+
+  const loadOrders = React.useCallback(async (clinicalId: number) => {
+    setOrdersLoading(true);
+    try {
+      const list = await fetchClinicalOrdersApi(clinicalId);
+      setOrders(list);
+    } catch {
+      setOrders([]);
+    } finally {
+      setOrdersLoading(false);
+    }
+  }, []);
 
   const loadData = React.useCallback(async () => {
     try {
       setErrorMessage(null);
       setLoading(true);
-      const [patientsResult, visitsResult] = await Promise.allSettled([
+      const [patientsResult, clinicalsResult] = await Promise.allSettled([
         fetchPatientsApi(),
-        fetchClinicalVisitsApi(),
+        fetchClinicalApi(),
       ]);
 
       if (patientsResult.status === "fulfilled") {
@@ -175,10 +213,10 @@ export default function ClinicalPage() {
         setErrorMessage("환자 목록을 불러오지 못했습니다.");
       }
 
-      if (visitsResult.status === "fulfilled") {
-        setVisits(visitsResult.value);
+      if (clinicalsResult.status === "fulfilled") {
+        setClinicals(clinicalsResult.value);
       } else {
-        setVisits([]);
+        setClinicals([]);
         setErrorMessage("진료 목록 연결에 실패했습니다. 환자 목록만 표시합니다.");
       }
     } catch (err) {
@@ -193,30 +231,23 @@ export default function ClinicalPage() {
     loadData();
   }, [loadData]);
 
-  React.useEffect(() => {
-    const timer = setInterval(() => {
-      loadData();
-    }, 20000);
-    return () => clearInterval(timer);
-  }, [loadData]);
-
   const queue = React.useMemo(() => {
-    if (!visits.length) return [];
-    return visits.filter((v) => {
-      const status = resolveVisitStatus(v);
+    if (!clinicals.length) return [];
+    return clinicals.filter((v) => {
+      const status = resolveClinicalStatus(v);
       if (tab === "WAIT") return status === "WAITING" || status === "CALLED" || status === "READY";
-      if (tab === "RESERVATION") return v.visitType === "RESERVATION";
+      if (tab === "RESERVATION") return v.clinicalType === "RESERVATION";
       return true;
     });
-  }, [visits, tab]);
+  }, [clinicals, tab]);
 
-  const visitByPatientId = React.useMemo(() => {
-    const m = new Map<number, VisitRes>();
-    for (const v of visits) {
+  const clinicalByPatientId = React.useMemo(() => {
+    const m = new Map<number, ClinicalRes>();
+    for (const v of clinicals) {
       if (!m.has(v.patientId)) m.set(v.patientId, v);
     }
     return m;
-  }, [visits]);
+  }, [clinicals]);
 
   const patientMap = React.useMemo(() => {
     const m = new Map<number, Patient>();
@@ -254,9 +285,26 @@ export default function ClinicalPage() {
     return listForLeft.slice(start, start + LEFT_LIST_PAGE_SIZE);
   }, [listForLeft, leftPage, LEFT_LIST_PAGE_SIZE]);
 
-  const selectedVisit = selectedPatient ? visitByPatientId.get(selectedPatient.patientId) ?? null : null;
-  const selectedStatus = visitStatusView(resolveVisitStatus(selectedVisit));
+  const selectedClinical = selectedPatient ? clinicalByPatientId.get(selectedPatient.patientId) ?? null : null;
+  const selectedStatus = clinicalStatusView(resolveClinicalStatus(selectedClinical));
   const vitals = selectedPatient ? "체온 37.5 · 맥박 90 · 혈압 118/76" : "-";
+  const currentClinicalId = selectedClinical?.clinicalId ?? selectedClinical?.id ?? null;
+
+  const ordersGrouped = React.useMemo(() => {
+    const counts: Record<LabOrderType, number> = { BLOOD: 0, IMAGING: 0, PROCEDURE: 0 };
+    for (const o of orders) {
+      if (o.orderType in counts) counts[o.orderType as LabOrderType] += 1;
+    }
+    return (["BLOOD", "IMAGING", "PROCEDURE"] as const).map((type) => ({
+      label: ORDER_TYPE_LABELS[type],
+      count: counts[type],
+    }));
+  }, [orders]);
+
+  React.useEffect(() => {
+    if (currentClinicalId != null) loadOrders(currentClinicalId);
+    else setOrders([]);
+  }, [currentClinicalId, loadOrders]);
 
   React.useEffect(() => {
     setSafetyChecked(false);
@@ -272,19 +320,26 @@ export default function ClinicalPage() {
     }
   }, [leftPage, totalLeftPages]);
 
-  const handleStartNewVisit = React.useCallback(async () => {
+  const handleStartNewClinical = React.useCallback(async () => {
     if (!selectedPatient) {
       window.alert("환자를 먼저 선택해 주세요.");
       return;
     }
+    if (creatingClinicalRef.current) return;
+    creatingClinicalRef.current = true;
+    setCreatingClinical(true);
     try {
       setErrorMessage(null);
-      await createClinicalVisitApi(selectedPatient.patientId);
+      await createClinicalApi(selectedPatient.patientId);
       await loadData();
+      window.alert("신규 진료가 등록되었습니다.");
     } catch (err) {
       const message = err instanceof Error ? err.message : "신규 진료 생성에 실패했습니다.";
       setErrorMessage(message);
       window.alert(message);
+    } finally {
+      creatingClinicalRef.current = false;
+      setCreatingClinical(false);
     }
   }, [selectedPatient, loadData]);
 
@@ -331,11 +386,13 @@ export default function ClinicalPage() {
                 sx={{ bgcolor: "rgba(255,255,255,0.85)", borderRadius: 2, minWidth: 220 }}
               />
               <Button
+                type="button"
                 variant="contained"
                 sx={{ bgcolor: "var(--brand)" }}
-                onClick={() => void handleStartNewVisit()}
+                disabled={creatingClinical || !selectedPatient}
+                onClick={() => void handleStartNewClinical()}
               >
-                신규 진료 시작
+                {creatingClinical ? "등록 중…" : "신규 진료 시작"}
               </Button>
             </Stack>
           </CardContent>
@@ -391,11 +448,11 @@ export default function ClinicalPage() {
                       <Stack direction="row" spacing={0.75}>
                         <Chip label={sexLabel(p.gender)} size="small" />
                         <Chip
-                          label={visitStatusView(resolveVisitStatus(visitByPatientId.get(p.patientId))).label}
-                          color={visitStatusView(resolveVisitStatus(visitByPatientId.get(p.patientId))).color}
+                          label={clinicalStatusView(resolveClinicalStatus(clinicalByPatientId.get(p.patientId))).label}
+                          color={clinicalStatusView(resolveClinicalStatus(clinicalByPatientId.get(p.patientId))).color}
                           size="small"
                         />
-                        {visitByPatientId.get(p.patientId)?.priorityYn && (
+                        {clinicalByPatientId.get(p.patientId)?.priorityYn && (
                           <Chip label="우선" size="small" color="error" />
                         )}
                       </Stack>
@@ -544,24 +601,44 @@ export default function ClinicalPage() {
                   <ScienceOutlinedIcon sx={{ color: "var(--accent)" }} />
                   <Typography fontWeight={800}>오더세트 / 검사</Typography>
                 </Stack>
-                <Stack spacing={1} sx={{ mt: 2 }}>
-                  {DUMMY_ORDERS.map((o) => (
-                    <Box
-                      key={o.label}
-                      sx={{
-                        p: 1.25,
-                        borderRadius: 2,
-                        border: "1px solid var(--line)",
-                        display: "flex",
-                        justifyContent: "space-between",
-                        bgcolor: "rgba(255,255,255,0.7)",
+                {ordersLoading ? (
+                  <Typography sx={{ mt: 2, color: "var(--muted)" }}>조회 중…</Typography>
+                ) : (
+                  <>
+                    <Stack spacing={1} sx={{ mt: 2 }}>
+                      {ordersGrouped.map((o) => (
+                        <Box
+                          key={o.label}
+                          sx={{
+                            p: 1.25,
+                            borderRadius: 2,
+                            border: "1px solid var(--line)",
+                            display: "flex",
+                            justifyContent: "space-between",
+                            bgcolor: "rgba(255,255,255,0.7)",
+                          }}
+                        >
+                          <Typography>{o.label}</Typography>
+                          <Typography fontWeight={800}>{o.count}</Typography>
+                        </Box>
+                      ))}
+                    </Stack>
+                    <Button
+                      variant="outlined"
+                      size="small"
+                      fullWidth
+                      sx={{ mt: 2 }}
+                      disabled={currentClinicalId == null}
+                      onClick={() => {
+                        setNewOrderType("BLOOD");
+                        setNewOrderName("");
+                        setOrderDialogOpen(true);
                       }}
                     >
-                      <Typography>{o.label}</Typography>
-                      <Typography fontWeight={800}>{o.count}</Typography>
-                    </Box>
-                  ))}
-                </Stack>
+                      검사 오더 등록
+                    </Button>
+                  </>
+                )}
                 <Divider sx={{ my: 2 }} />
                 <Typography fontWeight={700}>검사 결과</Typography>
                 <Stack spacing={1} sx={{ mt: 1 }}>
@@ -606,6 +683,61 @@ export default function ClinicalPage() {
           </Stack>
         </Box>
       </Stack>
+
+      <Dialog open={orderDialogOpen} onClose={() => setOrderDialogOpen(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>검사 오더 등록</DialogTitle>
+        <DialogContent>
+          <Stack spacing={2} sx={{ mt: 1 }}>
+            <FormControl fullWidth size="small">
+              <InputLabel>검사 유형</InputLabel>
+              <Select
+                value={newOrderType}
+                label="검사 유형"
+                onChange={(e) => setNewOrderType(e.target.value as LabOrderType)}
+              >
+                <MenuItem value="BLOOD">{ORDER_TYPE_LABELS.BLOOD}</MenuItem>
+                <MenuItem value="IMAGING">{ORDER_TYPE_LABELS.IMAGING}</MenuItem>
+                <MenuItem value="PROCEDURE">{ORDER_TYPE_LABELS.PROCEDURE}</MenuItem>
+              </Select>
+            </FormControl>
+            <TextField
+              fullWidth
+              size="small"
+              label="검사/처치 명"
+              value={newOrderName}
+              onChange={(e) => setNewOrderName(e.target.value)}
+              placeholder="예: CBC, 흉부 X-ray, 주사"
+            />
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOrderDialogOpen(false)}>취소</Button>
+          <Button
+            variant="contained"
+            sx={{ bgcolor: "var(--brand)" }}
+            disabled={!newOrderName.trim() || creatingOrder || currentClinicalId == null}
+            onClick={async () => {
+              if (currentClinicalId == null || !newOrderName.trim()) return;
+              setCreatingOrder(true);
+              try {
+                await createClinicalOrderApi(currentClinicalId, {
+                  orderType: newOrderType,
+                  orderName: newOrderName.trim(),
+                });
+                await loadOrders(currentClinicalId);
+                setOrderDialogOpen(false);
+                setNewOrderName("");
+              } catch (err) {
+                window.alert(err instanceof Error ? err.message : "검사 오더 등록에 실패했습니다.");
+              } finally {
+                setCreatingOrder(false);
+              }
+            }}
+          >
+            {creatingOrder ? "등록 중…" : "등록"}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </MainLayout>
   );
 }
