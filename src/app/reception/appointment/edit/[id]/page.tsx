@@ -3,11 +3,12 @@
 import * as React from "react";
 import { useParams, useRouter } from "next/navigation";
 import MainLayout from "@/components/layout/MainLayout";
-import ReservationForm from "@/components/ReservationForm";
+
 import { useDispatch, useSelector } from "react-redux";
 import type { RootState, AppDispatch } from "@/store/store";
 import { reservationActions } from "@/features/Reservations/ReservationSlice";
 import type { ReservationForm as ReservationFormPayload } from "@/features/Reservations/ReservationTypes";
+import ReservationForm from "@/components/reservation/ReservationForm";
 
 export default function EditReservationPage() {
   const params = useParams<{ id: string }>();
@@ -21,10 +22,11 @@ export default function EditReservationPage() {
   }, [dispatch, reservationId]);
 
   const current = selected && String(selected.reservationId) === reservationId ? selected : null;
+  const formLoading = loading && !current;
 
   const onSubmit = (form: ReservationFormPayload) => {
     dispatch(reservationActions.updateReservationRequest({ reservationId, form }));
-    router.push(`/reservations/${reservationId}`);
+    router.push(`/reception/appointment/detail/${reservationId}`);
   };
 
   return (
@@ -44,11 +46,11 @@ export default function EditReservationPage() {
           status: current?.status ?? "RESERVED",
           note: current?.note ?? "",
         }}
-        loading={loading}
+        loading={formLoading}
         error={error}
         mode="edit"
         onSubmit={onSubmit}
-        onCancel={() => router.push(`/reservations/${reservationId}`)}
+        onCancel={() => router.push(`/reception/appointment/detail/${reservationId}`)}
       />
     </MainLayout>
   );

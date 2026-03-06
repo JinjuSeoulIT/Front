@@ -1,5 +1,5 @@
 const CLINICAL_API_BASE =
-  process.env.NEXT_PUBLIC_CLINICAL_API_BASE_URL ?? "http://localhost:8090";
+  process.env.NEXT_PUBLIC_CLINICAL_API_BASE_URL ?? "http://192.168.1.70:8090";
 
 export type LabOrderType = "BLOOD" | "IMAGING" | "PROCEDURE";
 
@@ -29,6 +29,16 @@ type ApiEnvelope<T> = {
   result?: T;
 };
 
+async function parseJson<T>(res: Response): Promise<T> {
+  const body = (await res.json()) as ApiEnvelope<T> | T;
+  if (Array.isArray(body)) return body as T;
+  if (body && typeof body === "object" && ("data" in body || "result" in body)) {
+    const v = (body as ApiEnvelope<T>).data ?? (body as ApiEnvelope<T>).result;
+    return v as T;
+  }
+  return body as T;
+};
+
 type OrderItemRaw = { itemName?: string | null; itemCode?: string | null };
 type OrderRaw = {
   orderId: number;
@@ -49,17 +59,6 @@ function mapOrderToClinical(o: OrderRaw): ClinicalOrder {
     status: o.orderStatus ?? null,
   };
 }
-
-async function parseJson<T>(res: Response): Promise<T> {
-  const body = (await res.json()) as ApiEnvelope<T> | T;
-  if (Array.isArray(body)) return body as T;
-  if (body && typeof body === "object" && ("data" in body || "result" in body)) {
-    const v = (body as ApiEnvelope<T>).data ?? (body as ApiEnvelope<T>).result;
-    return v as T;
-  }
-  return body as T;
-}
-
 export async function fetchClinicalOrdersApi(
   clinicalId: number
 ): Promise<ClinicalOrder[]> {
@@ -80,12 +79,16 @@ export async function createClinicalOrderApi(
   clinicalId: number,
   payload: ClinicalOrderCreatePayload
 ): Promise<ClinicalOrder> {
+  const body = {
+    orderType: payload.orderType,
+    items: [{ itemCode: payload.orderCode ?? payload.orderType, itemName: payload.orderName }],
+  };
   const res = await fetch(
     `${CLINICAL_API_BASE}/api/clinicals/${clinicalId}/orders`,
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
+      body: JSON.stringify(body),
     }
   );
   if (!res.ok) {
@@ -95,7 +98,6 @@ export async function createClinicalOrderApi(
   const value = await parseJson<OrderRaw>(res);
   return mapOrderToClinical(value as OrderRaw);
 }
-
 export async function updateClinicalOrderStatusApi(
   clinicalId: number,
   orderId: number,
