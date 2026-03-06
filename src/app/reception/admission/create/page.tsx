@@ -3,11 +3,12 @@
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import MainLayout from "@/components/layout/MainLayout";
-import InpatientReceptionForm from "@/components/InpatientReceptionForm";
+
 import { useDispatch, useSelector } from "react-redux";
 import type { RootState, AppDispatch } from "@/store/store";
 import { inpatientReceptionActions } from "@/features/InpatientReceptions/InpatientReceptionSlice";
 import type { InpatientReceptionForm as InpatientReceptionFormPayload } from "@/features/InpatientReceptions/InpatientReceptionTypes";
+import InpatientReceptionForm from "@/components/reception/InpatientReceptionForm";
 
 export default function NewInpatientReceptionPage() {
   const router = useRouter();
@@ -16,7 +17,7 @@ export default function NewInpatientReceptionPage() {
 
   const onSubmit = (form: InpatientReceptionFormPayload) => {
     dispatch(inpatientReceptionActions.createInpatientReceptionRequest(form));
-    router.push("/inpatient-receptions");
+    router.push("/reception/admission/list");
   };
 
   return (
@@ -41,7 +42,7 @@ export default function NewInpatientReceptionPage() {
         error={error}
         mode="create"
         onSubmit={onSubmit}
-        onCancel={() => router.push("/inpatient-receptions")}
+        onCancel={() => router.push("/reception/admission/list")}
       />
     </MainLayout>
   );

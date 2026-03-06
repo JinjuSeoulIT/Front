@@ -37,7 +37,8 @@ export type NursingRecordCreatePayload = {
 };
 
 export type NursingRecordUpdatePayload = NursingRecordCreatePayload;
-
+//mui - UI 컴포넌트 라이브러리
+//백엔드와 통신?
 const api = axios.create({
   baseURL: process.env.NEXT_PUBLIC_NURSING_API_BASE_URL ?? "http://192.168.1.66:8181",
 });
@@ -51,9 +52,9 @@ export const fetchRecordsApi = async (): Promise<NursingRecord[]> => {
 };
 
 export const fetchRecordApi = async (
-  id: string | number
+  nursingId: string | number
 ): Promise<NursingRecord> => {
-  const res = await api.get<ApiResponse<NursingRecord>>(`/api/record/${id}`);
+  const res = await api.get<ApiResponse<NursingRecord>>(`/api/record/${nursingId}`);
   if (!res.data.success) {
     throw new Error(res.data.message || "Fetch failed");
   }

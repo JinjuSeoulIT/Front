@@ -1,4 +1,4 @@
-﻿export type ContactPriority = "PATIENT" | "GUARDIAN" | string;
+export type ContactPriority = "PATIENT" | "GUARDIAN" | string;
 
 export interface Patient {
   patientId: number;
@@ -19,8 +19,16 @@ export interface Patient {
   note?: string | null;
 
   isVip?: boolean | null;
+  /** @deprecated DB 컬럼 제거됨. 하위 호환용 optional */
   photoUrl?: string | null;
   statusCode?: string | null;
+}
+
+export interface PatientFamilyForm {
+  relation: string;
+  familyName: string;
+  familyPhone?: string;
+  isPrimary?: boolean;
 }
 
 export interface PatientForm {
@@ -36,9 +44,11 @@ export interface PatientForm {
   guardianPhone?: string;
   guardianRelation?: string;
   isForeigner?: boolean;
+  isVip?: boolean;
   contactPriority?: ContactPriority;
   note?: string;
 
+  families?: PatientFamilyForm[];
   photoFile?: File | null;
 }
 

@@ -5,9 +5,8 @@ import RecordDetail from "@/components/record/RecordDetail";
 
 const RecordDetailPage = () => {
   return (
-    <MainLayout showSidebar={false}>
       <RecordDetail />
-    </MainLayout>
+   
   );
 };
 

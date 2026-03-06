@@ -7,8 +7,7 @@ export default function ConsentsPage() {
       <PatientSelectList
         title="동의서 관리"
         description="환자를 선택하면 동의서 관리 화면으로 이동합니다."
-        basePath="/patient"
-        pathSuffix="/consent"
+        basePath="/consents"
       />
     </MainLayout>
   );

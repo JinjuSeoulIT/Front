@@ -3,11 +3,12 @@
 import * as React from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import MainLayout from "@/components/layout/MainLayout";
-import ReservationForm from "@/components/ReservationForm";
+
 import { useDispatch, useSelector } from "react-redux";
 import type { RootState, AppDispatch } from "@/store/store";
 import { reservationActions } from "@/features/Reservations/ReservationSlice";
 import type { ReservationForm as ReservationFormPayload } from "@/features/Reservations/ReservationTypes";
+import ReservationForm from "@/components/reservation/ReservationForm";
 
 export default function NewReservationPage() {
   const router = useRouter();
@@ -19,7 +20,7 @@ export default function NewReservationPage() {
 
   const onSubmit = (form: ReservationFormPayload) => {
     dispatch(reservationActions.createReservationRequest(form));
-    router.push("/reservations");
+    router.push("/reception/appointment/list");
   };
 
   return (
@@ -43,7 +44,7 @@ export default function NewReservationPage() {
         error={error}
         mode="create"
         onSubmit={onSubmit}
-        onCancel={() => router.push("/reservations")}
+        onCancel={() => router.push("/reception/appointment/list")}
       />
     </MainLayout>
   );
