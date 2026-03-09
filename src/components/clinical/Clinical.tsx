@@ -263,7 +263,8 @@ const MEDICATION_OPTIONS: { code: string; name: string }[] = [
 
 export default function ClinicalPage() {
   const searchParams = useSearchParams();
-  const LEFT_LIST_PAGE_SIZE = 5;
+  const LEFT_LIST_PAGE_SIZE = 10;
+  const PAST_CLINICAL_PAGE_SIZE = 10;
   const theme = useTheme();
   const isCompact = useMediaQuery(theme.breakpoints.down("xl"));
   const [patients, setPatients] = React.useState<Patient[]>([]);
@@ -323,6 +324,7 @@ export default function ClinicalPage() {
   const [chartTemplateText, setChartTemplateText] = React.useState("");
   const [savingRecord, setSavingRecord] = React.useState(false);
   const [pastClinicalSummaries, setPastClinicalSummaries] = React.useState<Record<number, string>>({});
+  const [pastClinicalPage, setPastClinicalPage] = React.useState(1);
   const [repeatingFromClinicalId, setRepeatingFromClinicalId] = React.useState<number | null>(null);
   const queryPatientId = React.useMemo(() => {
     const raw = searchParams.get("patientId");
@@ -513,6 +515,17 @@ export default function ClinicalPage() {
       .filter((c) => c.patientId === selectedPatient.patientId && (c.clinicalId ?? c.id) !== id)
       .sort((a, b) => new Date(b.clinicalAt ?? b.createdAt ?? 0).getTime() - new Date(a.clinicalAt ?? a.createdAt ?? 0).getTime());
   }, [clinicals, selectedPatient, currentClinicalId]);
+
+  const totalPastClinicalPages = Math.max(1, Math.ceil(pastClinicalsForPatient.length / PAST_CLINICAL_PAGE_SIZE));
+  const pastClinicalPageSafe = Math.min(pastClinicalPage, totalPastClinicalPages);
+  const paginatedPastClinicals = React.useMemo(() => {
+    const start = (pastClinicalPageSafe - 1) * PAST_CLINICAL_PAGE_SIZE;
+    return pastClinicalsForPatient.slice(start, start + PAST_CLINICAL_PAGE_SIZE);
+  }, [pastClinicalsForPatient, pastClinicalPageSafe, PAST_CLINICAL_PAGE_SIZE]);
+
+  React.useEffect(() => {
+    setPastClinicalPage(1);
+  }, [selectedPatientId]);
 
   React.useEffect(() => {
     if (pastClinicalsForPatient.length === 0) {
@@ -921,8 +934,9 @@ export default function ClinicalPage() {
                 {pastClinicalsForPatient.length === 0 ? (
                   <Typography sx={{ fontSize: 13, color: "var(--muted)", py: 0.5 }}>과거 진료가 없습니다.</Typography>
                 ) : (
+                  <>
                   <Stack spacing={0.5}>
-                    {pastClinicalsForPatient.map((c) => {
+                    {paginatedPastClinicals.map((c) => {
                       const cid = c.clinicalId ?? c.id;
                       if (cid == null) return null;
                       return (
@@ -961,6 +975,16 @@ export default function ClinicalPage() {
                       );
                     })}
                   </Stack>
+                  <Stack sx={{ mt: 1, alignItems: "center" }}>
+                    <Pagination
+                      page={pastClinicalPageSafe}
+                      count={totalPastClinicalPages}
+                      size="small"
+                      color="primary"
+                      onChange={(_, page) => setPastClinicalPage(page)}
+                    />
+                  </Stack>
+                  </>
                 )}
               </CardContent>
             </Card>
