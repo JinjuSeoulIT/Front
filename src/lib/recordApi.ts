@@ -1,4 +1,4 @@
-import axios from "axios";
+﻿import axios from "axios";
 import type { ApiResponse } from "@/features/patients/patientTypes";
 
 export type NursingRecord = {
@@ -81,8 +81,6 @@ export const updateRecordApi = async (
   return res.data.result;
 };
 
-
-
 export const deleteRecordApi = async (id: string | number): Promise<void> => {
   const res = await api.delete<ApiResponse<void>>(`/api/record/${id}`);
   if (!res.data.success) {
@@ -90,9 +88,20 @@ export const deleteRecordApi = async (id: string | number): Promise<void> => {
   }
 };
 
-export const searchRecordApi = async (type: string | number, value: string|number): Promise<void> => {
-  const res = await api.get<ApiResponse<void>>(`/api/search`);
+export const searchRecordApi = async (
+  type: string,
+  value: string
+): Promise<NursingRecord[]> => {
+  const res = await api.get<ApiResponse<NursingRecord[]>>("/api/search", {
+    params: {
+      type,
+      value,
+    },
+  });
+
   if (!res.data.success) {
-    throw new Error(res.data.message || "search failed");
+    throw new Error(res.data.message || "Search failed");
   }
+
+  return res.data.result;
 };

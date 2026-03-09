@@ -5,9 +5,10 @@ import { watchInsuranceSaga } from "@/features/insurance/insuranceSaga";
 import { watchInpatientReceptionSaga } from "@/features/InpatientReceptions/InpatientReceptionSaga";
 import { watchPatientSaga } from "@/features/patients/patientSaga";
 import { watchReceptionSaga as watchReceptionsSaga } from "@/features/Receptions/ReceptionSaga";
-import { watchReservationSaga } from "@/features/Reservations/ReservationSaga";
+// import { watchReservationSaga } from "@/features/Reservations/ReservationSaga";
 import { watchRecordSaga } from "@/features/Record/recordSaga";
-import { watchNurseSaga } from "@/features/nurse/nurseSaga";
+import { watchEmployeeNurseSaga } from "@/features/employee/nurse/nurseSaga";
+import { watchReservationSaga } from "@/features/Reservations/ReservationSaga";
 
 export default function* rootSaga() {
   yield all([
@@ -18,7 +19,8 @@ export default function* rootSaga() {
     fork(watchConsentSaga),
     fork(watchRecordSaga),
     fork(watchReceptionsSaga),
+    
     fork(watchReservationSaga),
-     fork(watchNurseSaga),
+    fork(watchEmployeeNurseSaga),
   ]);
 }
