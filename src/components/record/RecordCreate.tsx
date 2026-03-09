@@ -5,15 +5,14 @@ import { Card, CardContent } from "@mui/material";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch, RootState } from "@/store/store";
 import { emptyRecordForm } from "@/features/Record/recordTypes";
-import type { NursingRecordCreatePayload } from "@/lib/medical-support/recordApi";
+import type { NursingRecordCreatePayload } from "@/lib/recordApi";
 import RecordForm from "./RecordForm";
 import { createRecordRequest } from "@/features/Record/recordSlice";
-
 
 export default function RecordCreate() {
   const router = useRouter();
   const dispatch = useDispatch<AppDispatch>();
-  const { loading, error } = useSelector((s: RootState) => s.records);
+  const { loading, error} = useSelector((s: RootState) => s.records);
 
   const onSubmit = (payload: NursingRecordCreatePayload) => {
     dispatch(createRecordRequest(payload));
@@ -34,7 +33,7 @@ export default function RecordCreate() {
           loading={loading}
           error={error}
           onSubmit={onSubmit}
-          onCancel={() => router.push("/medical_support/list")}
+          onCancel={() => router.push("/medical_support/record/list")}
         />
       </CardContent>
     </Card>
