@@ -54,7 +54,6 @@ useEffect(() => {
 
   const fields = [
     { label: "간호사 아이디", value: selected.nursingId },
-    { label: "진료 ID", value: selected.visitId },
     { label: "기록 시각", value: selected.recordedAt },
     { label: "생성일시", value: selected.createdAt },
     { label: "수정일시", value: selected.updatedAt },
@@ -66,6 +65,7 @@ useEffect(() => {
     { label: "동맥혈산소포화도", value: selected.spo2 },
     { label: "통증 점수", value: selected.painScore },
     { label: "의식 수준", value: selected.consciousnessLevel },
+    { label: "접수 아이디", value: selected.receptionId }
   ];
 
   return (
@@ -106,6 +106,12 @@ useEffect(() => {
               }
             />
           </Grid>
+          
+          <Grid size={12}>
+            <Typography fontWeight={600}>접수 아이디</Typography>
+            <Typography>{selected.receptionId}</Typography>
+          </Grid>
+          
            <Button
                       component={Link}
                       href={`/medical_support/record/edit/${nursingId}`}
