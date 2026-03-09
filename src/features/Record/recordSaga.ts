@@ -9,7 +9,7 @@ import {
   type NursingRecordUpdatePayload,
   searchRecordApi,
   updateRecordApi,
-} from "@/lib/recordApi";
+} from "@/lib/medical-support/recordApi";
 import { createRecordFailure, createRecordRequest, createRecordSuccess, deleteRecordFailure, deleteRecordRequest, deleteRecordSuccess, fetchRecordFailure, fetchRecordRequest, fetchRecordsFailure, fetchRecordsRequest, fetchRecordsSuccess, fetchRecordSuccess, searchRecordFailure, searchRecordRequest, searchRecordSuccess, updateRecordFailure, updateRecordRequest, updateRecordSuccess } from "./recordSlice";
 import type { RecordItem } from "./recordTypes";
 
@@ -71,7 +71,11 @@ function* deleteRecordSaga(action: PayloadAction<string>) {
 
 function* searchRecordSaga(action: PayloadAction<{searchType:string; searchValue:string}>) {
   try {
-    const list: RecordItem[] = yield call(searchRecordApi,searchType,searchValue);
+    const list: RecordItem[] = yield call(
+      searchRecordApi,
+      action.payload.searchType,
+      action.payload.searchValue
+    );
     yield put(searchRecordSuccess(list));
   } catch (err: unknown) {
     yield put(searchRecordFailure(errorMessage(err, "간호 기록 목록 조회 실패")));

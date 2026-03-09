@@ -3,11 +3,12 @@
 import * as React from "react";
 import { useParams, useRouter } from "next/navigation";
 import MainLayout from "@/components/layout/MainLayout";
-import EmergencyReceptionForm from "@/components/EmergencyReceptionForm";
+
 import { useDispatch, useSelector } from "react-redux";
 import type { RootState, AppDispatch } from "@/store/store";
 import { emergencyReceptionActions } from "@/features/EmergencyReceptions/EmergencyReceptionSlice";
 import type { EmergencyReceptionForm as EmergencyReceptionFormPayload } from "@/features/EmergencyReceptions/EmergencyReceptionTypes";
+import EmergencyReceptionForm from "@/components/reception/EmergencyReceptionForm";
 
 export default function EditEmergencyReceptionPage() {
   const params = useParams<{ id: string }>();
@@ -24,7 +25,7 @@ export default function EditEmergencyReceptionPage() {
 
   const onSubmit = (form: EmergencyReceptionFormPayload) => {
     dispatch(emergencyReceptionActions.updateEmergencyReceptionRequest({ receptionId, form }));
-    router.push(`/emergency-receptions/${receptionId}`);
+    router.push("/reception/emergency/list");
   };
 
   return (
@@ -35,11 +36,10 @@ export default function EditEmergencyReceptionPage() {
         initial={{
           receptionNo: current?.receptionNo ?? "",
           patientId: current?.patientId ? String(current.patientId) : "",
+          patientName: "",
           departmentId: current?.departmentId ? String(current.departmentId) : "",
-          doctorId: current?.doctorId ? String(current.doctorId) : "",
-          scheduledAt: current?.scheduledAt ?? "",
           arrivedAt: current?.arrivedAt ?? "",
-          status: current?.status ?? "WAITING",
+          status: current?.status ?? "REGISTERED",
           note: current?.note ?? "",
           triageLevel: current?.triageLevel ? String(current.triageLevel) : "",
           chiefComplaint: current?.chiefComplaint ?? "",
@@ -50,13 +50,12 @@ export default function EditEmergencyReceptionPage() {
           vitalRr: current?.vitalRr != null ? String(current.vitalRr) : "",
           vitalSpo2: current?.vitalSpo2 != null ? String(current.vitalSpo2) : "",
           arrivalMode: current?.arrivalMode ?? "WALK_IN",
-          triageNote: current?.triageNote ?? "",
         }}
         loading={loading}
         error={error}
         mode="edit"
         onSubmit={onSubmit}
-        onCancel={() => router.push(`/emergency-receptions/${receptionId}`)}
+        onCancel={() => router.push("/reception/emergency/list")}
       />
     </MainLayout>
   );

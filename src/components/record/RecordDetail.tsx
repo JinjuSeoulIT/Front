@@ -108,7 +108,7 @@ useEffect(() => {
           </Grid>
            <Button
                       component={Link}
-                      href={`/nurse/record/edit/${nursingId}`}
+                      href={`/medical_support/record/edit/${nursingId}`}
                       variant="outlined"
                       size="small"
                     >
