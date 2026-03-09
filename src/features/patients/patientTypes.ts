@@ -24,6 +24,13 @@ export interface Patient {
   statusCode?: string | null;
 }
 
+export interface PatientFamilyForm {
+  relation: string;
+  familyName: string;
+  familyPhone?: string;
+  isPrimary?: boolean;
+}
+
 export interface PatientForm {
   name: string;
   email?: string;
@@ -37,9 +44,13 @@ export interface PatientForm {
   guardianPhone?: string;
   guardianRelation?: string;
   isForeigner?: boolean;
+  isVip?: boolean;
   contactPriority?: ContactPriority;
   note?: string;
 
+  consentRequired?: boolean;
+  consentOptional?: boolean;
+  families?: PatientFamilyForm[];
   photoFile?: File | null;
 }
 
