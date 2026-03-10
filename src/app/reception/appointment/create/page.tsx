@@ -8,7 +8,7 @@ import { useDispatch, useSelector } from "react-redux";
 import type { RootState, AppDispatch } from "@/store/store";
 import { reservationActions } from "@/features/Reservations/ReservationSlice";
 import type { ReservationForm as ReservationFormPayload } from "@/features/Reservations/ReservationTypes";
-import ReservationForm from "@/components/reservation/ReservationForm";
+import ReservationForm from "@/components/reception/ReservationForm";
 
 export default function NewReservationPage() {
   const router = useRouter();
