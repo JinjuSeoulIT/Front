@@ -70,11 +70,11 @@ export type VisitUpdatePayload = {
 };
 
 const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_RECEPTION_API_BASE_URL ?? "http://localhost:8082",
+  baseURL: process.env.NEXT_PUBLIC_RECEPTION_API_BASE_URL ?? "http://192.168.1.55:8283",
 });
 
 export const fetchVisitsApi = async (): Promise<VisitRes[]> => {
-  const res = await api.get<ApiResponse<VisitRes[]>>("/api/visits");
+  const res = await api.get<ApiResponse<VisitRes[]>>("/api/receptions");
   if (!res.data.success) {
     throw new Error(res.data.message || "Fetch failed");
   }
@@ -84,7 +84,7 @@ export const fetchVisitsApi = async (): Promise<VisitRes[]> => {
 export const createVisitApi = async (
   payload: VisitCreatePayload
 ): Promise<VisitRes> => {
-  const res = await api.post<ApiResponse<VisitRes>>("/api/visits", payload);
+  const res = await api.post<ApiResponse<VisitRes>>("/api/receptions", payload);
   if (!res.data.success) {
     throw new Error(res.data.message || "Create failed");
   }
@@ -95,7 +95,7 @@ export const updateVisitApi = async (
   id: number,
   payload: VisitUpdatePayload
 ): Promise<VisitRes> => {
-  const res = await api.put<ApiResponse<VisitRes>>(`/api/visits/${id}`, payload);
+  const res = await api.put<ApiResponse<VisitRes>>(`/api/receptions/${id}`, payload);
   if (!res.data.success) {
     throw new Error(res.data.message || "Update failed");
   }
@@ -103,7 +103,7 @@ export const updateVisitApi = async (
 };
 
 export const deleteVisitApi = async (id: number): Promise<void> => {
-  const res = await api.delete<ApiResponse<void>>(`/api/visits/${id}`);
+  const res = await api.delete<ApiResponse<void>>(`/api/receptions/${id}`);
   if (!res.data.success) {
     throw new Error(res.data.message || "Delete failed");
   }

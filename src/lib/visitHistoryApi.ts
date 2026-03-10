@@ -14,21 +14,21 @@ export type VisitHistory = {
 };
 
 const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_RECEPTION_API_BASE_URL ?? "http://localhost:8082",
+  baseURL: process.env.NEXT_PUBLIC_RECEPTION_API_BASE_URL ?? "http://192.168.1.55:8283",
 });
 
 export const fetchVisitHistoryApi = async (
   visitId: number
 ): Promise<VisitHistory[]> => {
   const res = await api.get<ApiResponse<VisitHistory[]>>(
-    `/api/visits/${visitId}/history`
+    `/api/receptions/${visitId}/status-history`
   );
   if (!res.data.success) return [];
   return res.data.result ?? [];
 };
 
 export const fetchAllVisitHistoryApi = async (): Promise<VisitHistory[]> => {
-  const res = await api.get<ApiResponse<VisitHistory[]>>(`/api/visits/history`);
+  const res = await api.get<ApiResponse<VisitHistory[]>>(`/api/audit-logs`);
   if (!res.data.success) return [];
   return res.data.result ?? [];
 };
