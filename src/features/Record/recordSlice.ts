@@ -7,7 +7,7 @@ import type {
 } from "./recordTypes";
 
 type FetchRecordPayload = {
-  nursingId: string;
+  nursingId: string 
 };
 
 type UpdateRecordPayload = {
@@ -19,7 +19,7 @@ const initialState: RecordState = {
   list: [],
   selected: null,
   loading: false,
-  error: null,
+  error: null
 };
 
 const recordSlice = createSlice({
@@ -39,10 +39,10 @@ const recordSlice = createSlice({
       state.error = action.payload;
     },
 
-    fetchRecordRequest(state, action: PayloadAction<FetchRecordPayload>) {
+    fetchRecordRequest(state, _action: PayloadAction<FetchRecordPayload>) {
       state.loading = true;
       state.error = null;
-      state.selected = action.payload;
+      state.selected = null;
     },
     fetchRecordSuccess(state, action: PayloadAction<RecordItem>) {
       state.loading = false;
@@ -93,6 +93,20 @@ const recordSlice = createSlice({
       state.error = action.payload;
     },
 
+    
+    searchRecordRequest(state, _action: PayloadAction<{searchType:string; searchValue:string}>) {
+      state.loading = true;
+      state.error = null;
+    },
+    searchRecordSuccess(state, action: PayloadAction<RecordItem[]>) {
+      state.loading = false;
+      state.list = action.payload;
+    },
+   searchRecordFailure(state, action: PayloadAction<string>) {
+      state.loading = false;
+      state.error = action.payload;
+    }
+
   },
 });
 
@@ -113,6 +127,10 @@ export const {
   deleteRecordRequest,
   deleteRecordSuccess,
   deleteRecordFailure,
+  searchRecordRequest,
+  searchRecordSuccess,
+  searchRecordFailure
+
 }
 
 = recordSlice.actions;

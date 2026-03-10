@@ -12,24 +12,28 @@ import { createRecordRequest } from "@/features/Record/recordSlice";
 export default function RecordCreate() {
   const router = useRouter();
   const dispatch = useDispatch<AppDispatch>();
-  const { loading, error } = useSelector((s: RootState) => s.records);
+  const { loading, error} = useSelector((s: RootState) => s.records);
 
   const onSubmit = (payload: NursingRecordCreatePayload) => {
     dispatch(createRecordRequest(payload));
-    router.push("/nurse/record");
+    router.push("/medical_support/record/list");
   };
+
+   const form: typeof emptyRecordForm ={
+    ...emptyRecordForm,
+   };
 
   return (
     <Card sx={{ borderRadius: 3, border: "1px solid var(--line)" }}>
       <CardContent sx={{ p: 2.5 }}>
         <RecordForm
           title="간호 기록 등록"
-          initial={emptyRecordForm}
+          initial={form}
+          mode = "create"
           loading={loading}
           error={error}
-          submitLabel="등록"
           onSubmit={onSubmit}
-          onCancel={() => router.push("/nurse/record")}
+          onCancel={() => router.push("/medical_support/record/list")}
         />
       </CardContent>
     </Card>

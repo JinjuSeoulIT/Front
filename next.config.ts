@@ -1,11 +1,39 @@
 import type { NextConfig } from "next";
 
+const DEFAULT_AUTH_API_BASE_URL = "http://192.168.1.64:8081";
+const DEFAULT_PATIENTS_API_BASE_URL = "http://192.168.1.60:8181";
+const DEFAULT_RECEPTION_API_BASE_URL = "http://192.168.1.55:8283";
+const DEFAULT_BILLING_API_BASE_URL = "http://192.168.1.68:8081";
+
+const resolveBaseUrl = (envValue: string | undefined, fallback: string) => {
+  const value = (envValue ?? "").trim();
+  return value || fallback;
+};
+
 const nextConfig: NextConfig = {
+  allowedDevOrigins: [
+    "localhost",
+    "127.0.0.1",
+    "192.168.1.64",
+    "192.168.1.64:3001",
+  ],
   async rewrites() {
-    const patientsApiBase =
-      process.env.NEXT_PUBLIC_PATIENTS_API_BASE_URL ?? "http://192.168.1.60:8181";
-    const receptionApiBase =
-      process.env.NEXT_PUBLIC_RECEPTION_API_BASE_URL ?? "http://192.168.1.55:8283";
+    const patientsApiBase = resolveBaseUrl(
+      process.env.NEXT_PUBLIC_PATIENTS_API_BASE_URL,
+      DEFAULT_PATIENTS_API_BASE_URL
+    );
+    const receptionApiBase = resolveBaseUrl(
+      process.env.NEXT_PUBLIC_RECEPTION_API_BASE_URL,
+      DEFAULT_RECEPTION_API_BASE_URL
+    );
+    const authApiBase = resolveBaseUrl(
+      process.env.NEXT_PUBLIC_AUTH_API_BASE_URL,
+      DEFAULT_AUTH_API_BASE_URL
+    );
+    const billingApiBase = resolveBaseUrl(
+      process.env.NEXT_PUBLIC_BILLING_API_BASE_URL,
+      DEFAULT_BILLING_API_BASE_URL
+    );
 
     return [
       {
@@ -47,6 +75,14 @@ const nextConfig: NextConfig = {
       {
         source: "/api/patients/:patientId/consents/:path*",
         destination: `${patientsApiBase}/api/patients/:patientId/consents/:path*`,
+      },
+      {
+        source: "/api/auth/:path*",
+        destination: `${authApiBase}/api/auth/:path*`,
+      },
+      {
+        source: "/api/billing/:path*",
+        destination: `${billingApiBase}/api/billing/:path*`,
       },
       {
         source: "/api/:path*",

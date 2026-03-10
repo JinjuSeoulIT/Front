@@ -2,13 +2,13 @@ import type {
   NursingRecord,
   NursingRecordCreatePayload,
   NursingRecordUpdatePayload,
-} from "@/lib/recordApi";
+} from "@/lib/medical-support/recordApi";
 
 export type RecordItem = NursingRecord;
 
 export type RecordForm = {
   visitId: string;
-  recordedAt: string;
+  recordedAt: string | null;
   systolicBp: string;
   diastolicBp: string;
   pulse: string;

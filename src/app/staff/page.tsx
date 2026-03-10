@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import MainLayout from "@/components/layout/MainLayout";
+import { useRouter } from "next/navigation";
 import {
   Box,
   Card,
@@ -38,10 +39,13 @@ const FALLBACK_DEPARTMENTS = [
 
 const toLabel = (value?: string | null) => (value && value.trim() ? value : "기타");
 
+
 export default function StaffPage() {
   const [staffs, setStaffs] = React.useState<StaffListItem[]>([]);
   const [loading, setLoading] = React.useState(false);
 
+
+  const router = useRouter();
   React.useEffect(() => {
     let mounted = true;
     const load = async () => {
@@ -59,10 +63,14 @@ export default function StaffPage() {
     };
   }, []);
 
-  const displayStaffs = staffs.length ? staffs : FALLBACK_STAFFS;
+  const displayStaffs = staffs.length ? staffs : FALLBACK_STAFFS;  //간호변수값
   const departmentSummary = React.useMemo(() => {
-    if (!staffs.length) return FALLBACK_DEPARTMENTS;
+
+
+    if (!staffs.length) 
+      return FALLBACK_DEPARTMENTS;
     const map = new Map<string, number>();
+    
     for (const s of staffs) {
       const key = toLabel(s.departmentName ?? s.domainRole);
       map.set(key, (map.get(key) ?? 0) + 1);
@@ -213,6 +221,24 @@ export default function StaffPage() {
               </Typography>
             </CardContent>
           </Card>
+
+ <Card sx={{ borderRadius: 3, border: "1px solid var(--line)" }}>
+  <CardContent sx={{ p: 2.5 }}>
+    <Stack direction="row" spacing={1} alignItems="center">
+      <Typography fontWeight={800}>간호사 목록</Typography>
+  
+<Button
+  variant="outlined"
+  sx={{ mt: 2 }}
+  onClick={() => router.push("/nurse/join/list")}
+>
+  전체 보기
+</Button>
+      </Stack>
+  </CardContent>
+</Card>
+
+
         </Box>
       </Stack>
     </MainLayout>

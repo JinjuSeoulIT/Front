@@ -8,12 +8,15 @@ import {
   IconButton,
   Stack,
   Badge,
+  Button,
 } from "@mui/material";
 import MedicalServicesOutlinedIcon from "@mui/icons-material/MedicalServicesOutlined";
 import NotificationsNoneOutlinedIcon from "@mui/icons-material/NotificationsNoneOutlined";
 import PersonOutlineOutlinedIcon from "@mui/icons-material/PersonOutlineOutlined";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { logoutApi } from "@/lib/auth/authApi";
+import { clearSession } from "@/lib/auth/session";
 
 const ROLE_LINKS = [
   { key: "doctor", label: "의사", href: "/doctor" },
@@ -27,7 +30,20 @@ const ROLE_LINKS = [
 
 export default function Navbar() {
   const pathname = usePathname();
+  const router = useRouter();
   const activeRole = ROLE_LINKS.find((role) => pathname.startsWith(role.href));
+
+  const handleLogout = async () => {
+    try {
+      await logoutApi();
+    } catch {
+      // 서버 로그아웃 실패 시에도 로컬 세션은 정리한다.
+    } finally {
+      clearSession();
+      router.push("/login");
+      router.refresh();
+    }
+  };
 
   return (
     <AppBar
@@ -90,10 +106,26 @@ export default function Navbar() {
             <Typography sx={{ color: "#e8f1ff", fontSize: 14, fontWeight: 600 }}>
               관리자
             </Typography>
-            <Typography sx={{ color: "#cbd9f5", fontSize: 12 }}>
-              운영팀
-            </Typography>
-          </Stack>
+              <Typography sx={{ color: "#cbd9f5", fontSize: 12 }}>
+                운영팀
+              </Typography>
+            </Stack>
+          <Button
+            onClick={handleLogout}
+            variant="outlined"
+            sx={{
+              color: "#e8f1ff",
+              borderColor: "rgba(232, 241, 255, 0.45)",
+              fontWeight: 700,
+              minWidth: 88,
+              "&:hover": {
+                borderColor: "#e8f1ff",
+                backgroundColor: "rgba(255,255,255,0.08)",
+              },
+            }}
+          >
+            로그아웃
+          </Button>
         </Stack>
       </Toolbar>
     </AppBar>

@@ -1,38 +1,134 @@
-import { Card, CardContent, Stack, Typography } from "@mui/material";
-import type { RecordItem } from "@/features/Record/recordTypes";
+"use client";
 
-type RecordDetailProps = {
-  selected: RecordItem | null;
-};
+import {
+  Box,
+  Paper,
+  Typography,
+  Chip,
+  Grid,
+  CircularProgress,
+  Button,
+} from "@mui/material";
+import { useParams, useRouter } from "next/navigation";
+import { useSelector, useDispatch } from "react-redux";
+import { useEffect } from "react";
+import { RootState } from "@/store/rootReducer";
+import Link from "next/link";
+import { fetchRecordRequest } from "@/features/Record/recordSlice";
 
-export default function RecordDetail({ selected }: RecordDetailProps) {
+export default function RecordDetail() {
+  const { nursingId } = useParams<{nursingId:string}>();
+  const dispatch = useDispatch();
+
+  const { selected, loading, error} = useSelector(
+    (state: RootState) => state.records
+  );
+
+useEffect(() => {
+  if (nursingId) {
+    dispatch(fetchRecordRequest({nursingId}));
+  }
+}, [nursingId]);
+
+
+  if (loading)
+    return (
+      <Box p={4}>
+        <CircularProgress />
+      </Box>
+    );
+
+  if (error)
+    return (
+      <Typography p={4} color="error">
+        {error}
+      </Typography>
+    );
+
+  if (!selected)
+    return (
+      <Typography p={4}>
+        데이터를 찾을 수 없습니다...
+      </Typography>
+    );
+
+  const fields = [
+    { label: "간호사 아이디", value: selected.nursingId },
+    { label: "기록 시각", value: selected.recordedAt },
+    { label: "생성일시", value: selected.createdAt },
+    { label: "수정일시", value: selected.updatedAt },
+    { label: "수축기 혈압", value: selected.systolicBp },
+    { label: "이완기 혈압", value: selected.diastolicBp },
+    { label: "맥박", value: selected.pulse },
+    { label: "호흡", value: selected.respiration },
+    { label: "체온", value: selected.temperature },
+    { label: "동맥혈산소포화도", value: selected.spo2 },
+    { label: "통증 점수", value: selected.painScore },
+    { label: "의식 수준", value: selected.consciousnessLevel },
+    { label: "접수 아이디", value: selected.receptionId }
+  ];
+
   return (
-    <Card sx={{ borderRadius: 3, border: "1px solid var(--line)" }}>
-      <CardContent>
-        <Typography fontWeight={800} sx={{ mb: 1 }}>
-          상세 조회
-        </Typography>
+    <Box sx={{ p: 4 }}>
+      <Typography variant="h5" fontWeight={700} mb={3}>
+        간호 기록 상세
+      </Typography>
 
-        {!selected ? (
-          <Typography color="text.secondary">목록에서 기록을 선택하세요.</Typography>
-        ) : (
-          <Stack spacing={0.75}>
-            <Typography>기록 ID: {selected.nursingId ?? "-"}</Typography>
-            <Typography>방문 ID: {selected.visitId ?? "-"}</Typography>
-            <Typography>기록 시각: {selected.recordedAt ?? "-"}</Typography>
-            <Typography>
-              혈압: {selected.systolicBp ?? "-"} / {selected.diastolicBp ?? "-"}
-            </Typography>
-            <Typography>
-              맥박 / 호흡: {selected.pulse ?? "-"} / {selected.respiration ?? "-"}
-            </Typography>
-            <Typography>
-              체온 / SpO2: {selected.temperature ?? "-"} / {selected.spo2 ?? "-"}
-            </Typography>
-            <Typography>관찰 내용: {selected.observation ?? "-"}</Typography>
-          </Stack>
-        )}
-      </CardContent>
-    </Card>
+      <Paper sx={{ p: 4, borderRadius: 3 }}>
+        <Grid container spacing={3}>
+          {fields.map((field) => (
+            <Grid key={field.label} size={6}>
+              <Typography fontWeight={600}>
+                {field.label}
+              </Typography>
+              <Typography>{field.value ?? "-"}</Typography>
+            </Grid>
+          ))}
+
+          <Grid size={12}>
+            <Typography fontWeight={600}>관찰 내용</Typography>
+            <Typography>{selected.observation}</Typography>
+          </Grid>
+
+          <Grid size={12}>
+            <Typography fontWeight={600}>초기 평가</Typography>
+            <Typography>{selected.initialAssessment}</Typography>
+          </Grid>
+
+          <Grid size={12}>
+            <Typography fontWeight={600}>상태</Typography>
+            <Chip
+              label={selected.status}
+              color={
+                selected.status === "ACTIVE"
+                  ? "success"
+                  : "default"
+              }
+            />
+          </Grid>
+          
+          <Grid size={12}>
+            <Typography fontWeight={600}>접수 아이디</Typography>
+            <Typography>{selected.receptionId}</Typography>
+          </Grid>
+          
+           <Button
+                      component={Link}
+                      href={`/medical_support/record/edit/${nursingId}`}
+                      variant="outlined"
+                      size="small"
+                    >
+                      수정
+                    </Button>
+                    <Button
+                      variant="contained"
+                      color="error"
+                      size="small"
+                    >
+                      삭제
+                    </Button>
+        </Grid>
+      </Paper>
+    </Box>
   );
 }

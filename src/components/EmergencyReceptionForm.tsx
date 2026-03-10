@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import * as React from "react";
 import {
@@ -491,7 +491,7 @@ export default function EmergencyReceptionForm({
                   variant="outlined"
                   size="small"
                   onClick={() =>
-                    router.push(`/patients/new?name=${encodeURIComponent(patientKeyword.trim())}`)
+                    router.push(`/patient/list?open=registration&name=${encodeURIComponent(patientKeyword.trim())}`)
                   }
                   sx={{
                     width: "fit-content",
