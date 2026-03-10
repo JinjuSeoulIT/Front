@@ -1,16 +1,21 @@
-﻿import axios from "axios";
-import type { ApiResponse } from "../features/patients/patientTypes";
+import axios from "axios";
+
+type ApiResponse<T> = {
+  success?: boolean;
+  message?: string;
+  result?: T;
+};
 
 export type VisitRes = {
   id: number;
-  visitNo: string;
+  visitNo?: string | null;
   patientId: number;
   patientNo?: string | null;
   patientName?: string | null;
   patientPhone?: string | null;
-  visitType: string;
-  status: string;
-  deptCode: string;
+  visitType?: string | null;
+  status?: string | null;
+  deptCode?: string | null;
   doctorId?: string | null;
   priorityYn?: boolean | null;
   queueNo?: number | null;
@@ -21,12 +26,14 @@ export type VisitRes = {
   cancelledAt?: string | null;
   cancelReasonCode?: string | null;
   cancelMemo?: string | null;
-  createdAt?: string | null;
-  updatedAt?: string | null;
   reservationId?: string | null;
   scheduledAt?: string | null;
   arrivalAt?: string | null;
   reservationNote?: string | null;
+  createdBy?: string | null;
+  updatedBy?: string | null;
+  createdAt?: string | null;
+  updatedAt?: string | null;
 };
 
 export type VisitCreatePayload = {
@@ -35,8 +42,8 @@ export type VisitCreatePayload = {
   patientNo?: string | null;
   patientName?: string | null;
   patientPhone?: string | null;
-  visitType: string;
-  deptCode: string;
+  visitType?: string | null;
+  deptCode?: string | null;
   doctorId?: string | null;
   priorityYn?: boolean | null;
   queueNo?: number | null;
@@ -69,43 +76,74 @@ export type VisitUpdatePayload = {
   reservationNote?: string | null;
 };
 
+export type CreateVisitReq = VisitCreatePayload;
+
 const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_RECEPTION_API_BASE_URL ?? "http://192.168.1.55:8283",
+  baseURL:
+    process.env.NEXT_PUBLIC_RECEPTION_API_BASE_URL ?? "http://192.168.1.55:8283",
 });
 
-export const fetchVisitsApi = async (): Promise<VisitRes[]> => {
-  const res = await api.get<ApiResponse<VisitRes[]>>("/api/receptions");
-  if (!res.data.success) {
-    throw new Error(res.data.message || "Fetch failed");
+function unwrap<T>(data: ApiResponse<T> | T): T {
+  if (data && typeof data === "object" && "result" in (data as ApiResponse<T>)) {
+    return ((data as ApiResponse<T>).result ?? null) as T;
   }
-  return res.data.result;
+  return data as T;
+}
+
+function isWrappedResponse<T>(data: ApiResponse<T> | T): data is ApiResponse<T> {
+  return !!data && typeof data === "object" && "success" in (data as ApiResponse<T>);
+}
+
+export const fetchVisitsApi = async (): Promise<VisitRes[]> => {
+  const res = await api.get<ApiResponse<VisitRes[]> | VisitRes[]>("/api/receptions");
+  if (isWrappedResponse<VisitRes[]>(res.data)) {
+    if (res.data.success === false) {
+      throw new Error(res.data.message || "Failed to fetch receptions.");
+    }
+    return Array.isArray(res.data.result) ? res.data.result : [];
+  }
+
+  const value = unwrap<VisitRes[]>(res.data);
+  return Array.isArray(value) ? value : [];
 };
 
 export const createVisitApi = async (
   payload: VisitCreatePayload
 ): Promise<VisitRes> => {
-  const res = await api.post<ApiResponse<VisitRes>>("/api/receptions", payload);
-  if (!res.data.success) {
-    throw new Error(res.data.message || "Create failed");
+  const res = await api.post<ApiResponse<VisitRes> | VisitRes>("/api/receptions", payload);
+  if (isWrappedResponse<VisitRes>(res.data) && res.data.success === false) {
+    throw new Error(res.data.message || "Failed to create reception.");
   }
-  return res.data.result;
+
+  const value = unwrap<VisitRes>(res.data);
+  if (!value || typeof value !== "object") {
+    throw new Error("Create reception response is empty.");
+  }
+  return value;
 };
 
 export const updateVisitApi = async (
   id: number,
   payload: VisitUpdatePayload
 ): Promise<VisitRes> => {
-  const res = await api.put<ApiResponse<VisitRes>>(`/api/receptions/${id}`, payload);
-  if (!res.data.success) {
-    throw new Error(res.data.message || "Update failed");
+  const res = await api.put<ApiResponse<VisitRes> | VisitRes>(
+    `/api/receptions/${id}`,
+    payload
+  );
+  if (isWrappedResponse<VisitRes>(res.data) && res.data.success === false) {
+    throw new Error(res.data.message || "Failed to update reception.");
   }
-  return res.data.result;
+
+  const value = unwrap<VisitRes>(res.data);
+  if (!value || typeof value !== "object") {
+    throw new Error("Update reception response is empty.");
+  }
+  return value;
 };
 
 export const deleteVisitApi = async (id: number): Promise<void> => {
-  const res = await api.delete<ApiResponse<void>>(`/api/receptions/${id}`);
-  if (!res.data.success) {
-    throw new Error(res.data.message || "Delete failed");
+  const res = await api.delete<ApiResponse<void> | void>(`/api/receptions/${id}`);
+  if (isWrappedResponse<void>(res.data) && res.data.success === false) {
+    throw new Error(res.data.message || "Failed to cancel reception.");
   }
 };
-

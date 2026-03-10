@@ -1,6 +1,7 @@
-"use client";
+﻿"use client";
 
 import * as React from "react";
+import axios from "axios";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import MainLayout from "@/components/layout/MainLayout";
@@ -31,6 +32,8 @@ import AssignmentIndOutlinedIcon from "@mui/icons-material/AssignmentIndOutlined
 import BlockOutlinedIcon from "@mui/icons-material/BlockOutlined";
 import EventAvailableOutlinedIcon from "@mui/icons-material/EventAvailableOutlined";
 import SwapHorizOutlinedIcon from "@mui/icons-material/SwapHorizOutlined";
+import LocalHospitalOutlinedIcon from "@mui/icons-material/LocalHospitalOutlined";
+import HotelOutlinedIcon from "@mui/icons-material/HotelOutlined";
 
 import { useDispatch, useSelector } from "react-redux";
 import type { RootState, AppDispatch } from "@/store/store";
@@ -42,8 +45,9 @@ import type { PatientFlag } from "@/lib/flagApi";
 import { fetchPatientFlagsApi } from "@/lib/flagApi";
 import { changePatientStatusApi } from "@/lib/patientApi";
 import { fetchCodesApi } from "@/lib/codeApi";
-import { createVisitApi } from "@/lib/receptionApi";
-import { saveVisitReservationApi } from "@/lib/reservationApi";
+import { createReservationApi, fetchReservationsApi } from "@/lib/reservationAdminApi";
+import { createReceptionApi, fetchReceptionsApi } from "@/lib/receptionsCrudApi";
+import { buildNextReceptionNumber } from "@/lib/receptionNumber";
 
 function sexLabel(g?: Patient["gender"]) {
   if (g === "M") return "남(M)";
@@ -55,25 +59,18 @@ function resolveFileUrl(url?: string | null) {
   if (!url) return "";
   if (url.startsWith("http://") || url.startsWith("https://")) return url;
   const base =
-    process.env.NEXT_PUBLIC_PATIENTS_API_BASE_URL ?? "http://localhost:8081";
+    process.env.NEXT_PUBLIC_PATIENTS_API_BASE_URL ?? "http://192.168.1.60:8181";
   return `${base}${url.startsWith("/") ? "" : "/"}${url}`;
 }
 
-function restrictionLabel(type: string) {
-  switch (type) {
-    case "INFECTION":
-      return "감염주의(Infection)";
-    case "ALLERGY":
-      return "알레르기(Allergy)";
-    case "BLACKLIST":
-      return "블랙리스트(Blacklist)";
-    case "NO_SHOW":
-      return "노쇼(No-show)";
-    default:
-      return type;
-  }
-}
+type RestrictionOption = { value: string; label: string };
 type FlagOption = { value: string; label: string };
+type StatusOption = { value: string; label: string };
+
+function restrictionLabel(type: string, options: RestrictionOption[]) {
+  const found = options.find((opt) => opt.value === type);
+  return found ? found.label : type;
+}
 
 function flagLabel(type: string, options: FlagOption[]) {
   const found = options.find((opt) => opt.value === type);
@@ -83,19 +80,14 @@ function flagLabel(type: string, options: FlagOption[]) {
 function flagColor(type: string) {
   switch (type) {
     case "VIOLENCE":
-      return "error";
     case "INFECTIOUS":
       return "error";
     case "FALL_RISK":
-      return "warning";
     case "ALLERGY":
-      return "warning";
-    case "DNR":
-      return "info";
     case "SEIZURE":
-      return "warning";
     case "PSYCHIATRIC":
       return "warning";
+    case "DNR":
     case "SPECIAL_CARE":
       return "info";
     default:
@@ -107,73 +99,102 @@ function buildFlags(
   p: Patient,
   restrictions: PatientRestriction[],
   flags: PatientFlag[],
-  flagOptions: FlagOption[]
+  flagOptions: FlagOption[],
+  restrictionOptions: RestrictionOption[]
 ) {
   const chips: {
+    key: string;
     label: string;
     color?: "default" | "warning" | "error" | "info" | "success";
   }[] = [];
+
   if (p.isVip) {
-    chips.push({ label: "VIP", color: "warning" });
+    chips.push({ key: "vip", label: "VIP", color: "warning" });
   }
+
   for (const r of restrictions) {
     if (!r.activeYn) continue;
     chips.push({
-      label: restrictionLabel(r.restrictionType),
-      color: r.restrictionType === "INFECTION" ? "error" : "default",
+      key: `restriction-${r.restrictionId}`,
+      label: restrictionLabel(r.restrictionType, restrictionOptions),
+      color: "default",
     });
   }
+
   for (const f of flags) {
     if (!f.activeYn) continue;
     chips.push({
+      key: `flag-${f.flagId}`,
       label: flagLabel(f.flagType, flagOptions),
       color: flagColor(f.flagType),
     });
   }
+
   return chips;
 }
-
-type StatusOption = { value: string; label: string };
-
-const DEFAULT_STATUS_OPTIONS: StatusOption[] = [
-  { value: "OUTPATIENT", label: "외래" },
-  { value: "INPATIENT", label: "입원" },
-  { value: "DISCHARGED", label: "퇴원" },
-  { value: "TRANSFERRED", label: "전원" },
-  { value: "DECEASED", label: "사망" },
-  { value: "NO_SHOW", label: "노쇼" },
-  { value: "INACTIVE", label: "비활성" },
-];
 
 function statusLabel(code?: string | null, options?: StatusOption[]) {
   if (!code) return "-";
   const found = options?.find((opt) => opt.value === code);
   if (found) return `${found.label}(${found.value})`;
-  switch (code) {
-    case "ACTIVE":
-      return "활성(ACTIVE)";
-    case "OUTPATIENT":
-      return "외래(OUTPATIENT)";
-    case "INPATIENT":
-      return "입원(INPATIENT)";
-    case "DISCHARGED":
-      return "퇴원(DISCHARGED)";
-    case "TRANSFERRED":
-      return "전원(TRANSFERRED)";
-    case "DECEASED":
-      return "사망(DECEASED)";
-    case "NO_SHOW":
-      return "노쇼(NO_SHOW)";
-    case "INACTIVE":
-      return "비활성(INACTIVE)";
-    default:
-      return code ?? "-";
-  }
+  return code;
 }
+
 function toApiDateTime(value?: string) {
   if (!value) return undefined;
   return value.length === 16 ? `${value}:00` : value;
 }
+
+function toTodayDateTime(value?: string) {
+  if (!value) return undefined;
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+  const timeWithSeconds = value.length === 5 ? `${value}:00` : value;
+  return `${year}-${month}-${day}T${timeWithSeconds}`;
+}
+
+function toLocalDateTime(date = new Date()) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  const hours = String(date.getHours()).padStart(2, "0");
+  const minutes = String(date.getMinutes()).padStart(2, "0");
+  const seconds = String(date.getSeconds()).padStart(2, "0");
+  return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`;
+}
+
+function toLocalDate(date = new Date()) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function resolveErrorMessage(err: unknown, fallback: string) {
+  if (axios.isAxiosError(err)) {
+    const data = err.response?.data as
+      | { message?: string; error?: string; detail?: string }
+      | undefined;
+    if (data?.message) return data.message;
+    if (data?.error) return data.error;
+    if (data?.detail) return data.detail;
+    if (err.message) return err.message;
+  }
+  if (err instanceof Error && err.message) return err.message;
+  if (typeof err === "string" && err.trim()) return err;
+  return fallback;
+}
+
+const departments = [
+  { id: 1, name: "내과", doctor: "송태민", doctorId: 1 },
+  { id: 2, name: "외과", doctor: "이현석", doctorId: 2 },
+  { id: 3, name: "정형외과", doctor: "성숙희", doctorId: 3 },
+  { id: 4, name: "신경외과", doctor: "최효정", doctorId: 4 },
+];
+
+const defaultDepartment = departments[0];
 
 export default function PatientDetailPage() {
   const params = useParams<{ id: string }>();
@@ -181,13 +202,11 @@ export default function PatientDetailPage() {
   const dispatch = useDispatch<AppDispatch>();
   const patientId = Number(params.id);
 
-  const { selected, loading, error } = useSelector(
-    (s: RootState) => s.patients
-  );
+  const { selected, loading, error } = useSelector((s: RootState) => s.patients);
   const p = selected;
-  const [restrictions, setRestrictions] = React.useState<PatientRestriction[]>(
-    []
-  );
+  const todayDateLabel = toLocalDate();
+
+  const [restrictions, setRestrictions] = React.useState<PatientRestriction[]>([]);
   const [flags, setFlags] = React.useState<PatientFlag[]>([]);
 
   const [statusDialogOpen, setStatusDialogOpen] = React.useState(false);
@@ -195,11 +214,30 @@ export default function PatientDetailPage() {
   const [statusReason, setStatusReason] = React.useState("");
   const [statusChangedBy, setStatusChangedBy] = React.useState("");
   const [statusSaving, setStatusSaving] = React.useState(false);
-  const [statusOptions, setStatusOptions] = React.useState<StatusOption[]>(
-    DEFAULT_STATUS_OPTIONS
-  );
+
+  const [statusOptions, setStatusOptions] = React.useState<StatusOption[]>([]);
   const [flagOptions, setFlagOptions] = React.useState<FlagOption[]>([]);
+  const [restrictionOptions, setRestrictionOptions] = React.useState<RestrictionOption[]>([]);
+
   const [vipUpdating, setVipUpdating] = React.useState(false);
+  const [receptionDialogOpen, setReceptionDialogOpen] = React.useState(false);
+  const [receptionSaving, setReceptionSaving] = React.useState(false);
+  const [receptionForm, setReceptionForm] = React.useState({
+    deptCode: defaultDepartment.name,
+    doctorId: String(defaultDepartment.doctorId),
+    visitType: "OUTPATIENT",
+    arrivedAt: "",
+    note: "",
+  });
+
+  const [reservationDialogOpen, setReservationDialogOpen] = React.useState(false);
+  const [reservationSaving, setReservationSaving] = React.useState(false);
+  const [reservationForm, setReservationForm] = React.useState({
+    deptCode: defaultDepartment.name,
+    doctorId: String(defaultDepartment.doctorId),
+    scheduledAt: "",
+    note: "",
+  });
 
   React.useEffect(() => {
     dispatch(patientActions.fetchPatientRequest({ patientId }));
@@ -243,33 +281,25 @@ export default function PatientDetailPage() {
     let mounted = true;
     const loadCodes = async () => {
       try {
-        const list = await fetchCodesApi("PATIENT_STATUS");
-        if (!mounted) return;
-        if (list.length) {
-          setStatusOptions(list.map((c) => ({ value: c.code, label: c.name })));
-        }
-      } catch {
-        // keep defaults
-      }
-    };
-    loadCodes();
-    return () => {
-      mounted = false;
-    };
-  }, []);
+        const [statusList, flagList, restrictionList] = await Promise.all([
+          fetchCodesApi("PATIENT_STATUS"),
+          fetchCodesApi("PATIENT_FLAG"),
+          fetchCodesApi("PATIENT_RESTRICTION"),
+        ]);
 
-  React.useEffect(() => {
-    let mounted = true;
-    const loadFlagCodes = async () => {
-      try {
-        const list = await fetchCodesApi("PATIENT_FLAG");
         if (!mounted) return;
-        setFlagOptions(list.map((c) => ({ value: c.code, label: c.name })));
+        setStatusOptions(statusList.map((c) => ({ value: c.code, label: c.name })));
+        setFlagOptions(flagList.map((c) => ({ value: c.code, label: c.name })));
+        setRestrictionOptions(restrictionList.map((c) => ({ value: c.code, label: c.name })));
       } catch {
-        if (mounted) setFlagOptions([]);
+        if (!mounted) return;
+        setStatusOptions([]);
+        setFlagOptions([]);
+        setRestrictionOptions([]);
       }
     };
-    loadFlagCodes();
+
+    loadCodes();
     return () => {
       mounted = false;
     };
@@ -278,21 +308,32 @@ export default function PatientDetailPage() {
   const addressText = p
     ? `${p.address ?? "-"} ${p.addressDetail ? `(${p.addressDetail})` : ""}`
     : "-";
+
   const detailRows = [
-    { label: "환자ID", value: p?.patientId ?? "-" },
-    { label: "성별(Gender)", value: p ? sexLabel(p.gender) : "-" },
-    { label: "연락처(Phone)", value: p?.phone ?? "-" },
-    { label: "보호자 이름", value: p?.guardianName ?? "-" },
+    { label: "환자 ID", value: p?.patientId ?? "-" },
+    { label: "성별", value: p ? sexLabel(p.gender) : "-" },
+    { label: "연락처", value: p?.phone ?? "-" },
+    { label: "보호자명", value: p?.guardianName ?? "-" },
     { label: "보호자 연락처", value: p?.guardianPhone ?? "-" },
     { label: "보호자 관계", value: p?.guardianRelation ?? "-" },
-    { label: "내/외국인", value: p?.isForeigner ? "외국인" : "내국인" },
+    { label: "국적", value: p?.isForeigner ? "외국인" : "내국인" },
     {
       label: "연락 우선순위",
       value: p?.contactPriority === "GUARDIAN" ? "보호자" : "본인",
     },
-    { label: "알레르기/주의사항", value: p?.note ?? "-" },
-    { label: "주소(Address)", value: addressText },
-    { label: "상태(Status)", value: statusLabel(p?.statusCode, statusOptions) },
+    { label: "메모", value: p?.note ?? "-" },
+    { label: "주소", value: addressText },
+    { label: "상태", value: statusLabel(p?.statusCode, statusOptions) },
+  ];
+
+  const cards = [
+    { title: "보험", desc: "환자 보험 등록/수정", href: `/patients/${patientId}/insurances` },
+    { title: "동의서", desc: "동의서 등록/파일 관리", href: `/patients/${patientId}/consents` },
+    { title: "메모", desc: "주의사항/요청사항 기록", href: `/patients/${patientId}/memos` },
+    { title: "제한", desc: "환자 제한 상태 관리", href: `/patients/${patientId}/restrictions` },
+    { title: "플래그", desc: "환자 플래그 관리", href: `/patients/${patientId}/flags` },
+    { title: "정보 변경 이력", desc: "기본정보 변경 이력", href: `/patients/${patientId}/info-history` },
+    { title: "상태 변경 이력", desc: "환자 상태 변경 이력", href: `/patients/${patientId}/status-history` },
   ];
 
   const onDelete = () => {
@@ -302,46 +343,8 @@ export default function PatientDetailPage() {
     router.replace("/patients");
   };
 
-  const cards = [
-    {
-      title: "보험(Insurance)",
-      desc: "환자 보험 등록/수정",
-      href: `/patients/${patientId}/insurances`,
-    },
-    {
-      title: "동의서(Consent)",
-      desc: "동의서 등록/파일 관리",
-      href: `/patients/${patientId}/consents`,
-    },
-    {
-      title: "메모(Memo)",
-      desc: "주의사항/요청사항 기록",
-      href: `/patients/${patientId}/memos`,
-    },
-    {
-      title: "제한/주의(Restriction)",
-      desc: "제한 상태 관리",
-      href: `/patients/${patientId}/restrictions`,
-    },
-    {
-      title: "주의 플래그(Flag)",
-      desc: "주의 플래그 관리",
-      href: `/patients/${patientId}/flags`,
-    },
-    {
-      title: "정보 변경 이력(Info History)",
-      desc: "환자 기본정보 변경 이력",
-      href: `/patients/${patientId}/info-history`,
-    },
-    {
-      title: "상태 변경 이력(Status History)",
-      desc: "환자 상태 변경 이력",
-      href: `/patients/${patientId}/status-history`,
-    },
-  ];
-
   const openStatusDialog = () => {
-    setStatusCode(p?.statusCode ?? "OUTPATIENT");
+    setStatusCode(p?.statusCode ?? statusOptions[0]?.value ?? "");
     setStatusReason("");
     setStatusChangedBy("");
     setStatusDialogOpen(true);
@@ -349,7 +352,7 @@ export default function PatientDetailPage() {
 
   const toggleVip = (checked: boolean) => {
     if (!p) return;
-    if (!confirm(checked ? "VIP로 지정할까요?" : "VIP 해제할까요?")) return;
+    if (!confirm(checked ? "VIP로 지정할까요?" : "VIP를 해제할까요?")) return;
     try {
       setVipUpdating(true);
       dispatch(
@@ -379,29 +382,25 @@ export default function PatientDetailPage() {
     }
   };
 
-  const [reservationDialogOpen, setReservationDialogOpen] = React.useState(false);
-  const [reservationSaving, setReservationSaving] = React.useState(false);
-  const [reservationForm, setReservationForm] = React.useState({
-    deptCode: "내과",
-    doctorId: "김의사",
-    reservationId: "",
-    scheduledAt: "",
-    arrivalAt: "",
-    note: "",
-    memo: "",
-  });
-
   const openReservationDialog = () => {
     setReservationForm({
-      deptCode: "내과",
-      doctorId: "김의사",
-      reservationId: "",
+      deptCode: defaultDepartment.name,
+      doctorId: String(defaultDepartment.doctorId),
       scheduledAt: "",
-      arrivalAt: "",
       note: "",
-      memo: "",
     });
     setReservationDialogOpen(true);
+  };
+
+  const openReceptionDialog = () => {
+    setReceptionForm({
+      deptCode: defaultDepartment.name,
+      doctorId: String(defaultDepartment.doctorId),
+      visitType: "OUTPATIENT",
+      arrivedAt: "",
+      note: "",
+    });
+    setReceptionDialogOpen(true);
   };
 
   const saveReservation = async () => {
@@ -410,34 +409,85 @@ export default function PatientDetailPage() {
       alert("예약 일시는 필수입니다.");
       return;
     }
+
     try {
       setReservationSaving(true);
-      const visit = await createVisitApi({
-        patientId: p.patientId,
-        patientNo: p.patientNo ?? null,
-        patientName: p.name,
-        patientPhone: p.phone ?? null,
-        visitType: "RESERVATION",
-        deptCode: reservationForm.deptCode,
-        doctorId: reservationForm.doctorId,
-        priorityYn: false,
-        memo: reservationForm.memo || null,
-        createdBy: "patient-detail",
-      });
+      const reservedAt = toApiDateTime(reservationForm.scheduledAt);
+      if (!reservedAt) {
+        alert("예약 일시 형식이 올바르지 않습니다.");
+        return;
+      }
 
-      await saveVisitReservationApi(visit.id, {
-        reservationId: reservationForm.reservationId || null,
-        scheduledAt: toApiDateTime(reservationForm.scheduledAt),
-        arrivalAt: toApiDateTime(reservationForm.arrivalAt),
-        note: reservationForm.note || null,
+      const list = await fetchReservationsApi();
+      const reservationNo = buildNextReceptionNumber({
+        existingNumbers: list.map((item) => item.reservationNo),
+        startSequence: 301,
+      });
+      const selectedDept = departments.find((dept) => dept.name === reservationForm.deptCode);
+      const selectedByDoctor = departments.find(
+        (dept) => String(dept.doctorId) === reservationForm.doctorId
+      );
+      const resolvedDept = selectedDept ?? selectedByDoctor ?? defaultDepartment;
+
+      await createReservationApi({
+        reservationNo,
+        patientId: p.patientId,
+        patientName: p.name,
+        departmentId: resolvedDept.id,
+        departmentName: resolvedDept.name,
+        doctorId: Number(reservationForm.doctorId || resolvedDept.doctorId),
+        doctorName: resolvedDept.doctor,
+        reservedAt,
+        status: "RESERVED",
+        note: reservationForm.note?.trim() || null,
       });
 
       setReservationDialogOpen(false);
-      alert("예약이 등록되었습니다.");
-    } catch (err) {
-      alert("예약 등록에 실패했습니다.");
+      router.push("/reservations?page=last");
+    } catch (err: unknown) {
+      console.error("saveReservation failed", err);
+      alert(`예약 등록에 실패했습니다.\n원인: ${resolveErrorMessage(err, "알 수 없는 오류")}`);
     } finally {
       setReservationSaving(false);
+    }
+  };
+
+  const saveReception = async () => {
+    if (!p) return;
+
+    try {
+      setReceptionSaving(true);
+      const list = await fetchReceptionsApi();
+      const nextReceptionNo = buildNextReceptionNumber({
+        existingNumbers: list.map((item) => item.receptionNo),
+        startSequence: 1,
+      });
+      const selectedDept = departments.find((dept) => dept.name === receptionForm.deptCode);
+      const selectedByDoctor = departments.find(
+        (dept) => String(dept.doctorId) === receptionForm.doctorId
+      );
+      const resolvedDept = selectedDept ?? selectedByDoctor ?? defaultDepartment;
+
+      await createReceptionApi({
+        receptionNo: nextReceptionNo,
+        patientId: p.patientId,
+        patientName: p.name,
+        visitType: receptionForm.visitType,
+        departmentId: resolvedDept.id,
+        departmentName: resolvedDept.name,
+        doctorId: Number(receptionForm.doctorId || resolvedDept.doctorId),
+        doctorName: resolvedDept.doctor,
+        arrivedAt: toTodayDateTime(receptionForm.arrivedAt) ?? toLocalDateTime(),
+        status: "WAITING",
+        note: receptionForm.note?.trim() || "환자 상세 화면에서 접수 등록",
+      });
+
+      setReceptionDialogOpen(false);
+      router.push("/receptions?page=last");
+    } catch (err: unknown) {
+      alert(`접수 등록에 실패했습니다.\n원인: ${resolveErrorMessage(err, "알 수 없는 오류")}`);
+    } finally {
+      setReceptionSaving(false);
     }
   };
 
@@ -483,12 +533,7 @@ export default function PatientDetailPage() {
 
               <Grid size={{ xs: 12, md: 6 }}>
                 <Stack spacing={1.25} sx={{ pt: { md: 0.5 } }}>
-                  <Stack
-                    direction="row"
-                    spacing={1}
-                    alignItems="baseline"
-                    sx={{ flexWrap: "wrap" }}
-                  >
+                  <Stack direction="row" spacing={1} alignItems="baseline" sx={{ flexWrap: "wrap" }}>
                     <Typography variant="h4" fontWeight={900}>
                       {p?.name ?? "환자 상세"}
                     </Typography>
@@ -497,12 +542,13 @@ export default function PatientDetailPage() {
                     </Typography>
                     {p && (
                       <Typography color="text.secondary" fontWeight={800}>
-                        {sexLabel(p.gender)} 쨌 {p.birthDate ?? "-"}
+                        {sexLabel(p.gender)} · {p.birthDate ?? "-"}
                       </Typography>
                     )}
                   </Stack>
+
                   <Typography color="text.secondary" fontWeight={700}>
-                    환자 기본 정보를 정확히 확인하세요.
+                    환자 기본 정보를 확인하세요.
                   </Typography>
 
                   {p && (
@@ -520,17 +566,12 @@ export default function PatientDetailPage() {
 
                   <Stack spacing={0.75} sx={{ mt: 0.5 }}>
                     {detailRows.map((row) => (
-                      <Stack
-                        key={row.label}
-                        direction="row"
-                        spacing={1.5}
-                        alignItems="center"
-                      >
+                      <Stack key={row.label} direction="row" spacing={1.5} alignItems="center">
                         <Typography
                           variant="body2"
                           color="text.secondary"
                           fontWeight={800}
-                          sx={{ minWidth: 72 }}
+                          sx={{ minWidth: 96 }}
                         >
                           {row.label}
                         </Typography>
@@ -539,19 +580,10 @@ export default function PatientDetailPage() {
                     ))}
                   </Stack>
 
-                  <Stack
-                    direction="row"
-                    spacing={1}
-                    sx={{ flexWrap: "wrap", mt: 0.5 }}
-                  >
+                  <Stack direction="row" spacing={1} sx={{ flexWrap: "wrap", mt: 0.5 }}>
                     {p &&
-                      buildFlags(p, restrictions, flags, flagOptions).map((c) => (
-                        <Chip
-                          key={c.label}
-                          label={c.label}
-                          color={c.color ?? "default"}
-                          sx={{ fontWeight: 900 }}
-                        />
+                      buildFlags(p, restrictions, flags, flagOptions, restrictionOptions).map((c) => (
+                        <Chip key={c.key} label={c.label} color={c.color ?? "default"} sx={{ fontWeight: 900 }} />
                       ))}
                     {!p && <Chip label={loading ? "로딩..." : "선택 없음"} />}
                   </Stack>
@@ -559,18 +591,40 @@ export default function PatientDetailPage() {
               </Grid>
 
               <Grid size={{ xs: 12, md: 3 }}>
-                <Stack
-                  spacing={1.5}
-                  alignItems={{ xs: "flex-start", md: "flex-end" }}
-                >
-                  <Stack direction="row" spacing={1}>
+                <Stack spacing={1.5} alignItems={{ xs: "stretch", md: "flex-end" }}>
+                  <Paper
+                    elevation={0}
+                    sx={{
+                      p: 1.5,
+                      borderRadius: 3,
+                      border: "1px solid #d7e4fb",
+                      background: "linear-gradient(180deg, #f7fbff 0%, #eef5ff 100%)",
+                      boxShadow: "0 8px 18px rgba(43, 90, 169, 0.12)",
+                      width: "100%",
+                      maxWidth: 380,
+                    }}
+                  >
+                    <Stack spacing={1.2}>
+                      <Typography
+                        variant="caption"
+                        sx={{ color: "#5b6f96", fontWeight: 900, letterSpacing: 0.4 }}
+                      >
+                        QUICK ACTIONS
+                      </Typography>
+                      <Box
+                        sx={{
+                          display: "flex",
+                          flexWrap: "wrap",
+                          gap: 1,
+                        }}
+                      >
                     <Button
                       variant="contained"
                       color="info"
                       startIcon={<AssignmentIndOutlinedIcon />}
-                      onClick={() =>
-                        router.push(`/reception?patientId=${patientId}`)
-                      }
+                      onClick={openReceptionDialog}
+                      disabled={!p}
+                      sx={{ fontWeight: 800, whiteSpace: "nowrap", flex: "1 1 140px", minWidth: 140 }}
                     >
                       접수 등록
                     </Button>
@@ -580,47 +634,97 @@ export default function PatientDetailPage() {
                       startIcon={<EventAvailableOutlinedIcon />}
                       onClick={openReservationDialog}
                       disabled={!p}
+                      sx={{ fontWeight: 800, whiteSpace: "nowrap", flex: "1 1 140px", minWidth: 140 }}
                     >
                       예약 등록
                     </Button>
-                  </Stack>
-                  <Stack direction="row" spacing={1}>
                     <Button
-                      variant="outlined"
-                      startIcon={<ArrowBackOutlinedIcon />}
-                      onClick={() => router.back()}
-                    >
-                      뒤로
-                    </Button>
-                    {p && (
-                      <Button
-                        variant="outlined"
-                        component={Link}
-                        href={`/patients/${p.patientId}/edit`}
-                        startIcon={<EditOutlinedIcon />}
-                      >
-                        수정
-                      </Button>
-                    )}
-                    <Button
-                      variant="outlined"
-                      startIcon={<SwapHorizOutlinedIcon />}
-                      onClick={openStatusDialog}
+                      variant="contained"
+                      color="error"
+                      startIcon={<LocalHospitalOutlinedIcon />}
+                      component={Link}
+                      href={
+                        p
+                          ? `/emergency-receptions/new?patientId=${p.patientId}&patientName=${encodeURIComponent(
+                              p.name ?? ""
+                            )}`
+                          : "/emergency-receptions/new"
+                      }
                       disabled={!p}
+                      sx={{ fontWeight: 800, whiteSpace: "nowrap", flex: "1 1 140px", minWidth: 140 }}
                     >
-                      상태 변경
+                      응급 등록
                     </Button>
-                    {p && (
-                      <Button
-                        variant="outlined"
-                        color="warning"
-                        startIcon={<BlockOutlinedIcon />}
-                        onClick={onDelete}
+                    <Button
+                      variant="contained"
+                      color="secondary"
+                      startIcon={<HotelOutlinedIcon />}
+                      component={Link}
+                      href={
+                        p
+                          ? `/inpatient-receptions/new?patientId=${p.patientId}&patientName=${encodeURIComponent(
+                              p.name ?? ""
+                            )}`
+                          : "/inpatient-receptions/new"
+                      }
+                      disabled={!p}
+                      sx={{ fontWeight: 800, whiteSpace: "nowrap", flex: "1 1 140px", minWidth: 140 }}
+                    >
+                      입원 등록
+                    </Button>
+                      </Box>
+
+                      <Divider sx={{ borderColor: "#d7e4fb" }} />
+
+                      <Box
+                        sx={{
+                          display: "flex",
+                          flexWrap: "wrap",
+                          gap: 1,
+                        }}
                       >
-                        비활성
-                      </Button>
-                    )}
-                  </Stack>
+                        <Button
+                          variant="outlined"
+                          startIcon={<ArrowBackOutlinedIcon />}
+                          onClick={() => router.back()}
+                          sx={{ fontWeight: 800, whiteSpace: "nowrap", flex: "1 1 120px", minWidth: 120 }}
+                        >
+                      뒤로
+                        </Button>
+                        {p && (
+                          <Button
+                            variant="outlined"
+                            component={Link}
+                            href={`/patients/${p.patientId}/edit`}
+                            startIcon={<EditOutlinedIcon />}
+                            sx={{ fontWeight: 800, whiteSpace: "nowrap", flex: "1 1 120px", minWidth: 120 }}
+                          >
+                            수정
+                          </Button>
+                        )}
+                        <Button
+                          variant="outlined"
+                          startIcon={<SwapHorizOutlinedIcon />}
+                          onClick={openStatusDialog}
+                          disabled={!p || statusOptions.length === 0}
+                          sx={{ fontWeight: 800, whiteSpace: "nowrap", flex: "1 1 120px", minWidth: 120 }}
+                        >
+                          상태 변경
+                        </Button>
+                        {p && (
+                          <Button
+                            variant="outlined"
+                            color="warning"
+                            startIcon={<BlockOutlinedIcon />}
+                            onClick={onDelete}
+                            sx={{ fontWeight: 800, whiteSpace: "nowrap", flex: "1 1 120px", minWidth: 120 }}
+                          >
+                            비활성
+                          </Button>
+                        )}
+                      </Box>
+                    </Stack>
+                  </Paper>
                 </Stack>
               </Grid>
 
@@ -680,6 +784,7 @@ export default function PatientDetailPage() {
               value={statusCode}
               onChange={(e) => setStatusCode(e.target.value)}
               fullWidth
+              disabled={statusOptions.length === 0}
             >
               {statusOptions.map((opt) => (
                 <MenuItem key={opt.value} value={opt.value}>
@@ -687,6 +792,11 @@ export default function PatientDetailPage() {
                 </MenuItem>
               ))}
             </TextField>
+            {statusOptions.length === 0 && (
+              <Typography variant="caption" color="error">
+                환자 상태 코드가 비활성화 상태입니다.
+              </Typography>
+            )}
             <TextField
               label="사유"
               value={statusReason}
@@ -708,8 +818,124 @@ export default function PatientDetailPage() {
           <Button
             variant="contained"
             onClick={saveStatus}
-            disabled={!statusCode || statusSaving}
+            disabled={!statusCode || statusSaving || statusOptions.length === 0}
           >
+            저장
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog
+        open={receptionDialogOpen}
+        onClose={() => setReceptionDialogOpen(false)}
+        fullWidth
+        maxWidth="sm"
+        PaperProps={{ sx: { borderRadius: 4 } }}
+      >
+        <DialogTitle>접수 등록</DialogTitle>
+        <DialogContent>
+          <Stack spacing={2} sx={{ mt: 1 }}>
+            <TextField
+              select
+              label="진료과"
+              value={receptionForm.deptCode}
+              onChange={(e) =>
+                setReceptionForm((prev) => {
+                  const nextDeptName = e.target.value;
+                  const nextDept = departments.find((d) => d.name === nextDeptName);
+                  return {
+                    ...prev,
+                    deptCode: nextDeptName,
+                    doctorId: nextDept ? String(nextDept.doctorId) : prev.doctorId,
+                  };
+                })
+              }
+              fullWidth
+            >
+              {departments.map((dept) => (
+                <MenuItem key={dept.id} value={dept.name}>
+                  {dept.name}
+                </MenuItem>
+              ))}
+            </TextField>
+
+            <TextField
+              select
+              label="담당의"
+              value={receptionForm.doctorId}
+              onChange={(e) =>
+                setReceptionForm((prev) => {
+                  const nextDoctorId = e.target.value;
+                  const nextDept = departments.find(
+                    (dept) => String(dept.doctorId) === nextDoctorId
+                  );
+                  return {
+                    ...prev,
+                    doctorId: nextDoctorId,
+                    deptCode: nextDept?.name ?? prev.deptCode,
+                  };
+                })
+              }
+              fullWidth
+            >
+              {departments.map((dept) => (
+                <MenuItem key={dept.doctorId} value={String(dept.doctorId)}>
+                  {dept.doctor}
+                </MenuItem>
+              ))}
+            </TextField>
+
+            <TextField
+              select
+              label="내원유형"
+              value={receptionForm.visitType}
+              onChange={(e) =>
+                setReceptionForm((prev) => ({
+                  ...prev,
+                  visitType: e.target.value,
+                }))
+              }
+              fullWidth
+            >
+              <MenuItem value="OUTPATIENT">외래</MenuItem>
+              <MenuItem value="EMERGENCY">응급</MenuItem>
+              <MenuItem value="INPATIENT">입원</MenuItem>
+            </TextField>
+
+            <TextField
+              label="내원 시간(선택)"
+              type="time"
+              value={receptionForm.arrivedAt}
+              onChange={(e) =>
+                setReceptionForm((prev) => ({
+                  ...prev,
+                  arrivedAt: e.target.value,
+                }))
+              }
+              inputProps={{ step: 60 }}
+              InputLabelProps={{ shrink: true }}
+              fullWidth
+            />
+            <Typography variant="caption" color="text.secondary" sx={{ mt: -1 }}>
+              적용 날짜: {todayDateLabel} (오늘)
+            </Typography>
+
+            <TextField
+              label="접수 메모(선택)"
+              value={receptionForm.note}
+              onChange={(e) =>
+                setReceptionForm((prev) => ({
+                  ...prev,
+                  note: e.target.value,
+                }))
+              }
+              fullWidth
+            />
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setReceptionDialogOpen(false)}>취소</Button>
+          <Button variant="contained" onClick={saveReception} disabled={receptionSaving}>
             저장
           </Button>
         </DialogActions>
@@ -730,45 +956,51 @@ export default function PatientDetailPage() {
               label="진료과"
               value={reservationForm.deptCode}
               onChange={(e) =>
-                setReservationForm((prev) => ({
-                  ...prev,
-                  deptCode: e.target.value,
-                }))
+                setReservationForm((prev) => {
+                  const nextDeptName = e.target.value;
+                  const nextDept = departments.find((d) => d.name === nextDeptName);
+                  return {
+                    ...prev,
+                    deptCode: nextDeptName,
+                    doctorId: nextDept ? String(nextDept.doctorId) : prev.doctorId,
+                  };
+                })
               }
               fullWidth
             >
-              <MenuItem value="내과">내과</MenuItem>
-              <MenuItem value="정형외과">정형외과</MenuItem>
-              <MenuItem value="치과">치과</MenuItem>
-              <MenuItem value="소아과">소아과</MenuItem>
+              {departments.map((dept) => (
+                <MenuItem key={dept.id} value={dept.name}>
+                  {dept.name}
+                </MenuItem>
+              ))}
             </TextField>
+
             <TextField
               select
               label="담당의"
               value={reservationForm.doctorId}
               onChange={(e) =>
-                setReservationForm((prev) => ({
-                  ...prev,
-                  doctorId: e.target.value,
-                }))
+                setReservationForm((prev) => {
+                  const nextDoctorId = e.target.value;
+                  const nextDept = departments.find(
+                    (dept) => String(dept.doctorId) === nextDoctorId
+                  );
+                  return {
+                    ...prev,
+                    doctorId: nextDoctorId,
+                    deptCode: nextDept?.name ?? prev.deptCode,
+                  };
+                })
               }
               fullWidth
             >
-              <MenuItem value="김의사">김의사</MenuItem>
-              <MenuItem value="박의사">박의사</MenuItem>
-              <MenuItem value="이의사">이의사</MenuItem>
+              {departments.map((dept) => (
+                <MenuItem key={dept.doctorId} value={String(dept.doctorId)}>
+                  {dept.doctor}
+                </MenuItem>
+              ))}
             </TextField>
-            <TextField
-              label="예약 ID"
-              value={reservationForm.reservationId}
-              onChange={(e) =>
-                setReservationForm((prev) => ({
-                  ...prev,
-                  reservationId: e.target.value,
-                }))
-              }
-              fullWidth
-            />
+
             <TextField
               label="예약 일시"
               type="datetime-local"
@@ -782,21 +1014,9 @@ export default function PatientDetailPage() {
               InputLabelProps={{ shrink: true }}
               fullWidth
             />
+
             <TextField
-              label="도착 일시(선택)"
-              type="datetime-local"
-              value={reservationForm.arrivalAt}
-              onChange={(e) =>
-                setReservationForm((prev) => ({
-                  ...prev,
-                  arrivalAt: e.target.value,
-                }))
-              }
-              InputLabelProps={{ shrink: true }}
-              fullWidth
-            />
-            <TextField
-              label="예약 메모"
+              label="메모(선택)"
               value={reservationForm.note}
               onChange={(e) =>
                 setReservationForm((prev) => ({
@@ -806,26 +1026,11 @@ export default function PatientDetailPage() {
               }
               fullWidth
             />
-            <TextField
-              label="접수 메모(선택)"
-              value={reservationForm.memo}
-              onChange={(e) =>
-                setReservationForm((prev) => ({
-                  ...prev,
-                  memo: e.target.value,
-                }))
-              }
-              fullWidth
-            />
           </Stack>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setReservationDialogOpen(false)}>취소</Button>
-          <Button
-            variant="contained"
-            onClick={saveReservation}
-            disabled={reservationSaving}
-          >
+          <Button variant="contained" onClick={saveReservation} disabled={reservationSaving}>
             저장
           </Button>
         </DialogActions>

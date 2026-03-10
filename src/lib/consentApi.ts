@@ -1,4 +1,4 @@
-﻿import axios from "axios";
+import axios from "axios";
 import type { ApiResponse } from "../features/patients/patientTypes";
 import type {
   Consent,
@@ -7,7 +7,7 @@ import type {
 } from "../features/consent/consentTypes";
 
 const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_PATIENTS_API_BASE_URL ?? "http://192.168.1.60:8081",
+  baseURL: process.env.NEXT_PUBLIC_PATIENTS_API_BASE_URL ?? "http://192.168.1.60:8181",
 });
 
 const buildFormData = (data: ConsentCreateReq | ConsentUpdateReq, file?: File | null) => {
@@ -117,7 +117,7 @@ export const fetchConsentWithdrawHistoryApi = async (
 };
 
 export type ConsentType = {
-  id: number;
+  id?: number | string;
   code: string;
   name: string;
   sortOrder: number;
@@ -161,11 +161,12 @@ export const createConsentTypeApi = async (
 };
 
 export const updateConsentTypeApi = async (
-  id: number,
+  code: string | number | undefined,
   payload: ConsentTypeReq
 ): Promise<ConsentType> => {
+  const key = code ?? payload.code;
   const res = await api.put<ApiResponse<ConsentType>>(
-    `/api/consent-types/${id}`,
+    `/api/consent-types/${key}`,
     payload
   );
   if (!res.data.success) {
@@ -174,8 +175,10 @@ export const updateConsentTypeApi = async (
   return res.data.result;
 };
 
-export const deactivateConsentTypeApi = async (id: number): Promise<void> => {
-  const res = await api.delete<ApiResponse<void>>(`/api/consent-types/${id}`);
+export const deactivateConsentTypeApi = async (
+  code: string | number | undefined
+): Promise<void> => {
+  const res = await api.delete<ApiResponse<void>>(`/api/consent-types/${code ?? ""}`);
   if (!res.data.success) {
     throw new Error(res.data.message || "Consent type deactivate failed");
   }

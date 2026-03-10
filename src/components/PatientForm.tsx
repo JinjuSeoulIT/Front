@@ -13,12 +13,17 @@ import {
   List,
   ListItem,
   ListItemText,
+  Menu,
   MenuItem,
   Paper,
   Stack,
   TextField,
   Typography,
 } from "@mui/material";
+import KeyboardArrowDownRoundedIcon from "@mui/icons-material/KeyboardArrowDownRounded";
+import LocalHospitalOutlinedIcon from "@mui/icons-material/LocalHospitalOutlined";
+import EventAvailableOutlinedIcon from "@mui/icons-material/EventAvailableOutlined";
+import MedicalServicesOutlinedIcon from "@mui/icons-material/MedicalServicesOutlined";
 import type { PatientForm as PatientFormPayload } from "@/features/patients/patientTypes";
 import type { Patient } from "@/features/patients/patientTypes";
 import { searchPatientsApi } from "@/lib/patientApi";
@@ -49,10 +54,24 @@ type PatientFormProps = {
   error?: string | null;
   submitLabel: string;
   onSubmit: (form: PatientFormPayload) => void;
+  secondarySubmitLabel?: string;
+  onSecondarySubmit?: (form: PatientFormPayload) => void;
+  postSubmitOptions?: { label: string; onSubmit: (form: PatientFormPayload) => void }[];
   onCancel: () => void;
   onDelete?: () => void;
   showPhotoField?: boolean;
   enableDuplicateCheck?: boolean;
+};
+
+type DaumPostcodeData = { address?: string };
+type DaumPostcodeInstance = { open: () => void };
+type DaumPostcodeConstructor = new (opts: {
+  oncomplete: (data: DaumPostcodeData) => void;
+}) => DaumPostcodeInstance;
+type DaumWindow = Window & {
+  daum?: {
+    Postcode?: DaumPostcodeConstructor;
+  };
 };
 
 function toOptional(value: string) {
@@ -72,6 +91,9 @@ export default function PatientForm({
   error,
   submitLabel,
   onSubmit,
+  secondarySubmitLabel,
+  onSecondarySubmit,
+  postSubmitOptions,
   onCancel,
   onDelete,
   showPhotoField = false,
@@ -81,6 +103,8 @@ export default function PatientForm({
   const [duplicateOpen, setDuplicateOpen] = React.useState(false);
   const [duplicateLoading, setDuplicateLoading] = React.useState(false);
   const [duplicateList, setDuplicateList] = React.useState<Patient[]>([]);
+  const [postSubmitAnchorEl, setPostSubmitAnchorEl] = React.useState<null | HTMLElement>(null);
+  const hasPostSubmitOptions = Boolean(postSubmitOptions && postSubmitOptions.length > 0);
 
   React.useEffect(() => {
     setForm(initial);
@@ -99,13 +123,13 @@ export default function PatientForm({
 
   const handleAddressSearch = () => {
     if (typeof window === "undefined") return;
-    const daum = (window as any).daum;
+    const daum = (window as DaumWindow).daum;
     if (!daum || !daum.Postcode) {
       alert("주소 검색 스크립트를 불러오는 중입니다. 잠시 후 다시 시도하세요.");
       return;
     }
     new daum.Postcode({
-      oncomplete: (data: { address: string }) => {
+      oncomplete: (data) => {
         setForm((prev) => ({
           ...prev,
           address: data.address ?? "",
@@ -115,10 +139,10 @@ export default function PatientForm({
     }).open();
   };
 
-  const handleSubmit = () => {
+  const buildPayload = (): PatientFormPayload | null => {
     const name = form.name.trim();
-    if (!name) return;
-    onSubmit({
+    if (!name) return null;
+    return {
       name,
       email: toOptional(form.email),
       gender: toOptional(form.gender),
@@ -135,7 +159,45 @@ export default function PatientForm({
       note: toOptional(form.note),
 
       photoFile: form.photoFile ?? undefined,
-    });
+    };
+  };
+
+  const handleSubmit = () => {
+    const payload = buildPayload();
+    if (!payload) return;
+    onSubmit(payload);
+  };
+
+  const handleSecondarySubmit = () => {
+    if (!onSecondarySubmit) return;
+    const payload = buildPayload();
+    if (!payload) return;
+    onSecondarySubmit(payload);
+  };
+
+  const onOpenPostSubmitMenu = (event: React.MouseEvent<HTMLButtonElement>) => {
+    setPostSubmitAnchorEl(event.currentTarget);
+  };
+
+  const onClosePostSubmitMenu = () => {
+    setPostSubmitAnchorEl(null);
+  };
+
+  const onSelectPostSubmitOption = (option: {
+    label: string;
+    onSubmit: (form: PatientFormPayload) => void;
+  }) => {
+    const payload = buildPayload();
+    if (!payload) return;
+    onClosePostSubmitMenu();
+    option.onSubmit(payload);
+  };
+
+  const optionIcon = (label: string) => {
+    if (label.includes("외래")) return <LocalHospitalOutlinedIcon sx={{ fontSize: 18 }} />;
+    if (label.includes("예약")) return <EventAvailableOutlinedIcon sx={{ fontSize: 18 }} />;
+    if (label.includes("응급")) return <MedicalServicesOutlinedIcon sx={{ fontSize: 18 }} />;
+    return <LocalHospitalOutlinedIcon sx={{ fontSize: 18 }} />;
   };
 
   const handleDuplicateCheck = async () => {
@@ -397,6 +459,79 @@ export default function PatientForm({
           >
             {submitLabel}
           </Button>
+          {hasPostSubmitOptions && (
+            <>
+              <Button
+                variant="contained"
+                color="success"
+                onClick={onOpenPostSubmitMenu}
+                disabled={loading || !form.name.trim()}
+                endIcon={
+                  <KeyboardArrowDownRoundedIcon
+                    sx={{
+                      transform: Boolean(postSubmitAnchorEl) ? "rotate(180deg)" : "rotate(0deg)",
+                      transition: "transform .2s ease",
+                    }}
+                  />
+                }
+                sx={{
+                  px: 1.75,
+                  fontWeight: 800,
+                  letterSpacing: "-0.01em",
+                  boxShadow: "0 8px 16px rgba(25, 118, 210, 0.24)",
+                }}
+              >
+                등록 후 접수
+              </Button>
+              <Menu
+                anchorEl={postSubmitAnchorEl}
+                open={Boolean(postSubmitAnchorEl)}
+                onClose={onClosePostSubmitMenu}
+                anchorOrigin={{ vertical: "top", horizontal: "right" }}
+                transformOrigin={{ vertical: "bottom", horizontal: "right" }}
+                slotProps={{
+                  paper: {
+                    sx: {
+                      mb: 1,
+                      minWidth: 160,
+                      p: 0.75,
+                      borderRadius: 2.5,
+                      border: "1px solid #dbe5f5",
+                      boxShadow: "0 16px 36px rgba(20, 54, 99, 0.2)",
+                    },
+                  },
+                }}
+              >
+                {(postSubmitOptions ?? []).map((option) => (
+                  <MenuItem
+                    key={option.label}
+                    onClick={() => onSelectPostSubmitOption(option)}
+                    sx={{
+                      gap: 1,
+                      borderRadius: 1.5,
+                      py: 1,
+                      px: 1.25,
+                      fontWeight: 700,
+                      "&:hover": { bgcolor: "#eef4ff" },
+                    }}
+                  >
+                    {optionIcon(option.label)}
+                    {option.label}
+                  </MenuItem>
+                ))}
+              </Menu>
+            </>
+          )}
+          {!hasPostSubmitOptions && onSecondarySubmit && secondarySubmitLabel && (
+            <Button
+              variant="contained"
+              color="success"
+              onClick={handleSecondarySubmit}
+              disabled={loading || !form.name.trim()}
+            >
+              {secondarySubmitLabel}
+            </Button>
+          )}
         </Stack>
       </Stack>
 
