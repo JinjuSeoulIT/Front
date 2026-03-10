@@ -48,6 +48,8 @@ export interface PatientForm {
   contactPriority?: ContactPriority;
   note?: string;
 
+  consentRequired?: boolean;
+  consentOptional?: boolean;
   families?: PatientFamilyForm[];
   photoFile?: File | null;
 }

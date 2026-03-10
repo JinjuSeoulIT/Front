@@ -236,6 +236,8 @@ export default function PatientFormModal({
       isVip: form.patientType === "VIP",
       contactPriority: form.contactPriority || "PATIENT",
       note,
+      consentRequired: form.consentRequired,
+      consentOptional: form.consentOptional,
       families,
     };
   };

@@ -7,7 +7,8 @@ export default function InsurancesPage() {
       <PatientSelectList
         title="보험 관리"
         description="환자를 선택하면 보험 관리 화면으로 이동합니다."
-        basePath="/insurances"
+        basePath="/patient"
+        pathSuffix="/insurance"
       />
     </MainLayout>
   );

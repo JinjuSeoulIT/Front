@@ -11,6 +11,7 @@ import { patientActions } from "@/features/patients/patientSlice";
 import type { Patient, PatientSearchPayload, PatientMultiSearchPayload } from "@/features/patients/patientTypes";
 import type { PatientForm as PatientFormPayload } from "@/features/patients/patientTypes";
 import { createPatientApi } from "@/lib/patientApi";
+import { createConsentApi } from "@/lib/consentApi";
 import MainLayout from "@/components/layout/MainLayout";
 import PatientSearchCard from "@/components/patient/PatientSearchCard";
 import PatientTable from "@/components/patient/PatientTable";
@@ -102,11 +103,30 @@ export default function PatientsPage() {
     dispatch(patientActions.deletePatientRequest(patientId));
   };
 
+  const createConsentsForPatient = async (
+    patientId: number,
+    form: PatientFormPayload
+  ) => {
+    const consentTypes: { code: string; checked: boolean }[] = [
+      { code: "PRIVACY", checked: !!form.consentRequired },
+      { code: "MARKETING", checked: !!form.consentOptional },
+    ];
+    for (const { code, checked } of consentTypes) {
+      if (checked) {
+        await createConsentApi(patientId, {
+          patientId,
+          consentType: code,
+        });
+      }
+    }
+  };
+
   const handleRegistrationSubmit = async (form: PatientFormPayload) => {
     try {
       setRegistrationSubmitting(true);
       setRegistrationError(null);
-      await createPatientApi(form);
+      const created = await createPatientApi(form);
+      await createConsentsForPatient(created.patientId, form);
       dispatch(patientActions.fetchPatientsRequest());
       setRegistrationOpen(false);
     } catch (err: unknown) {
@@ -121,6 +141,7 @@ export default function PatientsPage() {
       setRegistrationSubmitting(true);
       setRegistrationError(null);
       const created = await createPatientApi(form);
+      await createConsentsForPatient(created.patientId, form);
       dispatch(patientActions.fetchPatientsRequest());
       setRegistrationOpen(false);
       const patientName = (created.name ?? form.name ?? "").trim();
