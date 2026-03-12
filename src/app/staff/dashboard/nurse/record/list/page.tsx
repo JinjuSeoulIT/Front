@@ -1,13 +1,13 @@
 "use client";
 
 import MainLayout from "@/components/layout/MainLayout";
-import RecordList from "@/components/employee/Dashboard/employeeDashboard/nurseDashboard/record/RecordList";
+import NurseRecordList from "@/features/staff/nurse/ui/record/NurseRecordList";
 
 
 const RecordPage = () => {
   return (
     <MainLayout showSidebar={false}>
-      <RecordList />
+      <NurseRecordList />
     </MainLayout>
   );
 };

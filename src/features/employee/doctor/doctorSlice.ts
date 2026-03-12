@@ -1,262 +1,214 @@
-
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
-import type { DoctorCreateRequest, DoctorDeleteRequest, DoctorDetailResView, DoctorListView, DoctorResponse, DoctorUpdateRequest, FileUploadResDTO } from "./doctortypes";
+import type {
+  DoctorCreateRequest,
+  DoctorFile,
+  DoctorIdNumber,
+  DoctorResponse,
+  DoctorUpdateRequest,
+  FileUploadResDTO,
 
-type DoctorState = {
-   list: DoctorListView[];
-   DoctorDetail: DoctorDetailResView | null;  //닥터 상세 뷰
+} from "./doctortypes";
 
+export interface DoctorState {
+  // 목록
+  doctorList: DoctorResponse[];
 
-  loading: boolean;
-  doctor: DoctorResponse | null;
-  error: string | null;
-  lastReq: any | null;
+  //
+  doctorDetail:  DoctorResponse | null;
+  doctorCreated: DoctorResponse | null;
+  doctorUpdated: DoctorResponse | null;
+
+  // 성공 액션
   createSuccess: boolean;
+  updateSuccess: boolean;
   deleteSuccess: boolean;
 
 
+  loading: boolean;
+  error:   string | null;
+  SuccessEnd : boolean;
 
 
-// ✅ 대표 이미지 독립 업로드
-  uploaded: FileUploadResDTO | null;  //“결과 데이터” ✅
-  uploadLoading: boolean;
-  uploadDone: boolean;    //“이벤트(트리거)” ✅
-  uploadedFileUrl: string | null;  //“결과 데이터” ✅
-
-
-
-
-};
+  //메타데이터용 업로드
+  uploaded:        FileUploadResDTO | null;   // 업로드 결과 전체
+  uploadLoading:   boolean;
+  uploadSuccess:      boolean;                   // 1회성 성공 
+  uploadedFileUrl: string | null;             // 화면에서 바로 쓰기 좋은 URL
+}
 
 const initialState: DoctorState = {
-  list: [],
-  DoctorDetail: null,   //닥터 상세 뷰
+  doctorList: [],
 
 
-  lastReq: null,
-  loading: false,
-  doctor: null,
-  error: null,
+
+  doctorDetail: null,
+  doctorCreated: null,
+  doctorUpdated: null,
+
+
   createSuccess: false,
+  updateSuccess: false,
   deleteSuccess: false,
 
 
+  loading: false,
+  error: null,
+  SuccessEnd : false,
 
-//✅ 대표 이미지 독립 업로드
-  uploaded: null,  //“결과 데이터” ✅
+
+
+  uploaded: null,
   uploadLoading: false,
-  uploadDone: false,
+  uploadSuccess: false,
   uploadedFileUrl: null,
-
-
 };
-
 
 const doctorSlice = createSlice({
   name: "doctor",
   initialState,
   reducers: {
-
-
-  //리스트
-   // 🔹 요청
-    DoctorProfileListRequest(state) {
-      state.loading = true;
-      state.error = null;
-    },
-
-    // 🔹 성공
-    DoctorProfileListSuccess(state,action: PayloadAction<DoctorListView[]>
-    ) {
-      state.loading = false;
-      state.list = action.payload;
-    },
-    // 🔹 실패
-    DoctorProfileListFailure(state, action: PayloadAction<string>) {
-      state.loading = false;
-      state.error = action.payload;
-    },
-
-
     
-    //의사 상세
-    DoctorProfileByIdRequest(state, action: PayloadAction<number>) {
+    //목록
+    DoctorListRequest: (state) => {
       state.loading = true;
-      state.lastReq = action.payload;
       state.error = null;
     },
-    DoctorProfileSuccess(state, action: PayloadAction<DoctorDetailResView>) {
+    DoctorListSuccess: (state, action: PayloadAction<DoctorResponse[]>) => {
       state.loading = false;
-      state.DoctorDetail = action.payload;
+      state.doctorList = action.payload;
     },
-    DoctorProfileFail(state, action: PayloadAction<string>) {
+    DoctorListFailure: (state, action: PayloadAction<string>) => {
       state.loading = false;
       state.error = action.payload;
     },
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-    // //상세
-    // DoctorByIdRequest(state, action: PayloadAction<number>) {
-    //   state.loading = true;
-    //   state.lastReq = action.payload;
-    //   state.error = null;
-    // },
-    // DoctorSuccess(state, action: PayloadAction<DoctorResponse>) {
-    //   state.loading = false;
-    //   state.doctor = action.payload;
-    // },
-    // DoctorFail(state, action: PayloadAction<string>) {
-    //   state.loading = false;
-    //   state.error = action.payload;
-    // },
-
-
-
-
-
-    createDoctorRequest(state, action: PayloadAction<DoctorCreateRequest>) {
+    //상세
+    DetailDoctorRequest: (state, action: PayloadAction<DoctorIdNumber>) => {
       state.loading = true;
       state.error = null;
-      state.lastReq = action.payload;
-      state.deleteSuccess = false;
     },
-    createDoctorSuccess(state, action: PayloadAction<DoctorResponse>) {
+    DetailDoctorSuccess: (state,action: PayloadAction<DoctorResponse>) => {
       state.loading = false;
-      state.doctor = action.payload;
+      state.doctorDetail = action.payload;
+    },
+    DetailDoctorFailure: (state, action: PayloadAction<string>) => {
+      state.loading = false;
+      state.error = action.payload;
+    },
+
+    //생성
+    //“컴포넌트에서  디스패치하면서 실어 보내는 요청 데이터”
+    createDoctorRequest: (state,action: PayloadAction<DoctorCreateRequest>) => {
+      state.loading = true;
+      state.error = null;
+    },
+     //“서버에서 응답으로 받을 데이터”
+    createDoctorSuccess: (state, action: PayloadAction<DoctorResponse>) => {
+      state.loading = false;
       state.createSuccess = true;
+      state.doctorCreated = action.payload;  //데이터 
     },
-    createDoctorFail(state, action: PayloadAction<string>) {
+    createDoctorFailure: (state, action: PayloadAction<string>) => {
       state.loading = false;
       state.error = action.payload;
     },
+
+
+    //수정
+    updateDoctorRequest: (state,action: PayloadAction<DoctorUpdateRequest>) => {
+      state.loading = true;
+      state.error = null;
+    },
+    updateDoctorSuccess: (state, action: PayloadAction<DoctorResponse>) => {
+      state.loading = false;
+      state.updateSuccess = true;
+      state.doctorUpdated = action.payload;
     
-   /* =======================
-    ✅ 독립 업로드(대표 이미지 0~1)
-    POST /api/files/upload
-    ======================= */ 
-//어디에(postId) + 무엇을(file) (1)
-    uploadFileRequest(state, _action: PayloadAction<{  file: File }>) {
+    },
+    updateDoctorFailure: (state, action: PayloadAction<string>) => {
+      state.loading = false;
+      state.error = action.payload;
+    },
+
+    //삭제
+    deleteDoctorRequest: (state,action: PayloadAction<DoctorIdNumber>) => {
+      state.loading = true;
+      state.error = null;
+    },
+    deleteDoctorSuccess: (state) => {
+      state.loading = false;
+      state.deleteSuccess = true; // ✅ 성공시 액션 
+    },
+    deleteDoctorFailure: (state, action: PayloadAction<string>) => {
+      state.loading = false;
+      state.deleteSuccess = false;
+      state.error = action.payload;
+      
+    },
+
+    //업로드  (메타데이터)
+    uploadDoctorFileRequest: (state,_action: PayloadAction<DoctorFile>) => {
       state.uploadLoading = true;
       state.error = null;
-      state.uploadDone = false;  //스위치 
+
+      state.uploadSuccess = false;
+      state.uploaded = null;
       state.uploadedFileUrl = null;
     },
-    uploadFileSuccess(state, action: PayloadAction<FileUploadResDTO>) {
+    uploadDoctorFileSuccess: (state,action: PayloadAction<FileUploadResDTO>) => {
       state.uploadLoading = false;
-      state.uploaded = action.payload;       // ✅ 업로드 결과 저장
-      state.uploadDone = true;
-      // state.uploadedFileUrl = action.payload.fileUrl;
+      state.uploadSuccess = true;
+      state.uploaded = action.payload;
+      // ✅ (미리보기용)
+      state.uploadedFileUrl = action.payload.fileUrl;
     },
-    uploadFileFailure(state, action: PayloadAction<string>) {
+    uploadDoctorFileFailure: (state, action: PayloadAction<string>) => {
       state.uploadLoading = false;
       state.error = action.payload;
-      state.uploadDone = false;  //스위치 
       state.uploadedFileUrl = null;
-    },
-
-    // 업로드 상태 초기화
-    clearUploadstate(state) {   //“업로드 성공 이벤트가 한 번 발생했음”을 알려주는 스위치
-      state.uploadDone = false;
-    },
-    clearUploadMetaData(state) {   //"업로드 결과로 받은 실제 데이터(결과물)""
-      state.uploadedFileUrl = null;
+      state.uploadSuccess = false;
     },
 
 
-
-
-
-
-
-
-
-    
-    updateDoctorRequest(state, action: PayloadAction<DoctorUpdateRequest>) {
-      state.loading = true;
-      state.error = null;
-      state.lastReq = action.payload;
-    
-    },
-    updateDoctorSuccess(state, action: PayloadAction<DoctorResponse>) {
-      state.loading = false;
-      state.doctor = action.payload;
-    },
-    updateDoctorFail(state, action: PayloadAction<string>) {
-      state.loading = false;
-      state.error = action.payload;
-    },
-
-
-    
-    deleteDoctorRequest(state, action: PayloadAction<DoctorDeleteRequest>) {
-      state.loading = true;
-      state.error = null;
-      state.lastReq = action.payload;
-      state.deleteSuccess = false;
-    },
-    deleteDoctorSuccess(state) {
-      state.loading = false;
-      state.doctor = null;
-      state.deleteSuccess = true;
-    },
-    deleteDoctorFail(state, action: PayloadAction<string>) {
-      state.loading = false;
-      state.error = action.payload;
-      state.deleteSuccess = false;
-    },
+     //리랜더링 끄기용 액션용
+    resetSuccessEnd: (state) => {
+      state.SuccessEnd = false;
+}
   },
-},
-)
+});
 
 export const {
-  DoctorProfileListRequest,
-  DoctorProfileListSuccess,
-  DoctorProfileListFailure,
+  // 목록
+  DoctorListRequest,
+  DoctorListSuccess,
+  DoctorListFailure,
 
-  DoctorProfileByIdRequest,
-  DoctorProfileSuccess,
-  DoctorProfileFail,
+  // 상세
+  DetailDoctorRequest,
+  DetailDoctorSuccess,
+  DetailDoctorFailure,
 
-
-
-
-
+  // 생성
   createDoctorRequest,
   createDoctorSuccess,
-  createDoctorFail,
+  createDoctorFailure,
 
-  uploadFileRequest,
-  uploadFileSuccess,
-  uploadFileFailure,
-  clearUploadstate,
-  clearUploadMetaData,
-
-
-  // DoctorByIdRequest,
-  // DoctorSuccess,
-  // DoctorFail,
-
+  // 수정
   updateDoctorRequest,
   updateDoctorSuccess,
-  updateDoctorFail,
+  updateDoctorFailure,
 
+  // 삭제
   deleteDoctorRequest,
   deleteDoctorSuccess,
-  deleteDoctorFail,
+  deleteDoctorFailure,
 
+  // 업로드
+  uploadDoctorFileRequest,
+  uploadDoctorFileSuccess,
+  uploadDoctorFileFailure,
 
+  resetSuccessEnd,
 
 } = doctorSlice.actions;
 

@@ -20,9 +20,9 @@ export default function RecordCreate() {
     router.push("/staff/dashboard/nurse/record/list");
   };
 
-   const form: typeof emptyRecordForm ={
+  const form: typeof emptyRecordForm ={
     ...emptyRecordForm,
-   };
+  };
 
   return (
     <Card sx={{ borderRadius: 3, border: "1px solid var(--line)" }}>

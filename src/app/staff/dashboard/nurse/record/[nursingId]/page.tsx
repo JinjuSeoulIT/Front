@@ -1,12 +1,12 @@
 import MainLayout from "@/components/layout/MainLayout";
-import RecordDetail from "@/components/employee/Dashboard/employeeDashboard/nurseDashboard/record/RecordDetail";
+import NurseRecordDetail from "@/features/staff/nurse/ui/record/NurseRecordDetail";
 
  
 
 const RecordDetailPage = () => {
   return (
     <MainLayout showSidebar={false}>
-      <RecordDetail />
+      <NurseRecordDetail />
     </MainLayout>
   );
 };

@@ -21,7 +21,7 @@ const MedicalSummaryCards = ({ State }: Props) => {
   const cards = [
     { title: "전체 환자", value: State.total },    //WAITING
     { title: "대기 환자", value: State.waiting },
-    { title: "진료중", value: State.treating },
+    { title: "진료중",    value: State.treating },
     { title: "진료 완료", value: State.done },
   ];
 

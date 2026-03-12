@@ -1,15 +1,17 @@
 "use client";
 
 import MainLayout from "@/components/layout/MainLayout";
+import DoctorDashboard from "@/components/employee/Dashboard/employeeDashboard/doctorDashboard/DoctorDashboard";
 
 
-import DoctorList from "@/components/employee/Dashboard/employeeDashboard/doctorDashboard/DoctorList";
+
+
 
 
 const RecordPage = () => {
   return (
     <MainLayout showSidebar={false}>
-      <DoctorList />
+      <DoctorDashboard />
     </MainLayout>
   );
 };

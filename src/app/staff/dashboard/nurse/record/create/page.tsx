@@ -1,12 +1,12 @@
 import MainLayout from "@/components/layout/MainLayout";
-import RecordCreate from "@/components/employee/Dashboard/employeeDashboard/nurseDashboard/record/RecordCreate";
+import NurseRecordCreate from "@/features/staff/nurse/ui/record/NurseRecordCreate";
 
  
 
 const RecordCreatePage = () => {
   return (
     <MainLayout showSidebar={false}>
-      <RecordCreate />
+      <NurseRecordCreate />
     </MainLayout>
   );
 };

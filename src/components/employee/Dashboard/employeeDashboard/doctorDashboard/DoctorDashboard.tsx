@@ -4,24 +4,20 @@ import { useRouter } from "next/navigation";
 import { Button, Card, CardContent, Divider, Stack, Typography } from "@mui/material";
 
 const menus = [
-  { title: "환자 목록",     path:     "/patients" },
-  { title: "진료 대시보드", path:     "/doctor" },
-  { title: "간호 기록",     path:     "/staff/dashboard/nurse/record/list" },
-  { title: "예약 조회",     path:     "/reservations" },                      // 예약쪽
+  { title: "의사 가입", path: "/staff/dashboard/doctor/SignUp/list" },
+  { title: "의사 업무", path: "/staff/dashboard/doctor/record" },
 ];
 
-const MedicalQuickMenu = () => {
+const DoctorDashboard = () => {
   const router = useRouter();
 
   return (
     <Card sx={{ borderRadius: 3, minHeight: 320 }}>
       <CardContent>
         <Typography variant="h6" fontWeight="bold" gutterBottom>
-        업무 메뉴 
+          의사 메뉴
         </Typography>
-
         <Divider sx={{ mb: 2 }} />
-
         <Stack spacing={1.5}>
           {menus.map((menu) => (
             <Button
@@ -39,4 +35,4 @@ const MedicalQuickMenu = () => {
   );
 };
 
-export default MedicalQuickMenu;
+export default DoctorDashboard;

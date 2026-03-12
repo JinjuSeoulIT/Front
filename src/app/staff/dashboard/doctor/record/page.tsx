@@ -2,13 +2,13 @@
 
 import MainLayout from "@/components/layout/MainLayout";
 
-import RecordSearchBar from "@/components/employee/Dashboard/employeeDashboard/doctorDashboard/record/RecordSearchBar";
+import DoctorRecordWorkspace from "@/features/staff/doctor/ui/DoctorRecordWorkspace";
 
 
 const RecordPage = () => {
   return (
     <MainLayout showSidebar={false}>
-      <RecordSearchBar/>
+      <DoctorRecordWorkspace />
     </MainLayout>
   );
 };

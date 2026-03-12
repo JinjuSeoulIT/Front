@@ -1,23 +1,26 @@
-﻿"use client";
+"use client";
 
+
+//이동 메뉴 컴포넌트 
+//빠른 메뉴
 import { useRouter } from "next/navigation";
-import { Button, Card, CardContent, Divider, Stack, Typography } from "@mui/material";
+import { Card, CardContent, Typography, Divider, Stack, Button } from "@mui/material";
 
 const menus = [
-  { title: "환자 목록",     path:     "/patients" },
-  { title: "진료 대시보드", path:     "/doctor" },
-  { title: "간호 기록",     path:     "/staff/dashboard/nurse/record/list" },
-  { title: "예약 조회",     path:     "/reservations" },                      // 예약쪽
+  { title: "간호 가입", path: "/staff/dashboard/nurse/SignUp/list" },
+  { title: "간호 업무", path: "/staff/dashboard/nurse/record/list" },
 ];
 
-const MedicalQuickMenu = () => {
+const NurseDashboard = () => {
+  
+  
   const router = useRouter();
 
   return (
     <Card sx={{ borderRadius: 3, minHeight: 320 }}>
       <CardContent>
         <Typography variant="h6" fontWeight="bold" gutterBottom>
-        업무 메뉴 
+        간호 메뉴
         </Typography>
 
         <Divider sx={{ mb: 2 }} />
@@ -39,4 +42,4 @@ const MedicalQuickMenu = () => {
   );
 };
 
-export default MedicalQuickMenu;
+export default NurseDashboard;

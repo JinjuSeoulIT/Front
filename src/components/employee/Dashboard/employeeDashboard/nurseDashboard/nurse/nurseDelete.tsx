@@ -15,17 +15,15 @@ import {
 
 
 } from "@mui/material";
-import {  deleteNurseRequest, deleteNurseSuccess, resetCreateSuccess } from "@/features/employee/nurse/nurseSlice";
+import {  deleteNurseRequest, resetSuccessEnd } from "@/features/employee/nurse/nurseSlice";
+import { NurseIdnNumber } from "@/features/employee/nurse/nurseTypes";
 
 
-type Props = { nurseId: number };  //컴포넌트용 
 
-const nurseDelete=({ nurseId }: Props) =>{
+
+const nurseDelete=({ nurseId }: NurseIdnNumber) =>{
   const dispatch = useDispatch();  //훅이 없어서 일단 레이아웃쪽에 그냥 연결
     const router = useRouter();
-
-
-
 
 
 
@@ -33,27 +31,14 @@ const nurseDelete=({ nurseId }: Props) =>{
   const {loading, deleteSuccess , error } = useSelector((state:RootState) => state.nurse);
 
 
-
-
 // 컴포넌트 뜨면(마운트) 무조건 이 ID로 상세 조회
   useEffect(() => {
     if (nurseId) {
-      dispatch(deleteNurseRequest(nurseId)); //디스패치 상세 리퀘스트랑 슬라이스 액션이 발동시킬려고 연결시켜놓음 (슬라이스 리퀘스트 넘버)
+      dispatch(deleteNurseRequest({nurseId})); 
+      //디스패치 상세 리퀘스트랑 슬라이스 액션이 발동시킬려고 연결시켜놓음 (슬라이스 리퀘스트 넘버)
     }
-
   }, [dispatch, nurseId]);
   
-
-
-
-  useEffect(() => {
-    return () => {
-      dispatch(deleteNurseSuccess());
-    };
-  }, [dispatch]);
-
-
-
 
 
 
@@ -62,22 +47,17 @@ const nurseDelete=({ nurseId }: Props) =>{
     if (!deleteSuccess) return;
     // 예: 수정 성공 후 뒤로가기 or 특정 페이지
 
-    router.replace("/staff/nurse/join/list"); // ✅ 네 관리자 화면 라우트로
-    dispatch(resetCreateSuccess()); 
+    router.replace("/staff/dashboard/nurse/SignUp/list"); // ✅ 네 관리자 화면 라우트로
+    dispatch(resetSuccessEnd()); 
 }, [deleteSuccess, router , dispatch]);
 
 
 
-
-
-
-
-   return (
-
+  return (
 
 
     // <MainLayout requireAuth showSidebar={false}> //인증담당 지금은 걍뺌 
- <div style={{ maxWidth: 720, margin: "0 auto", padding: 16 }}>
+  <div style={{ maxWidth: 720, margin: "0 auto", padding: 16 }}>
       <h2 style={{ marginBottom: 8 }}>간호사 상세 (ID: {nurseId})</h2>
 
       <Box sx={{ maxWidth: 780, mx: "auto", px: { xs: 2, md: 0 } }}>
@@ -108,8 +88,8 @@ const nurseDelete=({ nurseId }: Props) =>{
       </Box>
     </div>
   
- 
-   );
+
+);
 
 }
 

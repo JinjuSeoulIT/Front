@@ -1,81 +1,48 @@
-//애가 뷰
-
-export type DoctorListView = {
-  doctorId: number;
-  authenticationId: number;
-  realName: string;
-  position: string;
-  specialtyCode: string;   //진료코드
-  doctorFileUrl?: string | null;
-  profileSummary?: string | null;  //한줄소개
-};
-
-
-//애가 뷰
-
-export type DoctorDetailResView = {
-  doctorId: number;
-  authenticationId: number;
-  realName: string;
-  phone: string;
-  email: string;
-
-
-  position: string;
-  specialtyCode: string;   //진료코드
-  doctorFileUrl?: string | null;
-  profileSummary?: string | null;  //한줄소개
-  education?: string | null;
-  careerDetail?: string | null; //경력사항
-};
-
-
-
-
-
-
-
-// 3) 응답
-// 서버 → 프론트 응답
+// ✅ 의사응답
 export type DoctorResponse = {
-  doctorId: number;           // 
-  authenticationId: number;  // 
 
+  doctorId       : number;   // 의사 사번코드
+  licenseNo      : string;   // 면허 번호
+  doctorType     : string;   // 고정 타입 (DOCTOR)
+  specialtyId    : string;   // 진료과 코드 FK
 
-  realName: string; //이름
-  email: string;
-  doctorFileUrl : string | null;
-
-  licenseNo: string;
-  doctorType: string;        // DB default = 'DOCTOR'
-  position: string;
-  specialtyCode: string;
-     
+  doctorFileUrl  : string;   // 프로필 이미지
+  profileSummary : string;   // 한줄 소개
+  education      : string;   // 학력
+  careerDetail   : string;   // 경력
 };
 
 
 
-// 2) 요청(서버로 보낼 값)
+
+
+
+//참조값 (하드코딩)
+export type DoctorIdNumber = {
+  doctorId: number;
+};
+
+// ✅ 의사생성
 export type DoctorCreateRequest = {
- 
 
-    licenseNo: string;
-    position: string;
-    specialtyCode: string;
-     profileSummary?: string;   // ✅ 추가
-  education?: string;        // ✅ 추가
-  careerDetail?: string;     // ✅ 추가 (길면 textarea)
+  licenseNo      : string;   // 면허 번호
+  specialtyId    : string;   // 진료과 코드
 
+  doctorFileUrl  : string;   // 프로필 이미지
+  profileSummary : string;   // 한줄 소개
+  education      : string;   // 학력
+  careerDetail   : string;   // 경력
 };
 
-export const initialDoctorCreatForm: DoctorCreateRequest = {
- 
-  licenseNo: "",
-  position: "",
-  specialtyCode: "",
-   profileSummary: "",
-  education: "",
-  careerDetail: "",
+export const initialDoctorCreateForm: DoctorCreateRequest = {
+
+  licenseNo      : "",
+  specialtyId    : "",
+
+  doctorFileUrl  : "",
+  profileSummary : "",
+  education      : "",
+  careerDetail   : ""
 };
 
 
@@ -83,39 +50,68 @@ export const initialDoctorCreatForm: DoctorCreateRequest = {
 
 
 
-// 수정
+// ✅ 의사수정 
 export type DoctorUpdateRequest = {
-  authenticationId: number;
-  req: {
-    licenseNo: string;
-  
-    position: string;
-    specialtyCode: string;
-   
-  };
+
+
+  licenseNo      : string;
+  specialtyId    : string;
+
+  doctorFileUrl  : string;
+  profileSummary : string;
+  education      : string;
+  careerDetail   : string;
+};
+
+export const initialDoctorUpdateForm: DoctorUpdateRequest = {
+
+  licenseNo      : "",
+  specialtyId    : "",
+
+  doctorFileUrl  : "",
+  profileSummary : "",
+  education      : "",
+  careerDetail   : ""
+};
+//참조값 (하드코딩)
+export type DoctorUpdateNumber = {
+  doctorId: number;
+  doctorReq: DoctorUpdateRequest
 };
 
 
 
-// 삭제
-export type DoctorDeleteRequest = {
-  authenticationId: number;
+
+
+
+
+
+
+
+
+
+
+
+
+//업로드 요청
+export type DoctorFile = {
+  doctorId       : number; 
+  file           : File;
 };
 
 
-
-
-
-
-//API용 파일 업로드  (도메인별 분리)
+//서버가 업로드후 반환
 export type FileUploadResDTO = {
-
   fileUrl: string;
   objectKey: string;
   contentType: string;
   size: number;
   originalName: string;
-};
+}
+
+
+
+
 
 
 

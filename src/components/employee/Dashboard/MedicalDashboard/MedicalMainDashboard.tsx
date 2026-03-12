@@ -3,40 +3,42 @@
 import { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch, RootState } from "@/store/store";
-import { patientActions } from "@/features/patients/patientSlice";
+
 import type { PatientItem } from "@/features/employee/Dashboard/Dashboard.types";
-import MedicalPatientPanel from "./MedicalPatientPanel";
+import MedicalPatient from "./MedicalPatient";
 import MedicalQuickMenu from "./MedicalQuickMenu";
 import EmployeeCommonDashboard from "../employeeDashboard/EmployeeCommonDashboard";
 import MedicalSummaryCards from "./MedicalStateCards";
+import { receptionActions } from "@/features/Receptions/ReceptionSlice";
 
 const MedicalMainDashboard = () => {
   const dispatch = useDispatch<AppDispatch>();
-  const { list } = useSelector((state: RootState) => state.patients);
+  const { list } = useSelector((state: RootState) => state.receptions);
   console.log( list);
 
   useEffect(() => {
-    dispatch(patientActions.fetchPatientsRequest());
+    dispatch(receptionActions.fetchReceptionsRequest());
   }, [dispatch]);
 
 
   //환자 메인 상세정보 (겉화면 들어오면)
-  const patients: PatientItem[] = list.map((item) => ({
-    patientId: item.patientId,             //환자아이디
-    patientName: item.name,                //환자 이름
-    phone : item.phone,                    //환자 전화번호
-    status: item.statusCode ?? undefined,  //환자 상태 //스트롱..
+  const receptions: PatientItem[] = list.map((item) => ({
+    receptionId: item.receptionId,                //환자 접수
+    receptionNo: item.receptionNo,                //환자 접수번호
+    patientName : item.patientName ?? "",         //환자 이름
+    visitType :  item.visitType ,                 //
+    status: item.status ,  //환자 상태 //스트롱..
 
   }));
 
   const State = {
-    total:    patients.length,                                           //전체환자
+    total:    receptions.length,                                           //전체환자
 
-    waiting:  patients.filter((p) => p.status ===  "WAITING").length,    //대기환자
+    waiting:  receptions.filter((receptions) => receptions.status ===  "WAITING").length,    //대기환자
                                                   //웨이팅
-    treating: patients.filter((p) => p.status === "TREATING").length,    //진료중
+    treating: receptions.filter((receptions) => receptions.status === "TREATING").length,    //진료중
                                                   //트리링
-    done:     patients.filter((p) => p.status ===     "DONE").length,    //완료
+    done:     receptions.filter((receptions) => receptions.status ===     "DONE").length,    //완료
                                                   //던
   };
 
@@ -49,7 +51,7 @@ const MedicalMainDashboard = () => {
       <MedicalSummaryCards State={State} />
 
       //환자 상세 목록
-      <MedicalPatientPanel patients={patients} />
+      <MedicalPatient patients={receptions} />
 
       //업무 목록
       <MedicalQuickMenu />

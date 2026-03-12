@@ -1,11 +1,11 @@
 import MainLayout from "@/components/layout/MainLayout";
-import RecordEdit from "@/components/employee/Dashboard/employeeDashboard/nurseDashboard/record/RecordEdit";
+import NurseRecordEdit from "@/features/staff/nurse/ui/record/NurseRecordEdit";
 
  
 const RecordEditPage = () => {
   return (
     <MainLayout showSidebar={false}>
-      <RecordEdit />
+      <NurseRecordEdit />
     </MainLayout>
   );
 };

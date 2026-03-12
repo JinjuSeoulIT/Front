@@ -5,252 +5,154 @@ import type { PayloadAction } from "@reduxjs/toolkit";
 import type {
   ApiResponse,
   DoctorCreateRequest,
-  DoctorDeleteRequest,
-  DoctorDetailResView,
-  DoctorListView,
+  DoctorFile,
+  DoctorIdNumber,
   DoctorResponse,
-  DoctorUpdateRequest,
+  DoctorUpdateNumber,
   FileUploadResDTO,
 } from "./doctortypes";
 
 import {
-  //  DoctorByIdRequest,
-  // DoctorSuccess,
-  // DoctorFail,
+  DoctorListRequest,
+  DoctorListSuccess,
+  DoctorListFailure,
+
+  DetailDoctorRequest,
+  DetailDoctorSuccess,
+  DetailDoctorFailure,
 
   createDoctorRequest,
   createDoctorSuccess,
-  createDoctorFail,
+  createDoctorFailure,
 
   updateDoctorRequest,
   updateDoctorSuccess,
-  updateDoctorFail,
+  updateDoctorFailure,
 
   deleteDoctorRequest,
   deleteDoctorSuccess,
-  deleteDoctorFail,
-  DoctorProfileListRequest,
-  DoctorProfileListFailure,
-  DoctorProfileListSuccess,
-  uploadFileRequest,
-  uploadFileSuccess,
-  uploadFileFailure,
-  DoctorProfileSuccess,
-  DoctorProfileFail,
-  DoctorProfileByIdRequest,
+  deleteDoctorFailure,
 
+  uploadDoctorFileRequest,
+  uploadDoctorFileSuccess,
+  uploadDoctorFileFailure,
 } from "./doctorSlice";
 
 import {
-  DoctorDetailApi,
+  DoctorProfileListApi,
+  DoctorProfileDetailApi,
   createDoctorApi,
   updateDoctorApi,
   deleteDoctorApi,
-  DoctorProfileListApi,
   uploadFileApi,
-  DoctorProfileDetailApi,
-} from "./employeedoctorAPI";
+} from "../../../lib/employeedoctorAPI";
 
-
-
-
-/* =======================
-의사리스트
-======================= */
-function* DoctorProfileListSaga() {
+//목록
+function* doctorListSaga(): SagaIterator {
   try {
-    const res: ApiResponse<DoctorListView[]> = yield call(DoctorProfileListApi);
+    const response: ApiResponse<DoctorResponse[]> = yield call(DoctorProfileListApi);
 
-    if (res.success) {
-      yield put(DoctorProfileListSuccess(res.data));
-    }else{
-      yield put(DoctorProfileListFailure(res.message));
-    }
-  } catch (error: unknown) {
-    yield put(
-      DoctorProfileListFailure("의사 프로필 리스트 연결실패 500")
-    );
-  }
-}
-/* =======================
-의사상세
-======================= */
-function* DoctorProfileSaga(action: PayloadAction<number>): SagaIterator {
-  try {
-    const res: ApiResponse<DoctorDetailResView> = yield call(DoctorProfileDetailApi, action.payload);
-
-    if (res.success) {
-      yield put(DoctorProfileSuccess(res.data));
+    if (response.success) {
+      yield put(DoctorListSuccess(response.data));
     } else {
-      yield put(DoctorProfileFail(res.message));
+      yield put(DoctorListFailure(response.message));
     }
   } catch (error: unknown) {
-    yield put(DoctorProfileFail("의사 상세 연결실패 500"));
+    yield put(DoctorListFailure("의사 목록 연결실패 500"));
   }
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-// /* =======================
-// 상세
-// ======================= */
-// function* fetchDoctorSaga(action: PayloadAction<number>): SagaIterator {
-//   try {
-//     const res: ApiResponse<DoctorResponse> = yield call(DoctorDetailApi, action.payload);
-
-//     if (res.success) {
-//       yield put(DoctorSuccess(res.data));
-//     } else {
-//       yield put(DoctorFail(res.message));
-//     }
-//   } catch (error: unknown) {
-//     yield put(DoctorFail("의사 상세 연결실패 500"));
-//   }
-// }
-
-
-
-/* =======================
-의사생성
-======================= */
-function* createDoctorSaga(action: PayloadAction<DoctorCreateRequest>): SagaIterator {
+//상세
+function* detailDoctorSaga(action: PayloadAction<DoctorIdNumber>): SagaIterator { // =>API
   try {
-    const res: ApiResponse<DoctorResponse> = yield call(createDoctorApi, action.payload);
+    const response: ApiResponse<DoctorResponse> = yield call(DoctorProfileDetailApi,action.payload);
 
-    if (res.success) {
-      yield put(createDoctorSuccess(res.data));
+    if (response.success) {
+      yield put(DetailDoctorSuccess(response.data));
     } else {
-      yield put(createDoctorFail(res.message));
+      yield put(DetailDoctorFailure(response.message));
     }
   } catch (error: unknown) {
-    yield put(createDoctorFail("의사 생성 연결실패 500"));
+    yield put(DetailDoctorFailure("의사 상세 연결실패 500"));
   }
 }
 
-/* =======================
-  ✅ 대표 이미지 업로드(첨부 업로드: postId 필요)
-  - 성공 시: fileUrl 리턴(보장)
-======================= */
-function* uploadFileWorker(
-  action: ReturnType<typeof uploadFileRequest>): SagaIterator {
+//생성
+function* createDoctorSaga(action: PayloadAction<DoctorCreateRequest>): SagaIterator {  // =>API
   try {
+    const response: ApiResponse<DoctorResponse> = yield call(createDoctorApi,action.payload);
+
+    if (response.success) {
+      yield put(createDoctorSuccess(response.data));
+    } else {
+      yield put(createDoctorFailure(response.message));
+    }
+  } catch (error: unknown) {
+    yield put(createDoctorFailure("의사 생성 연결실패 500"));
+  }
+}
+
+
+
+//수정
+function* updateDoctorSaga(action: PayloadAction<DoctorUpdateNumber>): SagaIterator {  // =>API
   
-    const {  file } = action.payload; //🔑식별아이디 PK
-    const res: ApiResponse<FileUploadResDTO> = yield call(uploadFileApi,file); //🔑식별아이디 PK
+  try {
+    const { doctorId, doctorReq } = action.payload;
+    const response: ApiResponse<DoctorResponse> = yield call(updateDoctorApi, doctorId,doctorReq);
 
-    //업로드 결과(파일 자체 정보) (2)
-    if (res.success) {
-      yield put(uploadFileSuccess(res.data));
+    if (response.success) {
+      yield put(updateDoctorSuccess(response.data));
     } else {
-      yield put(uploadFileFailure(res.message));
+      yield put(updateDoctorFailure(response.message));
     }
-  } catch ( error: unknown) {
-    yield put(uploadFileFailure("파일 업로드 연결실패"));
+  } catch (error: unknown) {
+    yield put(updateDoctorFailure("의사 수정 연결실패 500"));
   }
 }
 
 
 
-
-
-
-
-
-
-
-
-/* =======================
-의사수정
-- authenticationId로 상세 조회해서 doctorId 얻고 수정
-======================= */
-function* updateDoctorSaga(action: PayloadAction<DoctorUpdateRequest>): SagaIterator {
+//삭제
+function* deleteDoctorSaga(action: PayloadAction<DoctorIdNumber>): SagaIterator {  // =>API
   try {
-    const detail: ApiResponse<DoctorResponse> = yield call(
-      DoctorDetailApi,
-      action.payload.authenticationId
-    );
-    if (detail.success) {
-    const doctorId = detail.data?.doctorId;
+    const response: ApiResponse<void> = yield call(deleteDoctorApi,action.payload.doctorId);
 
-    if (doctorId) {
-    const res: ApiResponse<DoctorResponse> = yield call(updateDoctorApi,doctorId,action.payload.req);
-
-    if (res.success) {
-    yield put(updateDoctorSuccess(res.data));
+    if (response.success) {
+      yield put(deleteDoctorSuccess());
     } else {
-    yield put(updateDoctorFail(res.message));
+      yield put(deleteDoctorFailure(response.message));
     }
-    } else {
-    yield put(updateDoctorFail("의사 정보 연결실패 500"));
-    }
-    } else {
-    yield put(updateDoctorFail(detail.message));
-    }
-    } catch (error: unknown) {
-    yield put(updateDoctorFail("의사 수정 연결실패 500"));
-    }
-    }
+  } catch (error: unknown) {
+    yield put(deleteDoctorFailure("의사 삭제 연결실패 500"));
+  }
+}
 
 
-
-
-/* =======================
-의사삭제
-- authenticationId로 상세 조회해서 doctorId 얻고 삭제
-======================= */
-function* deleteDoctorSaga(action: PayloadAction<DoctorDeleteRequest>): SagaIterator {
+//업로드`
+function* uploadDoctorFileSaga(action: PayloadAction<DoctorFile>): SagaIterator { // =>API
   try {
-    const detail: ApiResponse<DoctorResponse> = yield call(DoctorDetailApi,action.payload.authenticationId);
+    const { doctorId, file } = action.payload;  //메타데이터
+    const response: ApiResponse<FileUploadResDTO> = yield call(uploadFileApi,doctorId, file);
 
-    if (detail.success) {const doctorId = detail.data?.doctorId;
-
-    if (doctorId) {
-    const res: ApiResponse<void> = yield call(deleteDoctorApi, doctorId);
-
-    if (res.success) {
-    yield put(deleteDoctorSuccess());
+    if (response.success) {
+      yield put(uploadDoctorFileSuccess(response.data));
     } else {
-    yield put(deleteDoctorFail(res.message));
+      yield put(uploadDoctorFileFailure(response.message));
     }
-    } else {
-    yield put(deleteDoctorFail("의사 상세 연결실패.500"));
-    }
-    } else {
-      yield put(deleteDoctorFail(detail.message));
-    }
-    } catch (error: unknown) {
-    yield put(deleteDoctorFail("의사 삭제 연결실패 500"));
-    }
-    }
+  } catch (error: unknown) {
+    yield put(uploadDoctorFileFailure("파일 업로드 연결실패 500"));
+  }
+}
 
 
-
-
-/* =======================
-의사 루트사가
-======================= */
-export function* doctorSaga(): SagaIterator {
-  yield takeLatest(DoctorProfileListRequest.type,DoctorProfileListSaga);
-  yield takeLatest(DoctorProfileByIdRequest.type, DoctorProfileSaga); //의사상세 
-
-
-  // yield takeLatest(DoctorByIdRequest.type, fetchDoctorSaga);
+//의사 루트
+export function* watchdoctorSaga(): SagaIterator {
+  yield takeLatest(DoctorListRequest.type, doctorListSaga);
+  yield takeLatest(DetailDoctorRequest.type, detailDoctorSaga);
   yield takeLatest(createDoctorRequest.type, createDoctorSaga);
-  yield takeLatest(uploadFileRequest.type, uploadFileWorker);
-
   yield takeLatest(updateDoctorRequest.type, updateDoctorSaga);
   yield takeLatest(deleteDoctorRequest.type, deleteDoctorSaga);
+
+  yield takeLatest(uploadDoctorFileRequest.type, uploadDoctorFileSaga);
 }
