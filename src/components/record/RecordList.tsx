@@ -61,7 +61,7 @@ useEffect(() => {
             alignItems={{ xs: "flex-start", md: "center" }}
           >
             <Box sx={{ flexGrow: 1 }}>
-              <Typography sx={{ fontSize: 20, fontWeight: 900 }}>간호 기록</Typography>
+              <Typography sx={{ fontSize: 20, fontWeight: 900 }}>접수 / 간호 기록</Typography>
               <Typography sx={{ color: "var(--muted)", fontSize: 13 }}>
                 목록에서 선택한 기록의 상세 정보를 확인할 수 있습니다.
               </Typography>
