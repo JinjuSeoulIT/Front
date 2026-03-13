@@ -6,8 +6,8 @@ import MainLayout from "@/components/layout/MainLayout";
 
 import { useDispatch, useSelector } from "react-redux";
 import type { RootState, AppDispatch } from "@/store/store";
-import { emergencyReceptionActions } from "@/features/EmergencyReceptions/EmergencyReceptionSlice";
-import type { EmergencyReceptionForm as EmergencyReceptionFormPayload } from "@/features/EmergencyReceptions/EmergencyReceptionTypes";
+import { emergencyReceptionActions } from "@/features/EmergencyReception/EmergencyReceptionSlice";
+import type { EmergencyReceptionForm as EmergencyReceptionFormPayload } from "@/features/EmergencyReception/EmergencyReceptionTypes";
 import EmergencyReceptionForm from "@/components/reception/EmergencyReceptionForm";
 
 export default function NewEmergencyReceptionPage() {

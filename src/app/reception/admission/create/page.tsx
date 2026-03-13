@@ -6,8 +6,8 @@ import MainLayout from "@/components/layout/MainLayout";
 
 import { useDispatch, useSelector } from "react-redux";
 import type { RootState, AppDispatch } from "@/store/store";
-import { inpatientReceptionActions } from "@/features/InpatientReceptions/InpatientReceptionSlice";
-import type { InpatientReceptionForm as InpatientReceptionFormPayload } from "@/features/InpatientReceptions/InpatientReceptionTypes";
+import { inpatientReceptionActions } from "@/features/InpatientReception/InpatientReceptionSlice";
+import type { InpatientReceptionForm as InpatientReceptionFormPayload } from "@/features/InpatientReception/InpatientReceptionTypes";
 import InpatientReceptionForm from "@/components/reception/InpatientReceptionForm";
 
 export default function NewInpatientReceptionPage() {

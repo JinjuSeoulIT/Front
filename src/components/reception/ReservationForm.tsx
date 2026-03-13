@@ -21,7 +21,7 @@ import type {
   ReservationForm as ReservationFormPayload,
 } from "@/features/Reservations/ReservationTypes";
 import { fetchPatientsApi } from "@/lib/admin/masterDataApi";
-import { fetchReservationsApi } from "@/lib/reservation/reservationAdminApi";
+import { fetchReservationsApi } from "@/lib/reception/reservationAdminApi";
 import { buildNextReceptionNumber } from "@/lib/reception/receptionNumber";
 
 type ReservationFormState = {

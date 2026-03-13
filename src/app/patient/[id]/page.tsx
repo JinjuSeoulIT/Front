@@ -22,11 +22,11 @@ import type { PatientRestriction } from "@/lib/restrictionApi";
 import { fetchPatientRestrictionsApi } from "@/lib/restrictionApi";
 import type { PatientFlag } from "@/lib/flagApi";
 import { fetchPatientFlagsApi } from "@/lib/flagApi";
-import { changePatientStatusApi } from "@/lib/patientApi";
+import { changePatientStatusApi } from "@/lib/reception/patientApi";
 import { fetchCodesApi } from "@/lib/codeApi";
-import { createReservationApi, fetchReservationsApi } from "@/lib/reservationAdminApi";
-import { createReceptionApi, fetchReceptionsApi } from "@/lib/receptionsCrudApi";
-import { buildNextReceptionNumber } from "@/lib/receptionNumber";
+import { createReservationApi, fetchReservationsApi } from "@/lib/reception/reservationAdminApi";
+import { createReceptionApi, fetchReceptionsApi } from "@/lib/reception/receptionApi";
+import { buildNextReceptionNumber } from "@/lib/reception/receptionNumber";
 
 import {
   toApiDateTime,
@@ -336,7 +336,7 @@ export default function PatientDetailPage() {
       });
 
       setReceptionDialogOpen(false);
-      router.push("/receptions");
+      router.push("/reception/outpatient/list")
     } catch (err: unknown) {
       alert(`접수 등록에 실패했습니다.\n원인: ${resolveErrorMessage(err, "알 수 없는 오류")}`);
     } finally {

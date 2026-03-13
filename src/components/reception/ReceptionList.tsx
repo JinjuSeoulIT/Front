@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import * as React from "react";
 import Link from "next/link";
@@ -23,19 +23,19 @@ import RefreshIcon from "@mui/icons-material/Refresh";
 import BlockOutlinedIcon from "@mui/icons-material/BlockOutlined";
 import { useDispatch, useSelector } from "react-redux";
 import type { RootState, AppDispatch } from "@/store/store";
-import { receptionActions } from "@/features/Receptions/ReceptionSlice";
-import type { Reception, ReceptionSearchPayload } from "@/features/Receptions/ReceptionTypes";
+import { receptionActions } from "@/features/Reception/ReceptionSlice";
+import type { Reception, ReceptionSearchPayload } from "@/features/Reception/ReceptionTypes";
 import { formatDepartmentName } from "@/lib/common/departmentLabel";
 import type { Patient } from "@/features/patients/patientTypes";
 import { fetchPatientsApi, searchPatientsApi } from "@/lib/patient/patientApi";
-import { fetchReservationsApi, updateReservationApi } from "@/lib/reservation/reservationAdminApi";
+import { fetchReservationsApi, updateReservationApi } from "@/lib/reception/reservationAdminApi";
 import { buildNextReceptionNumber } from "@/lib/reception/receptionNumber";
 import {
   cancelReceptionApi,
   createReceptionApi,
   fetchReceptionsApi,
   updateReceptionApi,
-} from "@/lib/reception/receptionsCrudApi";
+} from "@/lib/reception/receptionApi";
 
 const SEARCH_OPTIONS: { label: string; value: ReceptionSearchPayload["type"] }[] = [
   { label: "접수번호", value: "receptionNo" },

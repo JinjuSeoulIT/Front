@@ -19,7 +19,7 @@ import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch, RootState } from "@/store/store";
 import { fetchRecordsRequest, searchRecordRequest } from "@/features/Record/recordSlice";
 import RecordSearchBar from "./RecordSearchBar";
-import { receptionActions } from "@/features/Receptions/ReceptionSlice";
+import { receptionActions } from "@/features/Reception/ReceptionSlice";
 
 export default function RecordList() {
   const router = useRouter();

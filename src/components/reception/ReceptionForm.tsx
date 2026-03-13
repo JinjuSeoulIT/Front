@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import * as React from "react";
 import {
@@ -18,8 +18,8 @@ import {
 } from "@mui/material";
 import LocalHospitalOutlinedIcon from "@mui/icons-material/LocalHospitalOutlined";
 import EditNoteRoundedIcon from "@mui/icons-material/EditNoteRounded";
-import type { ReceptionForm as ReceptionFormPayload } from "@/features/Receptions/ReceptionTypes";
-import { fetchReceptionsApi } from "@/lib/reception/receptionsCrudApi";
+import type { ReceptionForm as ReceptionFormPayload } from "@/features/Reception/ReceptionTypes";
+import { fetchReceptionsApi } from "@/lib/reception/receptionApi";
 import { buildNextReceptionNumber } from "@/lib/reception/receptionNumber";
 import { searchPatientsApi } from "@/lib/patient/patientApi";
 import type { Patient } from "@/features/patients/patientTypes";

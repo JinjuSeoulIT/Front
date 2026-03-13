@@ -19,11 +19,11 @@ import SearchIcon from "@mui/icons-material/Search";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import { useDispatch, useSelector } from "react-redux";
 import type { RootState, AppDispatch } from "@/store/store";
-import { emergencyReceptionActions } from "@/features/EmergencyReceptions/EmergencyReceptionSlice";
+import { emergencyReceptionActions } from "@/features/EmergencyReception/EmergencyReceptionSlice";
 import type {
   EmergencyReception,
   EmergencyReceptionSearchPayload,
-} from "@/features/EmergencyReceptions/EmergencyReceptionTypes";
+} from "@/features/EmergencyReception/EmergencyReceptionTypes";
 
 const SEARCH_OPTIONS: { label: string; value: EmergencyReceptionSearchPayload["type"] }[] = [
   { label: "환자ID", value: "patientId" },

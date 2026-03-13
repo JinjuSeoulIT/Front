@@ -1,10 +1,10 @@
-﻿import axios from "axios";
+import axios from "axios";
 import type {
   ApiResponse,
   EmergencyReception,
   EmergencyReceptionForm,
   EmergencyReceptionSearchPayload,
-} from "@/features/EmergencyReceptions/EmergencyReceptionTypes";
+} from "@/features/EmergencyReception/EmergencyReceptionTypes";
 
 const api = axios.create({
   baseURL: process.env.NEXT_PUBLIC_RECEPTION_API_BASE_URL ?? "http://192.168.1.55:8283",
