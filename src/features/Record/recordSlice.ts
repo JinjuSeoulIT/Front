@@ -7,7 +7,7 @@ import type {
 } from "./recordTypes";
 
 type FetchRecordPayload = {
-  nursingId: string 
+  nursingId: string;
 };
 
 type UpdateRecordPayload = {
@@ -15,11 +15,18 @@ type UpdateRecordPayload = {
   form: RecordUpdatePayload;
 };
 
+type SearchRecordPayload = {
+  searchType: string;
+  searchValue?: string;
+  startDate?: string;
+  endDate?: string;
+};
+
 const initialState: RecordState = {
   list: [],
   selected: null,
   loading: false,
-  error: null
+  error: null,
 };
 
 const recordSlice = createSlice({
@@ -39,7 +46,8 @@ const recordSlice = createSlice({
       state.error = action.payload;
     },
 
-    fetchRecordRequest(state, _action: PayloadAction<FetchRecordPayload>) {
+    fetchRecordRequest(state, action: PayloadAction<FetchRecordPayload>) {
+      void action;
       state.loading = true;
       state.error = null;
       state.selected = null;
@@ -53,7 +61,8 @@ const recordSlice = createSlice({
       state.error = action.payload;
     },
 
-    createRecordRequest(state, _action: PayloadAction<RecordCreatePayload>) {
+    createRecordRequest(state, action: PayloadAction<RecordCreatePayload>) {
+      void action;
       state.loading = true;
       state.error = null;
     },
@@ -65,7 +74,8 @@ const recordSlice = createSlice({
       state.error = action.payload;
     },
 
-    updateRecordRequest(state, _action: PayloadAction<UpdateRecordPayload>) {
+    updateRecordRequest(state, action: PayloadAction<UpdateRecordPayload>) {
+      void action;
       state.loading = true;
       state.error = null;
     },
@@ -77,7 +87,8 @@ const recordSlice = createSlice({
       state.error = action.payload;
     },
 
-    deleteRecordRequest(state, _action: PayloadAction<string>) {
+    deleteRecordRequest(state, action: PayloadAction<string>) {
+      void action;
       state.loading = true;
       state.error = null;
     },
@@ -93,8 +104,8 @@ const recordSlice = createSlice({
       state.error = action.payload;
     },
 
-    
-    searchRecordRequest(state, _action: PayloadAction<{searchType:string; searchValue:string}>) {
+    searchRecordRequest(state, action: PayloadAction<SearchRecordPayload>) {
+      void action;
       state.loading = true;
       state.error = null;
     },
@@ -102,16 +113,14 @@ const recordSlice = createSlice({
       state.loading = false;
       state.list = action.payload;
     },
-   searchRecordFailure(state, action: PayloadAction<string>) {
+    searchRecordFailure(state, action: PayloadAction<string>) {
       state.loading = false;
       state.error = action.payload;
-    }
-
+    },
   },
 });
 
 export const {
-
   fetchRecordsRequest,
   fetchRecordsSuccess,
   fetchRecordsFailure,
@@ -129,9 +138,7 @@ export const {
   deleteRecordFailure,
   searchRecordRequest,
   searchRecordSuccess,
-  searchRecordFailure
+  searchRecordFailure,
+} = recordSlice.actions;
 
-}
-
-= recordSlice.actions;
 export default recordSlice.reducer;

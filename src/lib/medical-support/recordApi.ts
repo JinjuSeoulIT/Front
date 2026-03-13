@@ -2,8 +2,9 @@ import axios from "axios";
 import type { ApiResponse } from "@/features/patients/patientTypes";
 
 export type NursingRecord = {
-  nursingId: string;
-  visitId?: number | null;
+  recordId?: string | null;
+  nursingId: string | null;
+  visitId?: string | number | null;
   recordedAt?: string | null;
   systolicBp?: number | null;
   diastolicBp?: number | null;
@@ -18,6 +19,9 @@ export type NursingRecord = {
   status?: string | null;
   createdAt?: string | null;
   updatedAt?: string | null;
+  name?: string | null;
+  departmentName?: string | null;
+  shiftType?: string | null;
 };
 
 export type NursingRecordCreatePayload = {
@@ -39,7 +43,8 @@ export type NursingRecordCreatePayload = {
 export type NursingRecordUpdatePayload = NursingRecordCreatePayload;
 
 const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_NURSING_API_BASE_URL ?? "http://192.168.1.66:8181",
+  baseURL:
+    process.env.NEXT_PUBLIC_NURSING_API_BASE_URL ?? "http://192.168.1.66:8181",
 });
 
 export const fetchRecordsApi = async (): Promise<NursingRecord[]> => {
@@ -56,6 +61,26 @@ export const fetchRecordApi = async (
   const res = await api.get<ApiResponse<NursingRecord>>(`/api/record/${id}`);
   if (!res.data.success) {
     throw new Error(res.data.message || "Fetch failed");
+  }
+  return res.data.result;
+};
+
+export const searchRecordApi = async (payload: {
+  searchType?: string;
+  searchValue?: string;
+  startDate?: string;
+  endDate?: string;
+}): Promise<NursingRecord[]> => {
+  const res = await api.get<ApiResponse<NursingRecord[]>>("/api/record/search", {
+    params: {
+      searchType: payload.searchType,
+      searchValue: payload.searchValue,
+      startDate: payload.startDate,
+      endDate: payload.endDate,
+    },
+  });
+  if (!res.data.success) {
+    throw new Error(res.data.message || "Search failed");
   }
   return res.data.result;
 };
@@ -81,18 +106,9 @@ export const updateRecordApi = async (
   return res.data.result;
 };
 
-
-
 export const deleteRecordApi = async (id: string | number): Promise<void> => {
   const res = await api.delete<ApiResponse<void>>(`/api/record/${id}`);
   if (!res.data.success) {
     throw new Error(res.data.message || "Delete failed");
-  }
-};
-
-export const searchRecordApi = async (type: string | number, value: string|number): Promise<void> => {
-  const res = await api.get<ApiResponse<void>>(`/api/search`);
-  if (!res.data.success) {
-    throw new Error(res.data.message || "search failed");
   }
 };

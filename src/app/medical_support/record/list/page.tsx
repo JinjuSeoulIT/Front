@@ -1,7 +1,6 @@
 "use client";
 
-import MainLayout from "@/components/layout/MainLayout";
-import RecordList from "@/components/record/RecordList";
+import RecordList from "@/components/record/RecordList.tsx";
 
 
 const RecordPage = () => {

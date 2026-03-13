@@ -52,8 +52,8 @@ const formatDateTime = (value?: string | null) => {
 };
 
 export default function RecordList() {
-  const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
+  const dispatch = useDispatch<AppDispatch>();
   const { list, loading, error } = useSelector(
     (state: RootState) => state.records
   );
@@ -208,7 +208,13 @@ export default function RecordList() {
               }}
             >
               <TableContainer>
-                <Table size="small" stickyHeader sx={{ minWidth: 920 }}>
+                <Table
+                  size="small"
+                  stickyHeader
+                  sx={{
+                    minWidth: 920,
+                  }}
+                >
                   <TableHead>
                     <TableRow>
                       <TableCell
@@ -280,8 +286,12 @@ export default function RecordList() {
                         hover
                         sx={{
                           cursor: "pointer",
-                          "& td": { py: 1.25 },
-                          "&:hover": { backgroundColor: "#f9fbff" },
+                          "& td": {
+                            py: 1.25,
+                          },
+                          "&:hover": {
+                            backgroundColor: "#f9fbff",
+                          },
                         }}
                         onClick={() => handleRowClick(record)}
                       >
