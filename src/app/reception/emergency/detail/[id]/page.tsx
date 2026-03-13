@@ -5,13 +5,14 @@ import { useParams, useRouter } from "next/navigation";
 import MainLayout from "@/components/layout/MainLayout";
 import { useDispatch, useSelector } from "react-redux";
 import type { RootState, AppDispatch } from "@/store/store";
-import { emergencyReceptionActions } from "@/features/EmergencyReceptions/EmergencyReceptionSlice";
+import { emergencyReceptionActions } from "@/features/EmergencyReception/EmergencyReceptionSlice";
 import type {
   EmergencyReception,
   EmergencyReceptionForm,
   ReceptionStatus,
-} from "@/features/EmergencyReceptions/EmergencyReceptionTypes";
-import { fetchPatientApi } from "@/lib/patientApi";
+} from "@/features/EmergencyReception/EmergencyReceptionTypes";
+import { fetchPatientApi } from "@/lib/reception/patientApi";
+import ReceptionExtensionsPanel from "@/components/reception/ReceptionExtensionsPanel";
 import { Box, Button, Card, CardContent, Divider, Stack, Typography } from "@mui/material";
 
 const statusLabel = (value?: ReceptionStatus | string | null) => {
@@ -193,6 +194,10 @@ export default function EmergencyReceptionDetailPage() {
                 취소
               </Button>
             </Stack>
+
+            <Divider sx={{ my: 1 }} />
+
+            <ReceptionExtensionsPanel scope="reception" entityId={receptionId} />
           </Stack>
         </CardContent>
       </Card>

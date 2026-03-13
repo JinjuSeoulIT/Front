@@ -11,6 +11,7 @@ import type {
   ReservationForm,
   ReservationStatus,
 } from "@/features/Reservations/ReservationTypes";
+import ReceptionExtensionsPanel from "@/components/reception/ReceptionExtensionsPanel";
 import { Box, Button, Card, CardContent, Divider, Stack, Typography } from "@mui/material";
 
 export default function ReservationDetailPage() {
@@ -143,6 +144,10 @@ export default function ReservationDetailPage() {
                 취소
               </Button>
             </Stack>
+
+            <Divider sx={{ my: 1 }} />
+
+            <ReceptionExtensionsPanel scope="reservation" entityId={reservationId} />
           </Stack>
         </CardContent>
       </Card>

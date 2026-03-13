@@ -23,11 +23,11 @@ import { reservationActions } from "@/features/Reservations/ReservationSlice";
 import type {
   Reservation,
   ReservationForm,
-  ReservationSearchPayload,
+  ReservationSearchType,
   ReservationStatus,
 } from "@/features/Reservations/ReservationTypes";
 
-const SEARCH_OPTIONS: { label: string; value: ReservationSearchPayload["type"] }[] = [
+const SEARCH_OPTIONS: { label: string; value: ReservationSearchType }[] = [
   { label: "예약번호", value: "reservationNo" },
   { label: "환자ID", value: "patientId" },
   { label: "상태", value: "status" },
@@ -86,7 +86,7 @@ const normalizeStatusKeyword = (keyword: string): string => {
 };
 
 type ReservationListProps = {
-  initialSearchType?: ReservationSearchPayload["type"];
+  initialSearchType?: ReservationSearchType;
   initialKeyword?: string;
   autoSearch?: boolean;
   hideCanceled?: boolean;
@@ -103,9 +103,7 @@ export default function ReservationList({
     (s: RootState) => s.reservations
   );
 
-  const [searchType, setSearchType] = React.useState<
-    ReservationSearchPayload["type"]
-  >(initialSearchType);
+  const [searchType, setSearchType] = React.useState<ReservationSearchType>(initialSearchType);
   const [keyword, setKeyword] = React.useState(initialSearchType === "status" ? "" : initialKeyword);
   const [statusKeyword, setStatusKeyword] = React.useState<ReservationStatus>(
     (initialSearchType === "status" && initialKeyword
@@ -264,13 +262,15 @@ export default function ReservationList({
             <Typography fontWeight={800} sx={{ color: "#2b5aa9", minWidth: 110 }}>
               예약 검색
             </Typography>
-            <TextField
-              select
-              size="small"
-              value={searchType}
-              onChange={(e) => setSearchType(e.target.value as any)}
-              sx={{ width: { xs: "100%", md: 180 } }}
-            >
+              <TextField
+                select
+                size="small"
+                value={searchType}
+                onChange={(e) =>
+                  setSearchType(e.target.value as ReservationSearchType)
+                }
+                sx={{ width: { xs: "100%", md: 180 } }}
+              >
               {SEARCH_OPTIONS.map((o) => (
                 <MenuItem key={o.value} value={o.value}>
                   {o.label}
@@ -319,10 +319,10 @@ export default function ReservationList({
               >
                 초기화
               </Button>
-                          <Button
+              <Button
                 variant="contained"
                 component={Link}
-                href="/reservations/new"
+                href="/reception/appointment/create"
                 sx={{ bgcolor: "#1f7a3f" }}
               >
                 신규 예약
@@ -421,7 +421,7 @@ export default function ReservationList({
                   variant="outlined"
                   sx={{ color: "#2b5aa9" }}
                   component={Link}
-                  href={primary ? `/reservations/${primary.reservationId}` : "#"}
+                  href={primary ? `/reception/appointment/detail/${primary.reservationId}` : "#"}
                   disabled={!primary}
                 >
                   상세 보기
@@ -430,7 +430,7 @@ export default function ReservationList({
                   variant="contained"
                   sx={{ bgcolor: "#2b5aa9" }}
                   component={Link}
-                  href={primary ? `/reservations/${primary.reservationId}/edit` : "#"}
+                  href={primary ? `/reception/appointment/edit/${primary.reservationId}` : "#"}
                   disabled={!primary}
                 >
                   예약 수정

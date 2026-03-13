@@ -5,12 +5,13 @@ import { useParams, useRouter } from "next/navigation";
 import MainLayout from "@/components/layout/MainLayout";
 import { useDispatch, useSelector } from "react-redux";
 import type { RootState, AppDispatch } from "@/store/store";
-import { inpatientReceptionActions } from "@/features/InpatientReceptions/InpatientReceptionSlice";
+import { inpatientReceptionActions } from "@/features/InpatientReception/InpatientReceptionSlice";
 import type {
   InpatientReception,
   InpatientReceptionForm,
   ReceptionStatus,
-} from "@/features/InpatientReceptions/InpatientReceptionTypes";
+} from "@/features/InpatientReception/InpatientReceptionTypes";
+import ReceptionExtensionsPanel from "@/components/reception/ReceptionExtensionsPanel";
 import { Box, Button, Card, CardContent, Divider, Stack, Typography } from "@mui/material";
 
 export default function InpatientReceptionDetailPage() {
@@ -151,6 +152,10 @@ export default function InpatientReceptionDetailPage() {
                 취소
               </Button>
             </Stack>
+
+            <Divider sx={{ my: 1 }} />
+
+            <ReceptionExtensionsPanel scope="inpatient" entityId={receptionId} />
           </Stack>
         </CardContent>
       </Card>

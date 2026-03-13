@@ -5,10 +5,11 @@ import { useParams, useRouter } from "next/navigation";
 import MainLayout from "@/components/layout/MainLayout";
 import { useDispatch, useSelector } from "react-redux";
 import type { RootState, AppDispatch } from "@/store/store";
-import { receptionActions } from "@/features/Receptions/ReceptionSlice";
-import type { Reception, ReceptionForm, ReceptionStatus } from "@/features/Receptions/ReceptionTypes";
-import { fetchReceptionStatusHistoryApi } from "@/lib/receptionHistoryApi";
+import { receptionActions } from "@/features/Reception/ReceptionSlice";
+import type { Reception, ReceptionForm, ReceptionStatus } from "@/features/Reception/ReceptionTypes";
+import { fetchReceptionStatusHistoryApi } from "@/lib/reception/receptionHistoryApi";
 import { fetchAuditLogsByReceptionApi } from "@/lib/auditLogApi";
+import ReceptionExtensionsPanel from "@/components/reception/ReceptionExtensionsPanel";
 import {
   Box,
   Button,
@@ -269,6 +270,10 @@ export default function ReceptionDetailPage() {
                 <Typography color="text.secondary">감사 로그가 없습니다.</Typography>
               )}
             </Stack>
+
+            <Divider sx={{ my: 1 }} />
+
+            <ReceptionExtensionsPanel scope="reception" entityId={receptionId} />
           </Stack>
         </CardContent>
       </Card>
