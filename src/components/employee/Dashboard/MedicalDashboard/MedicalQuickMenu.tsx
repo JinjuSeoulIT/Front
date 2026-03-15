@@ -6,7 +6,7 @@ import { Button, Card, CardContent, Divider, Stack, Typography } from "@mui/mate
 const menus = [
   { title: "환자 목록",     path:     "/patients" },
   { title: "진료 대시보드", path:     "/doctor" },
-  { title: "간호 기록",     path:     "/staff/dashboard/nurse/record/list" },
+  { title: "간호 기록",     path:     "/staff/employee/nurse/record/list" },
   { title: "예약 조회",     path:     "/reservations" },                      // 예약쪽
 ];
 

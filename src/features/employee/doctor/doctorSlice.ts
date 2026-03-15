@@ -2,9 +2,9 @@ import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import type {
   DoctorCreateRequest,
   DoctorFile,
-  DoctorIdNumber,
+  DoctorStaffIdParam,
   DoctorResponse,
-  DoctorUpdateRequest,
+  DoctorUpdateNumber,
   FileUploadResDTO,
 
 } from "./doctortypes";
@@ -83,7 +83,7 @@ const doctorSlice = createSlice({
     },
 
     //상세
-    DetailDoctorRequest: (state, action: PayloadAction<DoctorIdNumber>) => {
+    DetailDoctorRequest: (state, action: PayloadAction<DoctorStaffIdParam>) => {
       state.loading = true;
       state.error = null;
     },
@@ -115,7 +115,7 @@ const doctorSlice = createSlice({
 
 
     //수정
-    updateDoctorRequest: (state,action: PayloadAction<DoctorUpdateRequest>) => {
+    updateDoctorRequest: (state,action: PayloadAction<DoctorUpdateNumber>) => {
       state.loading = true;
       state.error = null;
     },
@@ -131,7 +131,7 @@ const doctorSlice = createSlice({
     },
 
     //삭제
-    deleteDoctorRequest: (state,action: PayloadAction<DoctorIdNumber>) => {
+    deleteDoctorRequest: (state,action: PayloadAction<DoctorStaffIdParam>) => {
       state.loading = true;
       state.error = null;
     },
@@ -173,7 +173,10 @@ const doctorSlice = createSlice({
      //리랜더링 끄기용 액션용
     resetSuccessEnd: (state) => {
       state.SuccessEnd = false;
-}
+      state.createSuccess = false;
+      state.updateSuccess = false;
+      state.deleteSuccess = false;
+    }
   },
 });
 

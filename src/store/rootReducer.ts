@@ -1,4 +1,4 @@
-﻿ 
+ 
 import consentReducer from "@/features/consent/consentSlice";
 import emergencyReceptionsReducer from "@/features/EmergencyReceptions/EmergencyReceptionSlice";
 import insuranceReducer from "@/features/insurance/insuranceSlice";
@@ -9,7 +9,7 @@ import receptionsReducer from "@/features/Receptions/ReceptionSlice";
 import reservationsReducer from "@/features/Reservations/ReservationSlice";
 import employeeNurseReducer from "@/features/employee/nurse/nurseSlice"
 import employeedoctorReducer from "@/features/employee/doctor/doctorSlice"
-import employeeAuthenticationReducer from "@/features/employee/Staff/StaffSlict"
+import employeeBasiclnfoReducer from "@/features/employee/Staff/BasiclnfoSlict"
 
 import { combineReducers } from "redux";
 
@@ -23,10 +23,13 @@ const rootReducer = combineReducers({
   records: recordReducer,
   receptions: receptionsReducer,
   reservations: reservationsReducer,
-
+  
+  
+  
   nurse: employeeNurseReducer,
-  // doctor :employeedoctorReducer,
-  // authentication : employeeAuthenticationReducer,
+  doctor :employeedoctorReducer,
+  staff: employeeBasiclnfoReducer,
+
 });
 
 export type RootState = ReturnType<typeof rootReducer>;

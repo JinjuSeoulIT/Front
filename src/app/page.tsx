@@ -69,7 +69,7 @@ const ROLES = [
     key: "staff",
     label: "의료진",
     desc: "직원/근무/권한 배정",
-    href: "/staff/dashboard",
+    href: "/staff/employee",
     icon: <BadgeOutlinedIcon />,
     tone:
       "linear-gradient(135deg, rgba(24, 90, 158, 0.18), rgba(24, 90, 158, 0))",

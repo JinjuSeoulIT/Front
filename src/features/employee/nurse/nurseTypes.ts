@@ -1,79 +1,70 @@
-
-
 // ✅ 간호사 응답(서버 → 프론트)
 export type NurseResponse = {
-  // sfaffId       : number;
+  staffId: string;
+  deptId?: string;
+  name?: string;
 
-  nurseId       : number;
-  unitId        : string;    //간호사 사번코드 [업무용]
-  shiftType     : string;    //근무형태 “DAY”, “EVENING”, “NIGHT”, “3교대”, “2교대” 등)
-  employmentType: string;   //“정규직”, “계약직”, “파트타임” 등)
-  nurseFileUrl  : string;  
-  education     : string;    //학력
-  careerDetail  : string;    //경력 상세
-};
+  licenseNo: string;
+  nurseType: string;
+  shiftType: string;
 
-//참조값 (하드코딩)
-export type NurseIdnNumber = { 
-  nurseId: number
+  nurseFileUrl: string | null;
+  education: string;
+  careerDetail: string;
 };
 
 
 
 
-
-// ✅ 간호사 생성 요청(프론트 → 서버)
+export type NurseStaffIdParam = {
+  staffId: string;
+};
 export type NurseCreateRequest = {
+  staffId: string;
+  licenseNo: string;
+  nurseType?: string | null;
+  shiftType: string;
 
-  unitId        : string;    //간호사 사번코드 [업무용]
-  shiftType     : string;    //근무형태 “DAY”, “EVENING”, “NIGHT”, “3교대”, “2교대” 등)
-  employmentType: string;    //“정규직”, “계약직”, “파트타임” 등)
-  nurseFileUrl  : string;
-  education     : string;    //학력
-  careerDetail  : string;    //경력 상세
+  nurseFileUrl: string | null;
+  education: string;
+  careerDetail: string;
 };
 
-// ✅ 폼 초기값
 export const initialNurseCreateForm: NurseCreateRequest = {
-
-  unitId        : "",    //간호사 사번코드 [업무용]
-  shiftType     : "",   //근무형태 “DAY”, “EVENING”, “NIGHT”, “3교대”, “2교대” 등)
-  employmentType: "",   //“정규직”, “계약직”, “파트타임” 등)
-  nurseFileUrl  : "",
-  education     : "",    //학력
-  careerDetail  : ""    //경력 상세
+  staffId: "",
+  licenseNo: "",
+  nurseType: "NURSE",
+  shiftType: "",
+  nurseFileUrl: "",
+  education: "",
+  careerDetail: "",
 };
 
 
 
 
 
+export type NurseUpdateNumber = {
+  staffId: string;
+  nurseReq: NurseUpdateRequest;
+};
 
-
-// ✅ 간호사 수정 
 export type NurseUpdateRequest = {
-
-  unitId        : string;    //간호사 사번코드 [업무용]
-  shiftType     : string;    //근무형태 “DAY”, “EVENING”, “NIGHT”, “3교대”, “2교대” 등)
-  employmentType: string;    //“정규직”, “계약직”, “파트타임” 등)
-  nurseFileUrl  : string;
-  education     : string;    //학력
-  careerDetail  : string;    //경력 상세
+  staffId: string;
+  licenseNo: string;
+  shiftType: string;
+  nurseFileUrl: string | null;
+  education: string;
+  careerDetail: string;
 };
 
 export const initialNurseUpdateForm: NurseUpdateRequest = {
-
-  unitId        : "",    //간호사 사번코드 [업무용]
-  shiftType     : "",    //근무형태 “DAY”, “EVENING”, “NIGHT”, “3교대”, “2교대” 등)
-  employmentType: "",    //“정규직”, “계약직”, “파트타임” 등)
-  nurseFileUrl  : "",
-  education     : "",    //학력
-  careerDetail  : "",    //경력 상세
-};
-//참조값 보내기 (하드코딩)
-export type NurseUpdateNumber = { 
-  nurseId: number
-  nurseReq:NurseUpdateRequest  
+  staffId: "",
+  licenseNo: "",
+  shiftType: "",
+  nurseFileUrl: "",
+  education: "",
+  careerDetail: "",
 };
 
 
@@ -81,28 +72,22 @@ export type NurseUpdateNumber = {
 
 
 
-//업로드 요청
+
+
+
 export type NurseFile = {
-  nurseId       : number; 
-  file           : File;
+  staffId: string;
+  file: File;
 };
 
-
-//서버가 업로드후 반환
 export type FileUploadResDTO = {
   fileUrl: string;
   objectKey: string;
   contentType: string;
   size: number;
   originalName: string;
-}
+};
 
-
-
-
-
-
-// 공통 
 export type ApiResponse<T> = {
   success: boolean;
   message: string;

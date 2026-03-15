@@ -69,6 +69,11 @@ export default function Sidebar({ width = 240 }: { width?: number }) {
         if (mounted) {
           setMenus(data);
         }
+      } catch (error) {
+        console.error("사이드바 메뉴 조회 실패", error);
+        if (mounted) {
+          setMenus([]);
+        }
       } finally {
         if (mounted) {
           setLoading(false);

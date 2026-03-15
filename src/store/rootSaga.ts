@@ -6,8 +6,10 @@ import { watchInpatientReceptionSaga } from "@/features/InpatientReceptions/Inpa
 import { watchPatientSaga } from "@/features/patients/patientSaga";
 import { watchReceptionSaga as watchReceptionsSaga } from "@/features/Receptions/ReceptionSaga";
 // import { watchReservationSaga } from "@/features/Reservations/ReservationSaga";
+import { watchEmployeeStaffSaga } from "@/features/employee/Staff/BasiclnfoSaga";
 import { watchRecordSaga } from "@/features/Record/recordSaga";
 import { watchEmployeeNurseSaga } from "@/features/employee/nurse/nurseSaga";
+import { watchEmployeedoctorSaga } from "@/features/employee/doctor/doctorSaga";
 import { watchReservationSaga } from "@/features/Reservations/ReservationSaga";
 
 export default function* rootSaga() {
@@ -22,5 +24,7 @@ export default function* rootSaga() {
     
     fork(watchReservationSaga),
     fork(watchEmployeeNurseSaga),
+    fork(watchEmployeedoctorSaga),
+    fork(watchEmployeeStaffSaga),
   ]);
 }

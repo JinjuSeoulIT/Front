@@ -4,7 +4,7 @@ import type {
   FileUploadResDTO,
   NurseCreateRequest,
   NurseFile,
-  NurseIdnNumber,
+  NurseStaffIdParam,
   NurseResponse,
   NurseUpdateNumber,
 } from "./nurseTypes";
@@ -85,7 +85,7 @@ const nurseSlice = createSlice({
 
 
     // 상세
-    DetailNurseRequest: (state, action: PayloadAction<NurseIdnNumber>) => {
+    DetailNurseRequest: (state, action: PayloadAction<NurseStaffIdParam>) => {
       state.loading = true;
       state.error = null;
     },
@@ -140,7 +140,7 @@ const nurseSlice = createSlice({
 
     // 삭제
     //“컴포넌트에서  디스패치하면서 실어 보내는 요청 데이터”(없음)
-    deleteNurseRequest: (state, action: PayloadAction<NurseIdnNumber>) => {
+    deleteNurseRequest: (state, action: PayloadAction<NurseStaffIdParam>) => {
       state.loading = true;
       state.error = null;
     },

@@ -1,15 +1,14 @@
-﻿"use client";
+"use client";
 
 import { useRouter } from "next/navigation";
 import { Button, Card, CardContent, Divider, Stack, Typography } from "@mui/material";
 
 const menus = [
-  { title: "의사 데시보드", path: "/staff/dashboard/doctor" },
-  { title: "간호 데시보드", path: "/staff/dashboard/nurse" },
-
-
+  { title: "직원 목록", path: "/staff/employee/Basiclnfo/list" },
+  { title: "직원 등록", path: "/staff/employee/Basiclnfo/create" },
+  { title: "의사 대시보드", path: "/staff/employee/doctor" },
+  { title: "간호사 대시보드", path: "/staff/employee/nurse" },
 ];
-
 
 const EmployeeCommonDashboard = () => {
   const router = useRouter();

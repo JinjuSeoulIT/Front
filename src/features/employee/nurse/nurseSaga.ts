@@ -1,4 +1,4 @@
-﻿import { call, put, takeLatest } from "redux-saga/effects";
+import { call, put, takeLatest } from "redux-saga/effects";
 import type { PayloadAction } from "@reduxjs/toolkit";
 import type { SagaIterator } from "redux-saga";
 import axios from "axios";
@@ -29,8 +29,8 @@ import type {
   FileUploadResDTO,
   NurseCreateRequest,
   NurseFile,
-  NurseIdnNumber,
   NurseResponse,
+  NurseStaffIdParam,
   NurseUpdateNumber,
 } from "./nurseTypes";
 
@@ -43,15 +43,12 @@ import {
   uploadFileApi,
 } from "@/lib/employeeNurseApi";
 
-type ApiErrorPayload = {
-  message?: string;
-};
+type ApiErrorPayload = { message?: string };
 
 function getErrorMessage(error: unknown, fallback: string): string {
   if (axios.isAxiosError<ApiErrorPayload>(error)) {
     const apiMessage = error.response?.data?.message;
     if (apiMessage) return apiMessage;
-
     const status = error.response?.status;
     if (status) return `${fallback} (HTTP ${status})`;
   }
@@ -71,7 +68,7 @@ function* nurseListSaga(): SagaIterator {
   }
 }
 
-function* detailNurseSaga(action: PayloadAction<NurseIdnNumber>): SagaIterator {
+function* detailNurseSaga(action: PayloadAction<NurseStaffIdParam>): SagaIterator {
   try {
     const response: ApiResponse<NurseResponse> = yield call(DetailNurseApi, action.payload);
     if (response.success) {
@@ -99,8 +96,8 @@ function* createNurseSaga(action: PayloadAction<NurseCreateRequest>): SagaIterat
 
 function* updateNurseSaga(action: PayloadAction<NurseUpdateNumber>): SagaIterator {
   try {
-    const { nurseId, nurseReq } = action.payload;
-    const response: ApiResponse<NurseResponse> = yield call(updateNursedApi, nurseId, nurseReq);
+    const { staffId, nurseReq } = action.payload;
+    const response: ApiResponse<NurseResponse> = yield call(updateNursedApi, staffId, nurseReq);
     if (response.success) {
       yield put(updateNurseSuccess(response.data));
     } else {
@@ -111,9 +108,9 @@ function* updateNurseSaga(action: PayloadAction<NurseUpdateNumber>): SagaIterato
   }
 }
 
-function* deleteNurseSaga(action: PayloadAction<NurseIdnNumber>): SagaIterator {
+function* deleteNurseSaga(action: PayloadAction<NurseStaffIdParam>): SagaIterator {
   try {
-    const response: ApiResponse<void> = yield call(deleteNurseApi, action.payload.nurseId);
+    const response: ApiResponse<void> = yield call(deleteNurseApi, action.payload.staffId);
     if (response.success) {
       yield put(deleteNurseSuccess());
     } else {
@@ -124,27 +121,19 @@ function* deleteNurseSaga(action: PayloadAction<NurseIdnNumber>): SagaIterator {
   }
 }
 
-
-//업로드`
-function* uploadNurseFileSaga(action: PayloadAction<NurseFile>): SagaIterator { // =>API
+function* uploadNurseFileSaga(action: PayloadAction<NurseFile>): SagaIterator {
   try {
-    const { nurseId, file } = action.payload;  //메타데이터
-    const response: ApiResponse<FileUploadResDTO> = yield call(uploadFileApi,nurseId, file);
-
+    const { staffId, file } = action.payload;
+    const response: ApiResponse<FileUploadResDTO> = yield call(uploadFileApi, staffId, file);
     if (response.success) {
       yield put(uploadNurseFileSuccess(response.data));
     } else {
       yield put(uploadNurseFileFailure(response.message));
     }
   } catch (error: unknown) {
-    yield put(uploadNurseFileFailure("파일 업로드 연결실패 500"));
+    yield put(uploadNurseFileFailure(getErrorMessage(error, "파일 업로드 실패")));
   }
 }
-
-
-
-
-
 
 export function* watchEmployeeNurseSaga() {
   yield takeLatest(nurselistRequest.type, nurseListSaga);
