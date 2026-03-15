@@ -207,19 +207,12 @@ export default function PatientFormModal({
     if (!n) return null;
     if (isCreate && !form.consentRequired) return null;
 
-    const note = form.note.trim() || undefined;
-
-    const hasGuardian = !!(form.guardianName?.trim() || form.guardianPhone?.trim() || form.guardianRelation?.trim());
-    const families = hasGuardian
-      ? [
-          {
-            relation: form.guardianRelation?.trim() || "보호자",
-            familyName: form.guardianName?.trim() || "보호자",
-            familyPhone: form.guardianPhone?.trim() || undefined,
-            isPrimary: true as const,
-          },
-        ]
-      : undefined;
+    const noteParts: string[] = [];
+    if (form.patientType) noteParts.push(`환자유형: ${form.patientType}`);
+    if (form.guardianPhone.trim()) noteParts.push(`비상연락처: ${form.guardianPhone.trim()}`);
+    const userNote = form.note.trim();
+    if (userNote) noteParts.push(userNote);
+    const note = noteParts.length ? noteParts.join(", ") : undefined;
 
     return {
       name: n,
@@ -233,12 +226,8 @@ export default function PatientFormModal({
       guardianPhone: toOptional(form.guardianPhone),
       guardianRelation: toOptional(form.guardianRelation),
       isForeigner: form.isForeigner,
-      isVip: form.patientType === "VIP",
       contactPriority: form.contactPriority || "PATIENT",
       note,
-      consentRequired: form.consentRequired,
-      consentOptional: form.consentOptional,
-      families,
     };
   };
 

@@ -7,10 +7,7 @@ import type {
 } from "../features/Receptions/ReceptionTypes";
 
 const api = axios.create({
-
-
   baseURL: process.env.NEXT_PUBLIC_RECEPTION_API_BASE_URL ?? "http://192.168.1.55:8283",
- 
 });
 
 // List

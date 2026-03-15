@@ -37,7 +37,7 @@ export type CreateVisitReq = {
 };
 
 const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_BASE ?? "http://192.168.1.55:8283",
+  baseURL: process.env.NEXT_PUBLIC_RECEPTION_API_BASE_URL ?? "http://192.168.1.55:8283",
 });
 
 function unwrap<T>(data: ApiResponse<T> | T): T {

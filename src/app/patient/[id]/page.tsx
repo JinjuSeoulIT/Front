@@ -3,16 +3,7 @@
 import * as React from "react";
 import { useParams, useRouter } from "next/navigation";
 import MainLayout from "@/components/layout/MainLayout";
-import {
-  Card,
-  CardContent,
-  Dialog,
-  DialogContent,
-  DialogTitle,
-  Grid,
-  Stack,
-  Typography,
-} from "@mui/material";
+import { Card, CardContent, Grid, Stack, Typography } from "@mui/material";
 
 import { useDispatch, useSelector } from "react-redux";
 import type { RootState, AppDispatch } from "@/store/store";
@@ -44,13 +35,6 @@ import PatientStatusDialog from "@/components/patient/detail/PatientStatusDialog
 import PatientReceptionDialog from "@/components/patient/detail/PatientReceptionDialog";
 import PatientReservationDialog from "@/components/patient/detail/PatientReservationDialog";
 import PatientFormModal from "@/components/patient/PatientFormModal";
-import PatientInsuranceContent from "@/components/patient/detail/PatientInsuranceContent";
-import PatientConsentContent from "@/components/patient/detail/PatientConsentContent";
-import PatientMemoContent from "@/components/patient/detail/PatientMemoContent";
-import PatientRestrictContent from "@/components/patient/detail/PatientRestrictContent";
-import PatientFlagContent from "@/components/patient/detail/PatientFlagContent";
-import PatientInfoHistoryContent from "@/components/patient/detail/PatientInfoHistoryContent";
-import PatientStatusHistoryContent from "@/components/patient/detail/PatientStatusHistoryContent";
 
 export default function PatientDetailPage() {
   const params = useParams<{ id: string }>();
@@ -97,16 +81,6 @@ export default function PatientDetailPage() {
   });
 
   const [editDialogOpen, setEditDialogOpen] = React.useState(false);
-
-  type CardModalType =
-    | "insurance"
-    | "consent"
-    | "memo"
-    | "restriction"
-    | "flag"
-    | "info-history"
-    | "status-history";
-  const [cardModalType, setCardModalType] = React.useState<CardModalType | null>(null);
 
   React.useEffect(() => {
     dispatch(patientActions.fetchPatientRequest({ patientId }));
@@ -395,7 +369,7 @@ export default function PatientDetailPage() {
           </CardContent>
         </Card>
 
-        <PatientDetailCards patientId={patientId} onOpenModal={setCardModalType} />
+        <PatientDetailCards patientId={patientId} />
       </Stack>
 
       <PatientStatusDialog
@@ -442,53 +416,6 @@ export default function PatientDetailPage() {
         onSubmit={saveEdit}
         onDelete={p ? () => onDelete() : undefined}
       />
-
-      <Dialog
-        open={!!cardModalType}
-        onClose={() => setCardModalType(null)}
-        maxWidth="lg"
-        fullWidth
-        PaperProps={{ sx: { borderRadius: 4 } }}
-      >
-        <DialogTitle>
-          {cardModalType === "insurance" && "보험"}
-          {cardModalType === "consent" && "동의서"}
-          {cardModalType === "memo" && "메모"}
-          {cardModalType === "restriction" && "제한"}
-          {cardModalType === "flag" && "플래그"}
-          {cardModalType === "info-history" && "정보 변경 이력"}
-          {cardModalType === "status-history" && "상태 변경 이력"}
-        </DialogTitle>
-        <DialogContent>
-          {cardModalType === "insurance" && patientId && (
-            <PatientInsuranceContent
-              patientId={patientId}
-              onClose={() => setCardModalType(null)}
-            />
-          )}
-          {cardModalType === "consent" && patientId && (
-            <PatientConsentContent
-              patientId={patientId}
-              onClose={() => setCardModalType(null)}
-            />
-          )}
-          {cardModalType === "memo" && patientId && (
-            <PatientMemoContent patientId={patientId} onClose={() => setCardModalType(null)} />
-          )}
-          {cardModalType === "restriction" && patientId && (
-            <PatientRestrictContent patientId={patientId} onClose={() => setCardModalType(null)} />
-          )}
-          {cardModalType === "flag" && patientId && (
-            <PatientFlagContent patientId={patientId} onClose={() => setCardModalType(null)} />
-          )}
-          {cardModalType === "info-history" && patientId && (
-            <PatientInfoHistoryContent patientId={patientId} onClose={() => setCardModalType(null)} />
-          )}
-          {cardModalType === "status-history" && patientId && (
-            <PatientStatusHistoryContent patientId={patientId} onClose={() => setCardModalType(null)} />
-          )}
-        </DialogContent>
-      </Dialog>
     </MainLayout>
   );
 }

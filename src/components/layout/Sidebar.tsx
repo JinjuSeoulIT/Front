@@ -43,59 +43,15 @@ const iconMap: Record<string, React.ReactNode> = {
 };
 
 const legacyPathMap: Record<string, string> = {
-  "/reception": "/reception/dashboard",
   "/reception/reservations": "/reservations",
   "/reception/emergency": "/emergency-receptions",
   "/reception/inpatient": "/inpatient-receptions",
   "/reception/history": "/receptions/canceled",
-
-  // reception legacy -> current routes
-  "/receptions": "/reception/outpatient/list",
-  "/reservations": "/reception/appointment/list",
-  "/emergency-receptions": "/reception/emergency/list",
-  "/inpatient-receptions": "/reception/admission/list",
-  "/receptions/canceled": "/reception/dashboard",
-  "/reception/edi-items": "/reception/dashboard",
-
-  // patient legacy -> current routes
-  "/consents": "/patient/consent/list",
-  "/insurances": "/patient/insurance/list",
-  "/patients": "/patient/list",
-
-  // clinical/support legacy -> current routes
-  "/doctor": "/clinical",
-  "/doctor/encounters": "/clinical",
-  "/nurse/reception": "/medical_support/dashboard",
-  "/nurse/support": "/medical_support/dashboard",
-  "/display": "/clinical",
-
-  // staff/admin legacy -> current routes
-  "/staff/setting": "/staff/dept",
-
-  // board placeholders (routes not yet implemented)
-  "/board": "/admin",
-  "/board/notices": "/admin",
-  "/board/schedule": "/admin",
-  "/board/events": "/admin",
-  "/board/docs": "/admin",
-  "/board/leave": "/admin",
-  "/board/shifts": "/admin",
-  "/board/shifts/weekly": "/admin",
-  "/board/shifts/daily": "/admin",
-  "/board/training": "/admin",
-  "/board/handover": "/admin",
-  "/board/meetings": "/admin",
 };
 
 const normalizeMenuPath = (path?: string | null) => {
   if (!path) return path;
-  let next = path;
-  const visited = new Set<string>();
-  while (legacyPathMap[next] && !visited.has(next)) {
-    visited.add(next);
-    next = legacyPathMap[next];
-  }
-  return next;
+  return legacyPathMap[path] ?? path;
 };
 
 export default function Sidebar({ width = 240 }: { width?: number }) {
@@ -112,6 +68,11 @@ export default function Sidebar({ width = 240 }: { width?: number }) {
         const data = await fetchMenusApi();
         if (mounted) {
           setMenus(data);
+        }
+      } catch (error) {
+        console.error("사이드바 메뉴 조회 실패", error);
+        if (mounted) {
+          setMenus([]);
         }
       } finally {
         if (mounted) {

@@ -1,0 +1,121 @@
+"use client";
+
+import { useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { useRouter } from "next/navigation";
+import { Alert, Box, Button, CircularProgress, Divider, Paper, Stack, Table, TableBody, TableCell, TableRow, Typography } from "@mui/material";
+
+import type { RootState } from "@/store/rootReducer";
+import { DetailNurseRequest, resetSuccessEnd } from "@/features/employee/nurse/nurseSlice";
+import { NurseStaffIdParam } from "@/features/employee/nurse/nurseTypes";
+import NurseUpload from "./nurseUpload";
+
+const NurseDetail = ({ staffId }: NurseStaffIdParam) => {
+  const dispatch = useDispatch();
+  const router = useRouter();
+  const { nurseDetail, loading, error } = useSelector((state: RootState) => state.nurse);
+
+  useEffect(() => {
+    if (!staffId) return;
+    dispatch(DetailNurseRequest({ staffId }));
+    dispatch(resetSuccessEnd());
+  }, [dispatch, staffId]);
+
+  const goList = () => router.replace("/staff/employee/nurse/SignUp/list");
+  const goEdit = () => router.push(`/staff/employee/nurse/SignUp/${staffId}/edit`);
+
+  return (
+    <Box sx={{ maxWidth: 980, mx: "auto", px: 2, py: 2 }}>
+      <Paper sx={{ p: 3, borderRadius: 3, border: "1px solid #dbe5f5" }}>
+        <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
+          <Typography variant="h6" fontWeight={800}>간호사 상세</Typography>
+        </Stack>
+
+        {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+        {loading && <Box sx={{ display: "flex", justifyContent: "center", py: 4 }}><CircularProgress /></Box>}
+
+
+
+
+
+        {!loading && nurseDetail && (
+          <Stack spacing={3}>
+            <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", mb: 1 }}>
+              {nurseDetail.nurseFileUrl ? (
+                <Box component="img" src={nurseDetail.nurseFileUrl} alt="간호사 프로필" 
+                sx={{ width: 140, height: 140, borderRadius: 3, objectFit: "cover", border: "1px solid #dbe5f5", bgcolor: "#f4f7fd" }} />
+              ) : (
+                <Box sx={{ width: 140, 
+                height: 140, 
+                borderRadius: 3, 
+                border: "1px solid #dbe5f5", 
+                bgcolor: "#f4f7fd", 
+                display: "flex", 
+                alignItems: "center", 
+                justifyContent: "center" }}>
+                  <Typography variant="body2" color="text.secondary">이미지 없음</Typography>
+                </Box>
+              )}
+            </Box>
+
+
+
+
+            <Divider />
+            <Table size="small">
+              <TableBody>
+                <TableRow>
+                  <TableCell 
+                  sx={{ fontWeight: 700, width: 160 }}>직원번호
+                  </TableCell>
+                  <TableCell>{nurseDetail.staffId ?? "-"}
+                </TableCell>
+                </TableRow>
+
+                <TableRow>
+                  <TableCell 
+                  sx={{ fontWeight: 700 }}>간호사 면허번호
+                  </TableCell>
+                  <TableCell>{nurseDetail.licenseNo ?? "-"}
+                  </TableCell>
+                  </TableRow>
+
+                <TableRow>
+                  <TableCell sx={{ fontWeight: 700 }}>근무 형태
+                  </TableCell>
+                  <TableCell>{nurseDetail.shiftType ?? "-"}
+                  </TableCell>
+                  </TableRow>
+
+                <TableRow>
+                  <TableCell sx={{ fontWeight: 700 }}>학력
+                  </TableCell>
+                  <TableCell>{nurseDetail.education ?? "-"}
+                  </TableCell>
+                  </TableRow>
+
+                <TableRow>
+                  <TableCell sx={{ fontWeight: 700 }}>경력 상세
+                  </TableCell>
+                  <TableCell>{nurseDetail.careerDetail ?? "-"}
+                  </TableCell>
+                  </TableRow>
+              </TableBody>
+            </Table>
+
+
+
+            <Stack direction="row" spacing={1.5}>
+              <Button variant="outlined" onClick={goList}>목록</Button>
+              <Button variant="contained" onClick={goEdit} sx={{ bgcolor: "#2b5aa9" }}>수정</Button>
+            </Stack>
+
+            <NurseUpload staffId={staffId} />
+          </Stack>
+        )}
+      </Paper>
+    </Box>
+  );
+};
+
+export default NurseDetail;

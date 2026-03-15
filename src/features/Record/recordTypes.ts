@@ -2,7 +2,7 @@ import type {
   NursingRecord,
   NursingRecordCreatePayload,
   NursingRecordUpdatePayload,
-} from "@/lib/medical-support/recordApi";
+} from "@/lib/recordApi";
 
 export type RecordItem = NursingRecord;
 

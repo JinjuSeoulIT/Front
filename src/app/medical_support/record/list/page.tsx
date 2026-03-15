@@ -6,8 +6,9 @@ import RecordList from "@/components/record/RecordList";
 
 const RecordPage = () => {
   return (
-  
+    <MainLayout showSidebar={false}>
       <RecordList />
+    </MainLayout>
   );
 };
 

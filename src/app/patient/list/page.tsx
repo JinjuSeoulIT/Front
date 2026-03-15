@@ -11,11 +11,9 @@ import { patientActions } from "@/features/patients/patientSlice";
 import type { Patient, PatientSearchPayload, PatientMultiSearchPayload } from "@/features/patients/patientTypes";
 import type { PatientForm as PatientFormPayload } from "@/features/patients/patientTypes";
 import { createPatientApi } from "@/lib/patientApi";
-import { createConsentApi } from "@/lib/consentApi";
 import MainLayout from "@/components/layout/MainLayout";
 import PatientSearchCard from "@/components/patient/PatientSearchCard";
 import PatientTable from "@/components/patient/PatientTable";
-import PatientDetailPanel from "@/components/patient/PatientDetailPanel";
 import PatientFormModal from "@/components/patient/PatientFormModal";
 
 function resolveErrorMessage(err: unknown, fallback: string) {
@@ -50,18 +48,23 @@ export default function PatientsPage() {
   const [multiBirthDate, setMultiBirthDate] = React.useState("");
   const [multiPhone, setMultiPhone] = React.useState("");
 
+  const sortedList = React.useMemo(
+    () => [...list].sort((a, b) => b.patientId - a.patientId),
+    [list]
+  );
+
   React.useEffect(() => {
     dispatch(patientActions.fetchPatientsRequest());
   }, [dispatch]);
 
   React.useEffect(() => {
-    if (!list.length) return;
+    if (!sortedList.length) return;
     if (selected) {
       const still = list.find((p) => p.patientId === selected.patientId);
       if (still) return;
     }
-    dispatch(patientActions.fetchPatientSuccess(list[0]));
-  }, [list, selected, dispatch]);
+    dispatch(patientActions.fetchPatientSuccess(sortedList[0]));
+  }, [sortedList, list, selected, dispatch]);
 
   const onSelect = (p: Patient) => {
     dispatch(patientActions.fetchPatientSuccess(p));
@@ -103,30 +106,11 @@ export default function PatientsPage() {
     dispatch(patientActions.deletePatientRequest(patientId));
   };
 
-  const createConsentsForPatient = async (
-    patientId: number,
-    form: PatientFormPayload
-  ) => {
-    const consentTypes: { code: string; checked: boolean }[] = [
-      { code: "PRIVACY", checked: !!form.consentRequired },
-      { code: "MARKETING", checked: !!form.consentOptional },
-    ];
-    for (const { code, checked } of consentTypes) {
-      if (checked) {
-        await createConsentApi(patientId, {
-          patientId,
-          consentType: code,
-        });
-      }
-    }
-  };
-
   const handleRegistrationSubmit = async (form: PatientFormPayload) => {
     try {
       setRegistrationSubmitting(true);
       setRegistrationError(null);
-      const created = await createPatientApi(form);
-      await createConsentsForPatient(created.patientId, form);
+      await createPatientApi(form);
       dispatch(patientActions.fetchPatientsRequest());
       setRegistrationOpen(false);
     } catch (err: unknown) {
@@ -141,11 +125,10 @@ export default function PatientsPage() {
       setRegistrationSubmitting(true);
       setRegistrationError(null);
       const created = await createPatientApi(form);
-      await createConsentsForPatient(created.patientId, form);
       dispatch(patientActions.fetchPatientsRequest());
       setRegistrationOpen(false);
       const patientName = (created.name ?? form.name ?? "").trim();
-      router.push(`/reception/outpatient/create?patientName=${encodeURIComponent(patientName)}&patientId=${created.patientId}`);
+      router.push(`/receptions/new?patientName=${encodeURIComponent(patientName)}&patientId=${created.patientId}`);
     } catch (err: unknown) {
       setRegistrationError(resolveErrorMessage(err, "등록 후 접수 처리 실패"));
     } finally {
@@ -153,7 +136,7 @@ export default function PatientsPage() {
     }
   };
 
-  const primary = selected ?? list[0] ?? null;
+  const primary = selected ?? sortedList[0] ?? null;
   const totalCount = list.length;
   const vipCount = list.filter((p) => p.isVip).length;
 
@@ -164,7 +147,7 @@ export default function PatientsPage() {
           <Box>
             <Typography sx={{ fontWeight: 800, fontSize: 20 }}>환자관리</Typography>
             <Typography sx={{ color: "text.secondary", fontSize: 13, mt: 0.25 }}>
-              검색 · 목록 · 상세를 한 화면에서 처리하는 원무/접수용 워크벤치
+              검색 · 목록 중심의 환자 관리 화면
             </Typography>
           </Box>
           <Stack direction="row" spacing={1} sx={{ flexWrap: "wrap" }}>
@@ -191,7 +174,7 @@ export default function PatientsPage() {
             alignItems: "start",
             gridTemplateColumns: {
               xs: "1fr",
-              lg: "320px minmax(0, 1fr) 380px",
+              lg: "320px minmax(0, 1fr)",
             },
           }}
         >
@@ -214,14 +197,12 @@ export default function PatientsPage() {
           />
 
           <PatientTable
-            list={list}
+            list={sortedList}
             selected={primary}
             onSelect={onSelect}
             onDeactivate={onDeactivate}
             onNavigateToDetail={(id) => router.push(`/patient/${id}`)}
           />
-
-          <PatientDetailPanel primary={primary} />
         </Box>
 
         <PatientFormModal
@@ -231,9 +212,9 @@ export default function PatientsPage() {
             setRegistrationError(null);
           }}
           mode="create"
+          initialName={registrationInitialName}
           loading={registrationSubmitting}
           error={registrationError}
-          initialName={registrationInitialName}
           onSubmit={handleRegistrationSubmit}
           onSubmitAndReception={handleRegistrationSubmitAndReception}
         />
