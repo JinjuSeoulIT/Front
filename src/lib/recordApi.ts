@@ -1,99 +1,61 @@
 import axios from "axios";
-import type { ApiResponse } from "@/features/patients/patientTypes";
+import { RecordFormType } from "@/features/record/recordTypes";
 
-export type NursingRecord = {
-  nursingId: string;
-  visitId?: number | null;
-  recordedAt?: string | null;
-  systolicBp?: number | null;
-  diastolicBp?: number | null;
-  pulse?: number | null;
-  respiration?: number | null;
-  temperature?: number | null;
-  spo2?: number | null;
-  observation?: string | null;
-  painScore?: number | null;
-  consciousnessLevel?: string | null;
-  initialAssessment?: string | null;
-  status?: string | null;
-  createdAt?: string | null;
-  updatedAt?: string | null;
-};
-
-export type NursingRecordCreatePayload = {
-  visitId?: number | null;
-  recordedAt?: string | null;
-  systolicBp?: number | null;
-  diastolicBp?: number | null;
-  pulse?: number | null;
-  respiration?: number | null;
-  temperature?: number | null;
-  spo2?: number | null;
-  observation?: string | null;
-  painScore?: number | null;
-  consciousnessLevel?: string | null;
-  initialAssessment?: string | null;
-  status?: string | null;
-};
-
-export type NursingRecordUpdatePayload = NursingRecordCreatePayload;
-//mui - UI 컴포넌트 라이브러리
-//백엔드와 통신?
 const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_NURSING_API_BASE_URL ?? "http://192.168.1.66:8181",
+  baseURL: "http://192.168.1.66:8181",
 });
 
-export const fetchRecordsApi = async (): Promise<NursingRecord[]> => {
-  const res = await api.get<ApiResponse<NursingRecord[]>>("/api/record");
-  if (!res.data.success) {
-    throw new Error(res.data.message || "Fetch failed");
-  }
+export const fetchRecordsApi = async (): Promise<RecordFormType[]> => {
+  const res = await api.get("/api/record");
   return res.data.result;
 };
 
 export const fetchRecordApi = async (
-  nursingId: string | number
-): Promise<NursingRecord> => {
-  const res = await api.get<ApiResponse<NursingRecord>>(`/api/record/${nursingId}`);
-  if (!res.data.success) {
-    throw new Error(res.data.message || "Fetch failed");
-  }
+  recordId: string
+): Promise<RecordFormType> => {
+  const res = await api.get(`/api/record/${recordId}`);
   return res.data.result;
 };
 
 export const createRecordApi = async (
-  payload: NursingRecordCreatePayload
-): Promise<NursingRecord> => {
-  const res = await api.post<ApiResponse<NursingRecord>>("/api/record", payload);
-  if (!res.data.success) {
-    throw new Error(res.data.message || "Create failed");
-  }
+  form: RecordFormType
+): Promise<RecordFormType> => {
+  const res = await api.post("/api/record", form);
   return res.data.result;
 };
 
 export const updateRecordApi = async (
-  id: string | number,
-  payload: NursingRecordUpdatePayload
-): Promise<NursingRecord> => {
-  const res = await api.put<ApiResponse<NursingRecord>>(`/api/record/${id}`, payload);
-  if (!res.data.success) {
-    throw new Error(res.data.message || "Update failed");
-  }
+  recordId: string,
+  form: RecordFormType
+): Promise<RecordFormType> => {
+  const res = await api.put(`/api/record/${recordId}`, form);
   return res.data.result;
 };
 
-
-
-export const deleteRecordApi = async (id: string | number): Promise<void> => {
-  const res = await api.delete<ApiResponse<void>>(`/api/record/${id}`);
-  if (!res.data.success) {
-    throw new Error(res.data.message || "Delete failed");
-  }
+export const updateRecordStatusApi = async (
+  recordId: string,
+  status: "ACTIVE" | "INACTIVE"
+): Promise<RecordFormType> => {
+  const res = await api.patch(`/api/record/${recordId}/status`, {
+    status,
+  });
+  return res.data.result;
 };
 
-export const searchRecordApi = async (type: string | number, value: string|number): Promise<void> => {
-  const res = await api.get<ApiResponse<void>>(`/api/search`);
-  if (!res.data.success) {
-    throw new Error(res.data.message || "search failed");
-  }
+export const searchRecordsApi = async (payload: {
+  searchType?: string;
+  searchValue?: string;
+  startDate?: string;
+  endDate?: string;
+}): Promise<RecordFormType[]> => {
+  const res = await api.get("/api/record/search", {
+    params: {
+      searchType: payload.searchType,
+      searchValue: payload.searchValue,
+      startDate: payload.startDate,
+      endDate: payload.endDate,
+    },
+  });
+
+  return res.data.result;
 };

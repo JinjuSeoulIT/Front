@@ -1,112 +1,119 @@
-import { call, put, takeLatest } from "redux-saga/effects";
-import type { PayloadAction } from "@reduxjs/toolkit";
-import {
-  createRecordApi,
-  deleteRecordApi,
-  fetchRecordApi,
-  fetchRecordsApi,
-  searchRecordApi,
-  type NursingRecordCreatePayload,
-  type NursingRecordUpdatePayload,
-  updateRecordApi,
-} from "@/lib/medical-support/recordApi";
-import {
-  createRecordFailure,
-  createRecordRequest,
-  createRecordSuccess,
-  deleteRecordFailure,
-  deleteRecordRequest,
-  deleteRecordSuccess,
-  fetchRecordFailure,
-  fetchRecordRequest,
-  fetchRecordsFailure,
-  fetchRecordsRequest,
-  fetchRecordsSuccess,
-  fetchRecordSuccess,
-  searchRecordFailure,
-  searchRecordRequest,
-  searchRecordSuccess,
-  updateRecordFailure,
-  updateRecordRequest,
-  updateRecordSuccess,
-} from "./recordSlice";
-import type { RecordItem } from "./recordTypes";
+﻿import { call, put, takeLatest } from "redux-saga/effects";
+import type { SagaIterator } from "redux-saga";
+import { PayloadAction } from "@reduxjs/toolkit";
 
-const errorMessage = (err: unknown, fallback: string) => {
-  if (err instanceof Error && err.message) return err.message;
-  return fallback;
-};
+import { RecActions as actions } from "./recordSlice";
+import * as api from "../../lib/recordApi";
+import type { RecordFormType } from "@/features/record/recordTypes";
 
-function* fetchRecordsSaga() {
+function* fetchRecordsSaga(): SagaIterator {
   try {
-    const list: RecordItem[] = yield call(fetchRecordsApi);
-    yield put(fetchRecordsSuccess(list));
-  } catch (err: unknown) {
-    yield put(fetchRecordsFailure(errorMessage(err, "간호 기록 목록 조회 실패")));
+    const records: RecordFormType[] = yield call(api.fetchRecordsApi);
+    yield put(actions.fetchRecordsSuccess(records));
+  } catch (err: any) {
+    yield put(
+      actions.fetchRecordsFailure(err.message ?? "Failed to fetch records")
+    );
   }
 }
 
-function* fetchRecordSaga(action: PayloadAction<{ nursingId: string }>) {
+function* fetchRecordSaga(action: PayloadAction<string>): SagaIterator {
   try {
-    const item: RecordItem = yield call(fetchRecordApi, action.payload.nursingId);
-    yield put(fetchRecordSuccess(item));
-  } catch (err: unknown) {
-    yield put(fetchRecordFailure(errorMessage(err, "간호 기록 조회 실패")));
+    const record: RecordFormType = yield call(
+      api.fetchRecordApi,
+      action.payload
+    );
+    yield put(actions.fetchRecordSuccess(record));
+  } catch (err: any) {
+    yield put(
+      actions.fetchRecordFailure(err.message ?? "Failed to fetch record")
+    );
   }
 }
 
-function* createRecordSaga(action: PayloadAction<NursingRecordCreatePayload>) {
+function* createRecordSaga(
+  action: PayloadAction<RecordFormType>
+): SagaIterator {
   try {
-    yield call(createRecordApi, action.payload);
-    yield put(createRecordSuccess());
-    yield put(fetchRecordsRequest());
-  } catch (err: unknown) {
-    yield put(createRecordFailure(errorMessage(err, "간호 기록 등록 실패")));
+    yield call(api.createRecordApi, action.payload);
+    yield put(actions.createRecordSuccess());
+    yield put(actions.fetchRecordsRequest());
+  } catch (err: any) {
+    yield put(
+      actions.createRecordFailure(err.message ?? "Failed to create record")
+    );
   }
 }
 
 function* updateRecordSaga(
-  action: PayloadAction<{ nursingId: string; form: NursingRecordUpdatePayload }>
-) {
+  action: PayloadAction<{ recordId: string; form: RecordFormType }>
+): SagaIterator {
   try {
-    yield call(updateRecordApi, action.payload.nursingId, action.payload.form);
-    yield put(updateRecordSuccess());
-    yield put(fetchRecordsRequest());
-  } catch (err: unknown) {
-    yield put(updateRecordFailure(errorMessage(err, "간호 기록 수정 실패")));
+    const { recordId, form } = action.payload;
+    yield call(api.updateRecordApi, recordId, form);
+    yield put(actions.updateRecordSuccess());
+    yield put(actions.fetchRecordsRequest());
+    yield put(actions.fetchRecordRequest(recordId));
+  } catch (err: any) {
+    yield put(
+      actions.updateRecordFailure(err.message ?? "Failed to update record")
+    );
   }
 }
 
-function* deleteRecordSaga(action: PayloadAction<string>) {
+function* toggleRecordStatusSaga(
+  action: PayloadAction<{
+    recordId: string;
+    status: "ACTIVE" | "INACTIVE";
+  }>
+): SagaIterator {
   try {
-    yield call(deleteRecordApi, action.payload);
-    yield put(deleteRecordSuccess(action.payload));
-  } catch (err: unknown) {
-    yield put(deleteRecordFailure(errorMessage(err, "간호 기록 삭제 실패")));
+    const { recordId, status } = action.payload;
+    const updatedRecord: RecordFormType = yield call(
+      api.updateRecordStatusApi,
+      recordId,
+      status
+    );
+
+    yield put(actions.toggleRecordStatusSuccess(updatedRecord));
+    yield put(actions.fetchRecordsRequest());
+  } catch (err: any) {
+    yield put(
+      actions.toggleRecordStatusFailure(
+        err.message ?? "Failed to toggle record status"
+      )
+    );
   }
 }
 
-function* searchRecordSaga(
+function* searchRecordsSaga(
   action: PayloadAction<{
     searchType: string;
     searchValue?: string;
     startDate?: string;
     endDate?: string;
   }>
-) {
+): SagaIterator {
   try {
-    const list: RecordItem[] = yield call(searchRecordApi, action.payload);
-    yield put(searchRecordSuccess(list));
-  } catch (err: unknown) {
-    yield put(searchRecordFailure(errorMessage(err, "간호 기록 검색 실패")));
+    const records: RecordFormType[] = yield call(
+      api.searchRecordsApi,
+      action.payload
+    );
+
+    yield put(actions.searchRecordsSuccess(records));
+
+  } catch (err: any) {
+    yield put(
+      actions.searchRecordsFailure(err.message ?? "Failed to search records")
+    );
   }
 }
 
-export function* watchRecordSaga() {
-  yield takeLatest(fetchRecordsRequest.type, fetchRecordsSaga);
-  yield takeLatest(fetchRecordRequest.type, fetchRecordSaga);
-  yield takeLatest(createRecordRequest.type, createRecordSaga);
-  yield takeLatest(updateRecordRequest.type, updateRecordSaga);
-  yield takeLatest(deleteRecordRequest.type, deleteRecordSaga);
-  yield takeLatest(searchRecordRequest.type, searchRecordSaga);
+export function* watchRecordSaga(): SagaIterator {
+  yield takeLatest(actions.fetchRecordsRequest.type, fetchRecordsSaga);
+  yield takeLatest(actions.fetchRecordRequest.type, fetchRecordSaga);
+  yield takeLatest(actions.createRecordRequest.type, createRecordSaga);
+  yield takeLatest(actions.updateRecordRequest.type, updateRecordSaga);
+  yield takeLatest(actions.toggleRecordStatusRequest.type, toggleRecordStatusSaga);
+  yield takeLatest(actions.searchRecordsRequest.type, searchRecordsSaga);
 }

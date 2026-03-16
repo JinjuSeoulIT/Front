@@ -1,41 +1,90 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { Card, CardContent } from "@mui/material";
+import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import type { AppDispatch, RootState } from "@/store/store";
-import { emptyRecordForm } from "@/features/Record/recordTypes";
-import type { NursingRecordCreatePayload } from "@/lib/recordApi";
+import { useRouter } from "next/navigation";
+import dayjs from "dayjs";
+import type { AppDispatch } from "../../store/store";
+
+import { RootState } from "@/store/rootReducer";
+
 import RecordForm from "./RecordForm";
-import { createRecordRequest } from "@/features/Record/recordSlice";
+import { RecActions } from "@/features/record/recordSlice";
+import { RecordFormType } from "@/features/record/recordTypes";
 
-export default function RecordCreate() {
-  const router = useRouter();
+
+const emptyForm: RecordFormType = {
+  recordId: "",
+  visitId: "",
+  nursingId: "",
+  recordedAt: "",
+  createdAt: "",
+  updatedAt: "",
+  systolicBp: "",
+  diastolicBp: "",
+  pulse: "",
+  respiration: "",
+  temperature: "",
+  spo2: "",
+  observation: "",
+  painScore: "",
+  consciousnessLevel: "",
+  initialAssessment: "",
+  status: "",
+};
+
+const RecordCreate = () => {
+  const [form, setForm] = useState<RecordFormType>(emptyForm);
   const dispatch = useDispatch<AppDispatch>();
-  const { loading, error} = useSelector((s: RootState) => s.records);
+  const router = useRouter();
 
-  const onSubmit = (payload: NursingRecordCreatePayload) => {
-    dispatch(createRecordRequest(payload));
-    router.push("/medical_support/record/list");
+  const { loading, error, createSuccess } = useSelector(
+  (state: RootState) => state.records
+);
+
+useEffect(() => {
+  if (!createSuccess) return;
+
+  alert("간호 기록이 저장되었습니다.");
+  dispatch(RecActions.resetCreateSuccess());
+  
+  router.push("/medical_support/record/list");
+}, [createSuccess, dispatch, router]);
+
+
+  const handleSubmit = () => {
+    
+    const now = dayjs().format("YYYY-MM-DDTHH:mm:ss");
+
+    const payload = {
+      ...form,
+      recordId: undefined,
+      createdAt: now,
+      updatedAt: now,
+      status: form.status || "ACTIVE",
+    };
+
+    dispatch(RecActions.createRecordRequest(payload as RecordFormType));
   };
 
-   const form: typeof emptyRecordForm ={
-    ...emptyRecordForm,
-   };
+      const errorMessage =
+  error === "Request failed with status code 500"
+    ? "간호 기록 저장에 실패했습니다. 입력값을 확인한 뒤 다시 시도해주세요."
+    : error;
 
-  return (
-    <Card sx={{ borderRadius: 3, border: "1px solid var(--line)" }}>
-      <CardContent sx={{ p: 2.5 }}>
-        <RecordForm
-          title="간호 기록 등록"
-          initial={form}
-          mode = "create"
-          loading={loading}
-          error={error}
-          onSubmit={onSubmit}
-          onCancel={() => router.push("/medical_support/record/list")}
-        />
-      </CardContent>
-    </Card>
-  );
-}
+return (
+  <main style={{ padding: 24 }}>
+    {errorMessage && <p>{errorMessage}</p>}
+
+    <RecordForm
+      mode="create"
+      form={form}
+      onChange={setForm}
+      onSubmit={handleSubmit}
+      loading={loading}
+    />
+  </main>
+);
+};
+
+export default RecordCreate;

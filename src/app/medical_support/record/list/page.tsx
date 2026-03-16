@@ -1,13 +1,8 @@
-"use client";
-
-import RecordList from "@/components/record/RecordList.tsx";
+import RecordList from "@/components/record/RecordList";
 
 
-const RecordPage = () => {
-  return (
-  
-      <RecordList />
-  );
+const RecordsPage = () => {
+  return <main><RecordList /></main>;
 };
 
-export default RecordPage;
+export default RecordsPage;

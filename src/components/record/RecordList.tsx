@@ -26,8 +26,8 @@ import RefreshIcon from "@mui/icons-material/Refresh";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useDispatch, useSelector } from "react-redux";
-import { fetchRecordsRequest } from "@/features/Record/recordSlice";
-import type { RecordItem } from "@/features/Record/recordTypes";
+import { RecActions } from "@/features/record/recordSlice";
+import type { RecordFormType } from "@/features/record/recordTypes";
 import type { AppDispatch, RootState } from "@/store/store";
 import RecordSearch from "./RecordSearch";
 
@@ -61,7 +61,7 @@ export default function RecordList() {
   const [rowsPerPage, setRowsPerPage] = useState(10);
 
   useEffect(() => {
-    dispatch(fetchRecordsRequest());
+    dispatch(RecActions.fetchRecordsRequest());
   }, [dispatch]);
 
   const maxPage = Math.max(0, Math.ceil(list.length / rowsPerPage) - 1);
@@ -82,7 +82,7 @@ export default function RecordList() {
     setPage(0);
   };
 
-  const handleRowClick = (record: RecordItem) => {
+  const handleRowClick = (record: RecordFormType) => {
     router.push(`/medical_support/record/detail/${record.recordId}`);
   };
 
@@ -151,7 +151,7 @@ export default function RecordList() {
                 variant="outlined"
                 size="small"
                 startIcon={<RefreshIcon />}
-                onClick={() => dispatch(fetchRecordsRequest())}
+                onClick={() => dispatch(RecActions.fetchRecordsRequest())}
                 disabled={loading}
               >
                 새로고침
@@ -285,7 +285,9 @@ export default function RecordList() {
                         }}
                         onClick={() => handleRowClick(record)}
                       >
-                        <TableCell>{currentPage * rowsPerPage + index + 1}</TableCell>
+                        <TableCell>
+                          {currentPage * rowsPerPage + index + 1}
+                        </TableCell>
                         <TableCell>{record.recordId ?? "-"}</TableCell>
                         <TableCell>{record.name ?? "-"}</TableCell>
                         <TableCell>{record.visitId ?? "-"}</TableCell>

@@ -125,6 +125,29 @@ export default function Sidebar({ width = 240 }: { width?: number }) {
     };
   }, []);
 
+  const itemSx = {
+    borderRadius: 2,
+    mb: 0.75,
+    px: 1.5,
+    py: 1,
+    color: "#1f2a36",
+    "&:hover": { bgcolor: "rgba(11, 91, 143, 0.08)" },
+    "& .MuiListItemIcon-root": { color: "var(--brand)", minWidth: 36 },
+  } as const;
+
+  const isPathActive = React.useCallback(
+    (path?: string | null, allowPrefix?: boolean) =>
+      !!path &&
+      (pathname === normalizeMenuPath(path) ||
+        (allowPrefix && pathname.startsWith(`${normalizeMenuPath(path)}/`))),
+    [pathname]
+  );
+
+  const isNodeActive = React.useCallback(
+    (node: MenuNode) => isPathActive(node.path, !!node.children?.length),
+    [isPathActive]
+  );
+
   React.useEffect(() => {
     if (!menus.length) return;
     const nextOpen: Record<number, boolean> = {};
@@ -148,25 +171,7 @@ export default function Sidebar({ width = 240 }: { width?: number }) {
 
     markParents(menus);
     setOpenMap((prev) => ({ ...prev, ...nextOpen }));
-  }, [menus, pathname]);
-
-  const itemSx = {
-    borderRadius: 2,
-    mb: 0.75,
-    px: 1.5,
-    py: 1,
-    color: "#1f2a36",
-    "&:hover": { bgcolor: "rgba(11, 91, 143, 0.08)" },
-    "& .MuiListItemIcon-root": { color: "var(--brand)", minWidth: 36 },
-  } as const;
-
-  const isPathActive = (path?: string | null, allowPrefix?: boolean) =>
-    !!path &&
-    (pathname === normalizeMenuPath(path) ||
-      (allowPrefix && pathname.startsWith(`${normalizeMenuPath(path)}/`)));
-
-  const isNodeActive = (node: MenuNode) =>
-    isPathActive(node.path, !!node.children?.length);
+  }, [isNodeActive, menus, pathname]);
 
   const hasActiveChild = (node: MenuNode): boolean =>
     node.children?.some((child) => isNodeActive(child) || hasActiveChild(child)) ??
@@ -245,7 +250,7 @@ export default function Sidebar({ width = 240 }: { width?: number }) {
       <React.Fragment key={node.id}>
         {node.path && !hasChildren ? (
           <ListItemButton
-            component={Link as any}
+            component={Link}
             href={normalizeMenuPath(node.path) ?? "#"}
             selected={isActive}
             sx={{
@@ -292,8 +297,11 @@ export default function Sidebar({ width = 240 }: { width?: number }) {
   return (
     <Box
       sx={{
+        display: "flex",
+        flexDirection: "column",
         px: 1.5,
         py: 1.5,
+        width,
         bgcolor: "rgba(255,255,255,0.96)",
         borderRight: "1px solid rgba(15, 32, 48, 0.08)",
         height: "100%",
@@ -309,28 +317,31 @@ export default function Sidebar({ width = 240 }: { width?: number }) {
         </Typography>
       </Box>
 
-      {loading ? (
-        <Box sx={{ p: 2, display: "flex", justifyContent: "center" }}>
-          <CircularProgress size={24} />
-        </Box>
-      ) : (
-        <List disablePadding>
-          {menus.map((node) => renderNode(node, 0))}
-        </List>
-      )}
+      <Box sx={{ flex: 1, minHeight: 0, overflowY: "auto", pr: 0.5 }}>
+        {loading ? (
+          <Box sx={{ p: 2, display: "flex", justifyContent: "center" }}>
+            <CircularProgress size={24} />
+          </Box>
+        ) : (
+          <List disablePadding>
+            {menus.map((node) => renderNode(node, 0))}
+          </List>
+        )}
+      </Box>
 
-      <Box
-        sx={{
-          mt: 2,
-          p: 1.25,
-          borderRadius: 2,
-          bgcolor: "rgba(255,255,255,0.65)",
-          border: "1px solid var(--line)",
-        }}
-      >
-        <Typography variant="caption" fontWeight={800} color="text.secondary">
-          * 모듈 확장은 Sprint에서 진행
-        </Typography>
+      <Box sx={{ mt: 2, pt: 1.5 }}>
+        <Box
+          sx={{
+            p: 1.25,
+            borderRadius: 2,
+            bgcolor: "rgba(255,255,255,0.65)",
+            border: "1px solid var(--line)",
+          }}
+        >
+          <Typography variant="caption" fontWeight={800} color="text.secondary">
+            * 모듈 확장은 Sprint에서 진행
+          </Typography>
+        </Box>
       </Box>
     </Box>
   );

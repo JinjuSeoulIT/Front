@@ -14,24 +14,12 @@ import MedicalServicesOutlinedIcon from "@mui/icons-material/MedicalServicesOutl
 import NotificationsNoneOutlinedIcon from "@mui/icons-material/NotificationsNoneOutlined";
 import PersonOutlineOutlinedIcon from "@mui/icons-material/PersonOutlineOutlined";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { logoutApi } from "@/lib/auth/authApi";
 import { clearSession } from "@/lib/auth/session";
 
-const ROLE_LINKS = [
-  { key: "doctor", label: "의사", href: "/doctor" },
-  { key: "nurse", label: "간호", href: "/nurse" },
-  { key: "reception", label: "접수", href: "/reception" },
-  { key: "billing", label: "수납", href: "/billing" },
-  { key: "patients", label: "환자", href: "/patients" },
-  { key: "staff", label: "스탭", href: "/staff" },
-  { key: "admin", label: "관리자", href: "/admin" },
-];
-
 export default function Navbar() {
-  const pathname = usePathname();
   const router = useRouter();
-  const activeRole = ROLE_LINKS.find((role) => pathname.startsWith(role.href));
 
   const handleLogout = async () => {
     try {

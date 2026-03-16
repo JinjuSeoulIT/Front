@@ -1,144 +1,179 @@
-import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
-import type {
-  RecordCreatePayload,
-  RecordItem,
-  RecordState,
-  RecordUpdatePayload,
-} from "./recordTypes";
+import { createSlice, PayloadAction } from "@reduxjs/toolkit";
+import { RecordFormType } from "@/features/record/recordTypes";
 
-type FetchRecordPayload = {
-  nursingId: string;
+const initialRecord: RecordFormType = {
+  recordId: "",
+  nursingId: "",
+  visitId: "",
+  recordedAt: "",
+  systolicBp: "",
+  diastolicBp: "",
+  pulse: "",
+  respiration: "",
+  temperature: "",
+  spo2: "",
+  observation: "",
+  painScore: "",
+  consciousnessLevel: "",
+  initialAssessment: "",
+  status: "",
+  createdAt: "",
+  updatedAt: "",
 };
 
-type UpdateRecordPayload = {
-  nursingId: string;
-  form: RecordUpdatePayload;
-};
-
-type SearchRecordPayload = {
-  searchType: string;
-  searchValue?: string;
-  startDate?: string;
-  endDate?: string;
-};
+interface RecordState {
+  list: RecordFormType[];
+  loading: boolean;
+  error: string | null;
+  selected: RecordFormType;
+  deleteSuccess: boolean;
+  updateSuccess: boolean;
+  statusToggleSuccess: boolean;
+  createSuccess: boolean;
+}
 
 const initialState: RecordState = {
   list: [],
-  selected: null,
   loading: false,
   error: null,
+  selected: initialRecord,
+  deleteSuccess: false,
+  updateSuccess: false,
+  statusToggleSuccess: false,
+  createSuccess: false,
 };
 
 const recordSlice = createSlice({
   name: "records",
   initialState,
   reducers: {
-    fetchRecordsRequest(state) {
+    // ===== 목록 조회 =====
+    fetchRecordsRequest: (state) => {
       state.loading = true;
       state.error = null;
     },
-    fetchRecordsSuccess(state, action: PayloadAction<RecordItem[]>) {
+    fetchRecordsSuccess: (state, action: PayloadAction<RecordFormType[]>) => {
       state.loading = false;
       state.list = action.payload;
     },
-    fetchRecordsFailure(state, action: PayloadAction<string>) {
+    fetchRecordsFailure: (state, action: PayloadAction<string>) => {
       state.loading = false;
       state.error = action.payload;
     },
 
-    fetchRecordRequest(state, action: PayloadAction<FetchRecordPayload>) {
-      void action;
+    // ===== 단건 조회 =====
+    fetchRecordRequest: (state, _action: PayloadAction<string>) => {
       state.loading = true;
       state.error = null;
-      state.selected = null;
+      state.selected = initialRecord;
     },
-    fetchRecordSuccess(state, action: PayloadAction<RecordItem>) {
+    fetchRecordSuccess: (state, action: PayloadAction<RecordFormType>) => {
       state.loading = false;
       state.selected = action.payload;
     },
-    fetchRecordFailure(state, action: PayloadAction<string>) {
+    fetchRecordFailure: (state, action: PayloadAction<string>) => {
       state.loading = false;
       state.error = action.payload;
     },
 
-    createRecordRequest(state, action: PayloadAction<RecordCreatePayload>) {
-      void action;
+    // ===== 생성 =====
+createRecordRequest: (state, _action: PayloadAction<RecordFormType>) => {
+  state.loading = true;
+  state.error = null;
+  state.createSuccess = false;
+},
+createRecordSuccess: (state) => {
+  state.loading = false;
+  state.createSuccess = true;
+},
+createRecordFailure: (state, action: PayloadAction<string>) => {
+  state.loading = false;
+  state.error = action.payload;
+  state.createSuccess = false;
+},
+resetCreateSuccess: (state) => {
+  state.createSuccess = false;
+},
+    // ===== 수정 =====
+    updateRecordRequest: (
+      state,
+      _action: PayloadAction<{ recordId: string; form: RecordFormType }>
+    ) => {
       state.loading = true;
       state.error = null;
+      state.updateSuccess = false;
     },
-    createRecordSuccess(state) {
+    updateRecordSuccess: (state) => {
       state.loading = false;
+      state.updateSuccess = true;
     },
-    createRecordFailure(state, action: PayloadAction<string>) {
+    updateRecordFailure: (state, action: PayloadAction<string>) => {
       state.loading = false;
       state.error = action.payload;
+      state.updateSuccess = false;
+    },
+    resetUpdateSuccess: (state) => {
+      state.updateSuccess = false;
     },
 
-    updateRecordRequest(state, action: PayloadAction<UpdateRecordPayload>) {
-      void action;
+    // ===== 상태 변경 =====
+    toggleRecordStatusRequest: (
+      state,
+      _action: PayloadAction<{
+        recordId: string;
+        status: "ACTIVE" | "INACTIVE";
+      }>
+    ) => {
       state.loading = true;
       state.error = null;
+      state.statusToggleSuccess = false;
     },
-    updateRecordSuccess(state) {
+    toggleRecordStatusSuccess: (
+      state,
+      action: PayloadAction<RecordFormType>
+    ) => {
       state.loading = false;
+      state.statusToggleSuccess = true;
+      state.selected = action.payload;
+
+      state.list = state.list.map((item) =>
+        item.recordId === action.payload.recordId ? action.payload : item
+      );
     },
-    updateRecordFailure(state, action: PayloadAction<string>) {
+    toggleRecordStatusFailure: (state, action: PayloadAction<string>) => {
       state.loading = false;
       state.error = action.payload;
+      state.statusToggleSuccess = false;
+    },
+    resetStatusToggleSuccess: (state) => {
+      state.statusToggleSuccess = false;
     },
 
-    deleteRecordRequest(state, action: PayloadAction<string>) {
-      void action;
-      state.loading = true;
-      state.error = null;
-    },
-    deleteRecordSuccess(state, action: PayloadAction<string>) {
-      state.loading = false;
-      state.list = state.list.filter((item) => item.nursingId !== action.payload);
-      if (state.selected?.nursingId === action.payload) {
-        state.selected = null;
-      }
-    },
-    deleteRecordFailure(state, action: PayloadAction<string>) {
-      state.loading = false;
-      state.error = action.payload;
-    },
+    // ===== 검색 =====
+  searchRecordsRequest: (
+  state,
+  _action: PayloadAction<{
+    searchType: string;
+    searchValue?: string;
+    startDate?: string;
+    endDate?: string;
+  }>
+) => {
+  state.loading = true;
+  state.error = null;
+},
 
-    searchRecordRequest(state, action: PayloadAction<SearchRecordPayload>) {
-      void action;
-      state.loading = true;
-      state.error = null;
-    },
-    searchRecordSuccess(state, action: PayloadAction<RecordItem[]>) {
-      state.loading = false;
-      state.list = action.payload;
-    },
-    searchRecordFailure(state, action: PayloadAction<string>) {
-      state.loading = false;
-      state.error = action.payload;
-    },
+searchRecordsSuccess: (state, action: PayloadAction<RecordFormType[]>) => {
+  state.loading = false;
+  state.list = action.payload;
+},
+
+searchRecordsFailure: (state, action: PayloadAction<string>) => {
+  state.loading = false;
+  state.error = action.payload;
+},
   },
 });
 
-export const {
-  fetchRecordsRequest,
-  fetchRecordsSuccess,
-  fetchRecordsFailure,
-  fetchRecordRequest,
-  fetchRecordSuccess,
-  fetchRecordFailure,
-  createRecordRequest,
-  createRecordSuccess,
-  createRecordFailure,
-  updateRecordRequest,
-  updateRecordSuccess,
-  updateRecordFailure,
-  deleteRecordRequest,
-  deleteRecordSuccess,
-  deleteRecordFailure,
-  searchRecordRequest,
-  searchRecordSuccess,
-  searchRecordFailure,
-} = recordSlice.actions;
-
+export const RecActions = recordSlice.actions;
 export default recordSlice.reducer;

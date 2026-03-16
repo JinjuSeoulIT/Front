@@ -1,13 +1,8 @@
-import MainLayout from "@/components/layout/MainLayout";
 import RecordEdit from "@/components/record/RecordEdit";
 
- 
+
 const RecordEditPage = () => {
-  return (
-   
-      <RecordEdit />
-   
-  );
+  return <main><RecordEdit /></main>;
 };
 
 export default RecordEditPage;
