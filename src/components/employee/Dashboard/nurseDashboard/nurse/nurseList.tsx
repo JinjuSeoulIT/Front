@@ -7,7 +7,7 @@ import { Box, Button, Paper, Stack, Table, TableBody, TableCell, TableHead, Tabl
 
 import type { RootState } from "@/store/rootReducer";
 import { nurselistRequest, resetSuccessEnd } from "@/features/employee/nurse/nurseSlice";
-import NurseDelete from "./nurseDelete"
+
 
 
 const NurseList = () => {
@@ -16,7 +16,7 @@ const NurseList = () => {
   const { nurselist, deleteSuccess, loading } = useSelector((state: RootState) => state.nurse);
 
   // 삭제 대상 이동다이얼그램 컴포넌트
-  const [nurseDelete, setnurseDelete] = useState<string | null>(null);
+  // const [nurseDelete, setnurseDelete] = useState<string | null>(null);
 
 
 
@@ -33,15 +33,15 @@ const NurseList = () => {
   const handleEdit = (staffId: string) => router.push(`/staff/employee/nurse/SignUp/${staffId}/edit`);
 
 
-  //삭제
-  const handleOpenDeleteDialog = (staffId: string) => {
-    setnurseDelete(staffId);
-  };
+  // //삭제
+  // const handleOpenDeleteDialog = (staffId: string) => {
+  //   setnurseDelete(staffId);
+  // };
 
-  const handleCloseDeleteDialog = () => {
-    if (loading) return;
-    setnurseDelete(null);
-  };
+  // const handleCloseDeleteDialog = () => {
+  //   if (loading) return;
+  //   setnurseDelete(null);
+  // };
 
 
 
@@ -64,6 +64,8 @@ const NurseList = () => {
           <TableHead>
             <TableRow>
               <TableCell>직원번호</TableCell>
+              <TableCell>이름</TableCell>
+              <TableCell>부서</TableCell>
               <TableCell>간호사 면허번호</TableCell>
               <TableCell>근무형태</TableCell>
               <TableCell>고용형태</TableCell>
@@ -74,7 +76,10 @@ const NurseList = () => {
           <TableBody>
             {nurselist.map((nurse) => (
               <TableRow key={nurse.staffId}>
+
                 <TableCell>{nurse.staffId}</TableCell>
+                <TableCell>{nurse.name}</TableCell>
+                <TableCell>{nurse.deptId}</TableCell>
                 <TableCell>{nurse.licenseNo}</TableCell>
                 <TableCell>{nurse.shiftType}</TableCell>
     
@@ -83,7 +88,7 @@ const NurseList = () => {
                   <Button size="small" onClick={() => handleEdit(nurse.staffId)}>수정</Button>
 
                   
-                  <Button
+                  {/* <Button
                     size="small"
                     //삭제 컴포넌트 이동
                     color="error"
@@ -91,7 +96,7 @@ const NurseList = () => {
                     disabled={loading}
                   >
                     삭제
-                  </Button>
+                  </Button> */}
 
 
 
