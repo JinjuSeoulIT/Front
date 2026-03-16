@@ -51,6 +51,19 @@ const formatDateTime = (value?: string | null) => {
   }).format(date);
 };
 
+const getStatusLabel = (status?: string | null) => {
+  if (status === "ACTIVE") return "ACTIVE";
+  if (status === "INACTIVE") return "INACTIVE";
+  return "-";
+};
+
+
+const getStatusColor = (status?: string | null) => {
+  if (status === "ACTIVE") return "success";
+  if (status === "INACTIVE") return "default";
+  return "default";
+};
+
 export default function RecordList() {
   const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
@@ -230,7 +243,7 @@ export default function RecordList() {
                           whiteSpace: "nowrap",
                         }}
                       >
-                        간호 기록 ID
+                        {/* 간호 기록 ID
                       </TableCell>
                       <TableCell
                         sx={{
@@ -239,7 +252,7 @@ export default function RecordList() {
                           backgroundColor: "#f8f9fa",
                           whiteSpace: "nowrap",
                         }}
-                      >
+                      > */}
                         간호사 이름
                       </TableCell>
                       <TableCell
@@ -262,13 +275,25 @@ export default function RecordList() {
                       >
                         기록일시
                       </TableCell>
+<TableCell
+  sx={{
+    fontWeight: 700,
+    py: 1.4,
+    backgroundColor: "#f8f9fa",
+    whiteSpace: "nowrap",
+  }}
+>
+  상태
+</TableCell>
+
+
                     </TableRow>
                   </TableHead>
 
                   <TableBody>
                     {list.length === 0 && (
                       <TableRow>
-                        <TableCell colSpan={5} align="center" sx={{ py: 5 }}>
+                        <TableCell colSpan={6} align="center" sx={{ py: 5 }}>
                           데이터가 없습니다.
                         </TableCell>
                       </TableRow>
@@ -288,10 +313,17 @@ export default function RecordList() {
                         <TableCell>
                           {currentPage * rowsPerPage + index + 1}
                         </TableCell>
-                        <TableCell>{record.recordId ?? "-"}</TableCell>
+                        {/* <TableCell>{record.recordId ?? "-"}</TableCell> */}
                         <TableCell>{record.name ?? "-"}</TableCell>
                         <TableCell>{record.visitId ?? "-"}</TableCell>
                         <TableCell>{formatDateTime(record.recordedAt)}</TableCell>
+                        <TableCell>
+  <Chip
+    label={getStatusLabel(record.status)}
+    color={getStatusColor(record.status)}
+    size="small"
+  />
+</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>

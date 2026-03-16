@@ -100,13 +100,13 @@ useEffect(() => {
     );
   }
 
-  if (!form) {
-    return (
-      <main style={{ padding: 24 }}>
-        <p>수정할 기록을 불러오지 못했습니다.</p>
-      </main>
-    );
-  }
+  // if (!form) {
+  //   return (
+  //     <main style={{ padding: 24 }}>
+  //       <p>수정할 기록을 불러오지 못했습니다.</p>
+  //     </main>
+  //   );
+  // }
 
   return (
     <main style={{ padding: 24 }}>

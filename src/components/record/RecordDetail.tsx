@@ -216,12 +216,12 @@ export default function RecordDetail() {
                     value={formatDateTime(record.recordedAt)}
                   />
                 </Grid>
-                <Grid size={{ xs: 12, md: 6 }}>
+                {/* <Grid size={{ xs: 12, md: 6 }}>
                   <DetailItem
                     label="생성일시"
                     value={formatDateTime(record.createdAt)}
                   />
-                </Grid>
+                </Grid> */}
                 <Grid size={{ xs: 12, md: 6 }}>
                   <DetailItem
                     label="수정일시"
