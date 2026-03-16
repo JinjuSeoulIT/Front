@@ -7,9 +7,9 @@ import { RootState } from "@/store/rootReducer";
 import { Alert, Box, Button, CircularProgress, Divider, Paper, Stack, TextField, Typography } from "@mui/material";
 
 import { DetailNurseRequest, resetSuccessEnd, updateNursedRequest } from "@/features/employee/nurse/nurseSlice";
-import { initialNurseUpdateForm, NurseStaffIdParam, NurseUpdateRequest } from "@/features/employee/nurse/nurseTypes";
+import { initialNurseUpdateForm,  NurseIdNumber,  NurseUpdateRequest } from "@/features/employee/nurse/nurseTypes";
 
-const NurseUpdate = ({ staffId }: NurseStaffIdParam) => {
+const NurseUpdate = ({ staffId }: NurseIdNumber) => {
   const dispatch = useDispatch();
   const router = useRouter();
   const { nurseDetail, updateSuccess, loading, error } = useSelector((state: RootState) => state.nurse);

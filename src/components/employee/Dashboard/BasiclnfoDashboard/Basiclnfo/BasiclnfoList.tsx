@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useRouter } from "next/navigation";
 import {
@@ -21,6 +21,9 @@ import {
   StafflistRequest,
 } from "@/features/employee/Staff/BasiclnfoSlict";
 import { staffResponse } from "@/features/employee/Staff/BasiclnfoType";
+import { deleteDoctorRequest } from "@/features/employee/doctor/doctorSlice";
+import { deleteNurseRequest } from "@/features/employee/nurse/nurseSlice";
+import BasicInfoDelete from "./BasiclnfoDelete";
 
 
 const BasicInfoList = () => {
@@ -28,6 +31,13 @@ const BasicInfoList = () => {
   const router = useRouter();
 
   const { Stafflist, loading, error } = useSelector((state: RootState) => state.staff);
+
+        // 삭제 대상 이동다이얼그램 컴포넌트
+  const [staffDelete, setstaffDelete] = useState<string | null>(null);
+
+
+
+
 
   useEffect(() => {
     dispatch(StafflistRequest());
@@ -41,6 +51,7 @@ const BasicInfoList = () => {
     if (staff.doctorType) return "DOCTOR";
     return null;
   };
+
 const handleDetail = (staff: staffResponse) => {
   const jobType = getJobType(staff);
 
@@ -66,7 +77,6 @@ const handleDetail = (staff: staffResponse) => {
   router.push(path);
 };
 
-    
 
 
 //수정
@@ -80,13 +90,34 @@ const handleDetail = (staff: staffResponse) => {
 
 
 
+  const handleOpenDeleteDialog = (staffId: string) => {
+    setstaffDelete(staffId);
+  };
 
-//삭제
-const handleDelete = (staffId: string) => {
-  const path = `/staff/employee/Basiclnfo/${staffId}/delete`;
-  console.log("basic delete path =", path);
-  router.push(path);
-};
+  const handleCloseDeleteDialog = () => {
+    setstaffDelete(null);
+  };
+
+
+  
+//   //삭제
+// const handleDelete = (staff: staffResponse) => {
+//   const jobType = getJobType(staff);
+
+// if (jobType === "DOCTOR" && staff.doctorType) {
+//   dispatch(deleteDoctorRequest({ staffId: staff.staffId}));
+//   return;
+// }
+
+// if (jobType === "NURSE" && staff.nurseType) {
+//   dispatch(deleteNurseRequest({staffId: staff.staffId}));
+//   return;
+// }
+// };
+
+
+
+
 
 
 
@@ -153,8 +184,6 @@ const handleDelete = (staffId: string) => {
                   <TableCell>{staff.phone}</TableCell>
                   <TableCell>{staff.email}</TableCell>
                   <TableCell>{staff.status}</TableCell>
-
-                  
                   <TableCell>{jobType ?? "미등록"}</TableCell>
                   <TableCell>
                     <Button size="small" onClick={() => handleDetail(staff)}>
@@ -165,18 +194,13 @@ const handleDelete = (staffId: string) => {
                       수정
                     </Button>
 
-
-
-
-
-            <Button
-  size="small"
-  color="error"
-  disabled={loading}
-  onClick={() => handleDelete(staff.staffId)}
->
-  삭제
-</Button>
+      
+                    <Button
+                      color="error"
+                      onClick={() => handleOpenDeleteDialog(staff.staffId)}
+                    >
+                      삭제
+                    </Button>
                   </TableCell>
                 </TableRow>
               );
@@ -192,7 +216,21 @@ const handleDelete = (staffId: string) => {
           </TableBody>
         </Table>
       </Paper>
+
+
+      <BasicInfoDelete
+        open={!!staffDelete}
+        staffId={staffDelete}
+        onClose={handleCloseDeleteDialog}
+      />
     </Box>
+  
+
+
+
+  
+
+
   );
 };
 

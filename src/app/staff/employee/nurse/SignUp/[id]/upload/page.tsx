@@ -1,7 +1,7 @@
 import NnurseUpload from "@/components/employee/Dashboard/nurseDashboard/nurse/nurseUpload";
 import MainLayout from "@/components/layout/MainLayout";
+import { Props } from "@/features/employee/Staff/BasiclnfoType";
 
-type Props = { params: Promise<{ id: string }> };
 
 export default async function UploadPage({ params }: Props) {
   const { id } = await params;

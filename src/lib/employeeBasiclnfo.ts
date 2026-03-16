@@ -37,6 +37,8 @@ export const updateStaffApi = async (
   return response.data;
 };
 
+
+
 export const deleteStaffApi = async (staffId: string): Promise<ApiResponse<void>> => {
   const response = await staffApi.delete<ApiResponse<void>>(`/api/staff/delete/${staffId}`);
   return response.data;

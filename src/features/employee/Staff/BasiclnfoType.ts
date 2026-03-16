@@ -1,3 +1,9 @@
+export type Props = { params: Promise<{ id: string }> };
+
+
+
+
+
 export type staffResponse = {
   staffId: string;
   deptId: string;
@@ -30,6 +36,11 @@ export type staffCreateRequest = {
   status: string;
 };
 
+
+
+
+
+
 export const initialstaffCreateForm: staffCreateRequest = {
   staffId: "",
   deptId: "",
@@ -44,6 +55,16 @@ export const initialstaffCreateForm: staffCreateRequest = {
   status: "ACTIVE",
 };
 
+
+
+
+
+export type staffIdNumber = {
+  staffId: string;
+};
+
+
+
 export type staffUpdateRequest = {
   deptId: string;
   name: string;
@@ -56,6 +77,8 @@ export type staffUpdateRequest = {
   address2: string;
   status: string;
 };
+
+
 
 export const initialstaffUpdateForm: staffUpdateRequest = {
   deptId: "",
@@ -74,6 +97,9 @@ export type staffIdnNumber = {
   staffId: string;
   staffReq: staffUpdateRequest;
 };
+
+
+
 
 export type ApiResponse<T> = {
   success: boolean;

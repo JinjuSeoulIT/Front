@@ -16,7 +16,7 @@ import {
 import type { RootState } from "@/store/rootReducer";
 import {
   DetailStaffRequest,
-  resetCreateSuccess,
+
   updateStaffRequest,
 } from "@/features/employee/Staff/BasiclnfoSlict";
 import {
@@ -138,7 +138,7 @@ const handleDetail = (staff: staffResponse) => {
     if (!StaffDetail) return;
 
     handleDetail(StaffDetail);
-    dispatch(resetCreateSuccess());
+    dispatch(resetSuccessEnd());
   }, [dispatch, router, staffId, updateSuccess]);
 
 
@@ -200,12 +200,7 @@ const openPostcode = () => {
 
 
 
-  //성공하면
-  useEffect(() => {
-    if (!updateSuccess) return;
-    router.replace("/staff/employee/doctor/SignUp/list");
-    dispatch(resetSuccessEnd());
-  }, [updateSuccess, router, dispatch]);
+
 
 
 

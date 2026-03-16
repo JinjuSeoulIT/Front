@@ -40,7 +40,8 @@ export const deleteDoctorApi = async (staffId: string): Promise<ApiResponse<void
 };
 
 
-export async function uploadFileApi(staffId: string, file: File): Promise<ApiResponse<FileUploadResDTO>> {
+export async function uploadFileApi(staffId: string, file: File):
+ Promise<ApiResponse<FileUploadResDTO>> {
   const form = new FormData();
   form.append("DoctorFile", file);
 

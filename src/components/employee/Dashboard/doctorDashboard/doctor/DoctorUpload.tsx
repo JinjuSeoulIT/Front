@@ -30,6 +30,9 @@ export default function DoctorUpload({ staffId }: DoctorIdNumber) {
     return () => URL.revokeObjectURL(objectUrl);
   }, [selectedFile]);
 
+
+
+  
   useEffect(() => {
     if (!uploadSuccess) return;
     setSelectedFile(null);
@@ -59,6 +62,8 @@ export default function DoctorUpload({ staffId }: DoctorIdNumber) {
     router.replace("/staff/employee/doctor/SignUp/list");
 
     dispatch(resetSuccessEnd());
+    
+    
   }, [uploadSuccess, router, dispatch]);
 
   

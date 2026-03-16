@@ -1,81 +1,85 @@
-// "use client";
+"use client";
 
-// import { useEffect } from "react";
-// import { useRouter } from "next/navigation";
-// import { useDispatch, useSelector } from "react-redux";
-// import { Box, Button, Paper, Stack, Typography } from "@mui/material";
+import { useEffect,  } from "react";
 
-// import type { RootState } from "@/store/rootReducer";
-// import {
-
-//   deleteDoctorRequest,
-//   DetailDoctorRequest,
-// } from "@/features/employee/doctor/doctorSlice";
-// import { DoctorIdNumber } from "@/features/employee/doctor/doctortypes";
+import { useDispatch, useSelector } from "react-redux";
+import { Alert, Button, CircularProgress, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Paper, Stack, Typography } from "@mui/material";
 
 
-
-// const DoctorDelete = ({ doctorId }: DoctorIdNumber) => {
-//   const dispatch = useDispatch();
-//   const router = useRouter();
-//   const { doctorDetail, loading, error, deleteSuccess } = useSelector((state: RootState) => state.doctor);
-
-
+import {
+deleteDoctorRequest,
+resetSuccessEnd,
+} from "@/features/employee/doctor/doctorSlice";
+import { RootState } from "@/store/rootReducer";
 
 
+type Props = {
+  open: boolean;
+  staffId: string | null;
+  onClose: () => void;
+};
 
-//   useEffect(() => {
-//     if (doctorId) {
-//       dispatch(DetailDoctorRequest({doctorId}));
-//     }
-//   }, [dispatch, doctorId]);
+    const DoctorDelete = ({ open, staffId, onClose }: Props) => {
+    const dispatch = useDispatch();
 
-//   useEffect(() => {
-//     if (!deleteSuccess) return;
-//     router.push("/staff/dashboard/doctor/SignUp/list");
-//   }, [deleteSuccess, router]);
+    const {  loading, error, deleteSuccess } = useSelector((state: RootState) => state.doctor);
 
 
-//   const onConfirm = () => {
-//     const  = doctorDetail?.;
-//     if (!doctorDetail) return;
-//     dispatch(deleteDoctorRequest({  }));
-//   };
 
-//   return (
-//     <Box sx={{ maxWidth: 520, mx: "auto", px: 2, py: 2 }}>
-//       <Paper sx={{ p: 3, borderRadius: 3, border: "1px solid #dbe5f5" }}>
-//         <Stack spacing={2}>
-//           <Typography variant="h6" fontWeight={800}>
-//             의사 삭제
-//           </Typography>
-//           <Typography>
-//             {DoctorDetail
-//               ? `${DoctorDetail.realName} 의사 정보를 삭제하시겠습니까?`
-//               : "삭제할 의사 정보를 불러오는 중입니다."}
-//           </Typography>
-//           {error && (
-//             <Typography color="error" variant="body2">
-//               {error}
-//             </Typography>
-//           )}
-//           <Stack direction="row" spacing={1}>
-//             <Button
-//               variant="contained"
-//               color="error"
-//               onClick={onConfirm}
-//               disabled={loading || !DoctorDetail}
-//             >
-//               {loading ? "처리중..." : "삭제"}
-//             </Button>
-//             <Button variant="outlined" onClick={() => router.back()} disabled={loading}>
-//               취소
-//             </Button>
-//           </Stack>
-//         </Stack>
-//       </Paper>
-//     </Box>
-//   );
-// };
+    const handleConfirmDelete = () => {
+      if (!staffId) return;
+      dispatch(deleteDoctorRequest({ staffId }));
+    };
+  
+    useEffect(() => {
+      if (!deleteSuccess) return;
+      dispatch(resetSuccessEnd());
+      onClose();
+    }, [deleteSuccess, dispatch, onClose]);
 
-// export default DoctorDelete;
+
+    return (
+    <Dialog open={open} onClose={loading ? undefined : onClose} maxWidth="xs" fullWidth>
+    <DialogTitle>의사 삭제</DialogTitle>
+
+        <DialogContent>
+        <DialogContentText sx={{ mb: 2 }}>
+        정말 삭제하시겠습니까?
+        </DialogContentText>
+
+        <Typography variant="body2" color="text.secondary">
+        staffId: {staffId ?? "-"}
+        </Typography>
+
+        {loading && <CircularProgress sx={{ mt: 2 }} />}
+
+        {error && (
+        <Alert severity="error" sx={{ mt: 2 }}>
+            {error}
+        </Alert>
+        )}
+        </DialogContent>
+
+        <DialogActions>
+        <Button onClick={onClose} disabled={loading}>
+        취소
+        </Button>
+        <Button
+        color="error"
+        variant="contained"
+        onClick={ handleConfirmDelete }
+        disabled={loading || !staffId}
+        >
+        삭제
+        </Button>
+        </DialogActions>
+        </Dialog>
+
+);
+};
+
+export default DoctorDelete;
+
+
+
+

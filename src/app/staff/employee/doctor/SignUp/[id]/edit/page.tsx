@@ -1,9 +1,7 @@
 
 import DoctorUpdate from "@/components/employee/Dashboard/doctorDashboard/doctor/doctorUpdate";
 import MainLayout from "@/components/layout/MainLayout";
-
-type Props = { params: Promise<{ id: string }> };
-
+import { Props } from "@/features/employee/Staff/BasiclnfoType";
 
 export default async function EditPage({ params }: Props) {
   const { id } = await params;

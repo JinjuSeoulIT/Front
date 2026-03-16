@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { Box, Button, Paper, Stack, Table, TableBody, TableCell, TableHead, TableRow, Typography } from "@mui/material";
 
 import type { RootState } from "@/store/rootReducer";
-import { deleteNurseRequest, nurselistRequest, resetSuccessEnd } from "@/features/employee/nurse/nurseSlice";
+import { nurselistRequest, resetSuccessEnd } from "@/features/employee/nurse/nurseSlice";
 import NurseDelete from "./nurseDelete"
 
 
@@ -33,7 +33,7 @@ const NurseList = () => {
   const handleEdit = (staffId: string) => router.push(`/staff/employee/nurse/SignUp/${staffId}/edit`);
 
 
-
+  //삭제
   const handleOpenDeleteDialog = (staffId: string) => {
     setnurseDelete(staffId);
   };
@@ -45,7 +45,7 @@ const NurseList = () => {
 
 
 
-
+  //화면 변환
   useEffect(() => {
     if (!deleteSuccess) return;
     dispatch(nurselistRequest());
@@ -56,9 +56,7 @@ const NurseList = () => {
     <Box sx={{ maxWidth: 980, mx: "auto", px: 2, py: 2 }}>
       <Paper sx={{ p: 3, borderRadius: 3, border: "1px solid #dbe5f5" }}>
         <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
-
           <Typography variant="h6" fontWeight={800}>간호사 목록</Typography>
-
           <Button variant="contained" onClick={handleHome}>메인홈</Button>
         </Stack>
 
@@ -108,13 +106,13 @@ const NurseList = () => {
           <Button variant="contained" onClick={handleCreate}>등록</Button>
         </Box>
       </Paper>
-
+{/* 
 
      <NurseDelete
-        open={!!nurseDelete}
+        open={!nurseDelete}
         staffId={nurseDelete}
         onClose={handleCloseDeleteDialog}
-      />
+      /> */}
 
 
     </Box>

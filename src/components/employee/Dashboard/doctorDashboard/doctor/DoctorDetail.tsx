@@ -15,14 +15,19 @@ const DoctorDetail = ({ staffId }: DoctorIdNumber) => {
   const router = useRouter();
   const { doctorDetail, loading, error } = useSelector((state: RootState) => state.doctor);
 
-  useEffect(() => {
-    if (!staffId) return;
-    dispatch(DetailDoctorRequest({ staffId }));
-    dispatch(resetSuccessEnd());
-  }, [dispatch, staffId]);
-
+ 
   const goList = () => router.replace("/staff/employee/doctor/SignUp/list");
   const goEdit = () => router.push(`/staff/employee/doctor/SignUp/${staffId}/edit`);
+
+
+  
+   useEffect(() => {
+    if (!staffId) return;
+    dispatch(DetailDoctorRequest({ staffId }));
+    
+    dispatch(resetSuccessEnd());
+
+  }, [dispatch, staffId]);
 
   return (
     <Box sx={{ maxWidth: 980, mx: "auto", px: 2, py: 2 }}>

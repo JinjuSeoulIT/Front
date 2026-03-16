@@ -17,7 +17,8 @@ import {
 import type { RootState } from "@/store/rootReducer";
 import {
   createStaffRequest,
-  resetCreateSuccess,
+  resetSuccessEnd,
+
 } from "@/features/employee/Staff/BasiclnfoSlict";
 import {
   initialstaffCreateForm,
@@ -105,7 +106,7 @@ const BasicInfoCreate = () => {
     if (!createSuccess) return;
 
     router.replace("/staff/employee/Basiclnfo/list");
-    dispatch(resetCreateSuccess());
+    dispatch(resetSuccessEnd());
   }, [createSuccess, dispatch, router]);
 
 

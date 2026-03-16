@@ -5,7 +5,7 @@ import { Button, Card, CardContent, Divider, Stack, Typography } from "@mui/mate
 
 const menus = [
   { title: "의사 목록", path: "/staff/employee/doctor/SignUp/list" },
-  { title: "의사 업무", path: "/staff/employee/doctor/record" },
+  { title: "의사 업무", path: "/doctor" },
 ];
 
 const DoctorDashboard = () => {

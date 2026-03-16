@@ -29,8 +29,9 @@ import type {
   FileUploadResDTO,
   NurseCreateRequest,
   NurseFile,
+  NurseIdNumber,
   NurseResponse,
-  NurseStaffIdParam,
+  
   NurseUpdateNumber,
 } from "./nurseTypes";
 
@@ -68,7 +69,7 @@ function* nurseListSaga(): SagaIterator {
   }
 }
 
-function* detailNurseSaga(action: PayloadAction<NurseStaffIdParam>): SagaIterator {
+function* detailNurseSaga(action: PayloadAction<NurseIdNumber>): SagaIterator {
   try {
     const response: ApiResponse<NurseResponse> = yield call(DetailNurseApi, action.payload);
     if (response.success) {
@@ -108,7 +109,10 @@ function* updateNurseSaga(action: PayloadAction<NurseUpdateNumber>): SagaIterato
   }
 }
 
-function* deleteNurseSaga(action: PayloadAction<NurseStaffIdParam>): SagaIterator {
+
+
+
+function* deleteNurseSaga(action: PayloadAction<NurseIdNumber>): SagaIterator {
   try {
     const response: ApiResponse<void> = yield call(deleteNurseApi, action.payload.staffId);
     if (response.success) {
@@ -120,6 +124,10 @@ function* deleteNurseSaga(action: PayloadAction<NurseStaffIdParam>): SagaIterato
     yield put(deleteNurseFailure(getErrorMessage(error, "간호사 삭제 실패")));
   }
 }
+
+
+
+
 
 function* uploadNurseFileSaga(action: PayloadAction<NurseFile>): SagaIterator {
   try {

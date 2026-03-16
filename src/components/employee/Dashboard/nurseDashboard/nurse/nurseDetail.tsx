@@ -7,22 +7,27 @@ import { Alert, Box, Button, CircularProgress, Divider, Paper, Stack, Table, Tab
 
 import type { RootState } from "@/store/rootReducer";
 import { DetailNurseRequest, resetSuccessEnd } from "@/features/employee/nurse/nurseSlice";
-import { NurseStaffIdParam } from "@/features/employee/nurse/nurseTypes";
+import { NurseIdNumber } from "@/features/employee/nurse/nurseTypes";
 import NurseUpload from "./nurseUpload";
 
-const NurseDetail = ({ staffId }: NurseStaffIdParam) => {
+const NurseDetail = ({ staffId }: NurseIdNumber) => {
   const dispatch = useDispatch();
   const router = useRouter();
   const { nurseDetail, loading, error } = useSelector((state: RootState) => state.nurse);
 
+
+
+  const goList = () => router.replace("/staff/employee/nurse/SignUp/list");
+  const goEdit = () => router.push(`/staff/employee/nurse/SignUp/${staffId}/edit`);
+
+
+  
   useEffect(() => {
     if (!staffId) return;
     dispatch(DetailNurseRequest({ staffId }));
     dispatch(resetSuccessEnd());
   }, [dispatch, staffId]);
 
-  const goList = () => router.replace("/staff/employee/nurse/SignUp/list");
-  const goEdit = () => router.push(`/staff/employee/nurse/SignUp/${staffId}/edit`);
 
   return (
     <Box sx={{ maxWidth: 980, mx: "auto", px: 2, py: 2 }}>

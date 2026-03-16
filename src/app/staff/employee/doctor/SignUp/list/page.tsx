@@ -1,7 +1,5 @@
 "use client";
 
-
-
 import DoctorList from "@/components/employee/Dashboard/doctorDashboard/doctor/DoctorList";
 import MainLayout from "@/components/layout/MainLayout";
 

@@ -1,17 +1,23 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useRouter } from "next/navigation";
 import { Box, Button, Paper, Stack, Table, TableBody, TableCell, TableHead, TableRow, Typography } from "@mui/material";
 
 import type { RootState } from "@/store/rootReducer";
-import { deleteDoctorRequest, DoctorListRequest, resetSuccessEnd } from "@/features/employee/doctor/doctorSlice";
+import {DoctorListRequest, resetSuccessEnd } from "@/features/employee/doctor/doctorSlice";
+import DoctorDelete from "./doctorDelete";
 
 const DoctorList = () => {
   const dispatch = useDispatch();
   const router = useRouter();
-  const { doctorList, deleteSuccess } = useSelector((state: RootState) => state.doctor);
+
+  const { doctorList, loading, deleteSuccess } = useSelector((state: RootState) => state.doctor);
+
+  
+  //     // 삭제 대상 이동다이얼그램 컴포넌트
+  // const [doctorDelete, setdoctorDelete] = useState<string | null>(null);
 
   useEffect(() => {
     dispatch(DoctorListRequest());
@@ -25,11 +31,16 @@ const DoctorList = () => {
 
   const handleEdit = (staffId: string) => router.push(`/staff/employee/doctor/SignUp/${staffId}/edit`);
 
-  const handleDelete = (staffId: string) => {
-    const ok = confirm("정말 삭제하시겠습니까?");
-    if (!ok) return;
-    dispatch(deleteDoctorRequest({ staffId }));
-  };
+
+
+  //   //삭제
+  // const handleOpenDeleteDialog = (staffId: string) => {
+  //   setdoctorDelete(staffId);
+  // };
+  // const handleCloseDeleteDialog = () => {
+  //   if (loading) return;
+  //   setdoctorDelete(null);
+  // };
 
   useEffect(() => {
     if (!deleteSuccess) return;
@@ -49,6 +60,8 @@ const DoctorList = () => {
           <TableHead>
             <TableRow>
               <TableCell>직원번호</TableCell>
+              <TableCell>의사이름</TableCell>
+              <TableCell>부서</TableCell>
               <TableCell>면허번호</TableCell>
               <TableCell>직업</TableCell>
               <TableCell>전문분야</TableCell>
@@ -61,13 +74,28 @@ const DoctorList = () => {
               <TableRow key={doctor.staffId}>
                 
                 <TableCell>{doctor.staffId}</TableCell>
+                <TableCell>{doctor.name}</TableCell>
+                <TableCell>{doctor.deptId}</TableCell>
                 <TableCell>{doctor.licenseNo}</TableCell>
                 <TableCell>{doctor.doctorType ?? "DOCTOR"}</TableCell>
                 <TableCell>{doctor.specialtyId}</TableCell>
                 <TableCell>
                   <Button size="small" onClick={() => handleDetail(doctor.staffId)}>상세</Button>
                   <Button size="small" onClick={() => handleEdit(doctor.staffId)}>수정</Button>
-                  <Button size="small" color="error" onClick={() => handleDelete(doctor.staffId)}>삭제</Button>
+              
+
+{/*    
+                  <Button
+                    size="small"
+                    //삭제 컴포넌트 이동
+                    color="error"
+                    onClick={() => handleOpenDeleteDialog(doctor.staffId)}
+                    disabled={loading}
+                  >
+                    삭제
+                  </Button> */}
+
+    
                 </TableCell>
               </TableRow>
             ))}
@@ -78,7 +106,19 @@ const DoctorList = () => {
           <Button variant="contained" onClick={handleCreate}>의사 등록</Button>
         </Box>
       </Paper>
+
+
+{/* 
+   <DoctorDelete
+        open={!!doctorDelete}
+        staffId={doctorDelete}
+        onClose={handleCloseDeleteDialog}
+      /> */}
+
     </Box>
+
+
+
   );
 };
 

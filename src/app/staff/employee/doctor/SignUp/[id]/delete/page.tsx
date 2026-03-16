@@ -1,22 +1,17 @@
-// import DoctorDelete from "@/components/employee/Dashboard/employeeDashboard/doctorDashboard/doctor/delete/doctorDelete";
-// import MainLayout from "@/components/layout/MainLayout";
 
-// type Props = { params: Promise<{ id: string }> };
+import DoctorDelete from "@/components/employee/Dashboard/doctorDashboard/doctor/doctorDelete";
+import MainLayout from "@/components/layout/MainLayout";
+import { Props } from "@/features/employee/Staff/BasiclnfoType";
 
+export default async function DeletePage({ params }: Props) {
+  const { id } = await params;
 
-// export default async function DeletePage({ params }: Props) {
-//   const { id } = await params;
-//   const doctorId = Number(id);
-
-//   return (
-//     <MainLayout showSidebar={false}>
-//       <DoctorDelete doctorId={doctorId} />
-//     </MainLayout>
-//   );
-// }
-
-
-
+  return (
+    <MainLayout showSidebar={false}>
+      <DoctorDelete staffId={id} open={true} onClose={() => {}}/>
+    </MainLayout>
+  );
+}
 
 
 

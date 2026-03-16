@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "@/store/rootReducer";
 import { Alert, Box, Button, CircularProgress, Divider, Paper, Stack, TextField, Typography } from "@mui/material";
-import { initialNurseCreateForm, NurseCreateRequest, NurseStaffIdParam } from "@/features/employee/nurse/nurseTypes";
+import { initialNurseCreateForm, NurseCreateRequest, NurseIdNumber, } from "@/features/employee/nurse/nurseTypes";
 import { createNurseRequest, resetSuccessEnd } from "@/features/employee/nurse/nurseSlice";
 import { DetailStaffApi } from "@/lib/employeeBasiclnfo";
 
@@ -15,7 +15,7 @@ type StaffInfo = {
   name: string;
 };
 
-const NurseCreatePage = ({ staffId }: NurseStaffIdParam) => {
+const NurseCreatePage = ({ staffId }: NurseIdNumber) => {
   const dispatch = useDispatch();
   const router = useRouter();
   const { createSuccess, loading, error } = useSelector((state: RootState) => state.nurse);
@@ -90,11 +90,15 @@ const NurseCreatePage = ({ staffId }: NurseStaffIdParam) => {
     setForm((prev) => ({ ...prev, [name]: value }));
   };
 
+
+
+  
   useEffect(() => {
     if (!createSuccess) return;
     router.replace("/staff/employee/nurse/SignUp/list");
     dispatch(resetSuccessEnd());
   }, [createSuccess, router, dispatch]);
+
 
   return (
     <Box sx={{ maxWidth: 780, mx: "auto", px: { xs: 2, md: 0 } }}>

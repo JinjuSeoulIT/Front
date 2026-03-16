@@ -6,6 +6,7 @@ import type {
   ApiResponse,
   staffCreateRequest,
   staffIdnNumber,
+  staffIdNumber,
   staffResponse,
 } from "./BasiclnfoType";
 import {
@@ -98,9 +99,11 @@ function* updateStaffSaga(action: PayloadAction<staffIdnNumber>): SagaIterator {
   }
 }
 
-function* deleteStaffSaga(action: PayloadAction<string>): SagaIterator {
+//삭제
+function* deleteStaffSaga(action: PayloadAction<staffIdNumber>): SagaIterator {
   try {
-    const res: ApiResponse<void> = yield call(deleteStaffApi, action.payload);
+    const res: ApiResponse<void> = yield call(deleteStaffApi, action.payload.staffId);
+    console.log(res);
     if (res.success) {
       yield put(deleteStaffSuccess());
     } else {

@@ -16,7 +16,7 @@ export type NurseResponse = {
 
 
 
-export type NurseStaffIdParam = {
+export type NurseIdNumber = {
   staffId: string;
 };
 export type NurseCreateRequest = {

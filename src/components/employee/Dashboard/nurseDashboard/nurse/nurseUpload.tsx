@@ -5,11 +5,11 @@ import { useDispatch, useSelector } from "react-redux";
 import type { RootState } from "@/store/rootReducer";
 import type { AppDispatch } from "@/store/store";
 import { Alert, Box, Button, CircularProgress, Divider, Paper, Stack, Typography } from "@mui/material";
-import { NurseStaffIdParam } from "@/features/employee/nurse/nurseTypes";
+import { NurseIdNumber } from "@/features/employee/nurse/nurseTypes";
 import { useRouter } from "next/navigation";
 import { resetSuccessEnd, uploadNurseFileRequest } from "@/features/employee/nurse/nurseSlice";
 
-export default function NurseUpload({ staffId }: NurseStaffIdParam) {
+export default function NurseUpload({ staffId }: NurseIdNumber) {
   const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
 
@@ -49,6 +49,8 @@ export default function NurseUpload({ staffId }: NurseStaffIdParam) {
 
 
 
+
+
   //성공하면
     useEffect(() => {
     if (!uploadSuccess) return;
@@ -56,11 +58,6 @@ export default function NurseUpload({ staffId }: NurseStaffIdParam) {
     
     dispatch(resetSuccessEnd());
   }, [uploadSuccess, router, dispatch]);
-
-  
-
-
-
 
 
 

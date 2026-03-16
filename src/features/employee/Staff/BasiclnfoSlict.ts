@@ -2,6 +2,7 @@ import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import type {
   staffCreateRequest,
   staffIdnNumber,
+  staffIdNumber,
   staffResponse,
 } from "./BasiclnfoType";
 
@@ -90,7 +91,9 @@ const StaffSlice = createSlice({
       state.error = action.payload;
     },
 
-    deleteStaffRequest(state, _action: PayloadAction<string>) {
+
+
+    deleteStaffRequest(state, _action: PayloadAction<staffIdNumber>) {
       state.loading = true;
       state.error = null;
       state.deleteSuccess = false;
@@ -98,7 +101,9 @@ const StaffSlice = createSlice({
     deleteStaffSuccess(state) {
       state.loading = false;
       state.deleteSuccess = true;
+   
     },
+
     deleteStaffFailure(state, action: PayloadAction<string>) {
       state.loading = false;
       state.error = action.payload;
@@ -106,10 +111,11 @@ const StaffSlice = createSlice({
     },
 
     //초기화용
-    resetCreateSuccess(state) {
+    resetSuccessEnd(state) {
       state.createSuccess = false;
       state.updateSuccess = false;
       state.deleteSuccess = false;
+    
     },
   },
 });
@@ -130,7 +136,8 @@ export const {
   deleteStaffRequest,
   deleteStaffSuccess,
   deleteStaffFailure,
-  resetCreateSuccess,
+
+  resetSuccessEnd,
 } = StaffSlice.actions;
 
 export default StaffSlice.reducer;

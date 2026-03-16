@@ -6,6 +6,7 @@ import type {
   DoctorResponse,
   DoctorUpdateNumber,
   FileUploadResDTO,
+  DoctorIdNumber,
 
 } from "./doctortypes";
 
@@ -131,7 +132,7 @@ const doctorSlice = createSlice({
     },
 
     //삭제
-    deleteDoctorRequest: (state,action: PayloadAction<DoctorStaffIdParam>) => {
+    deleteDoctorRequest: (state,action: PayloadAction<DoctorIdNumber>) => {
       state.loading = true;
       state.error = null;
     },
@@ -176,6 +177,7 @@ const doctorSlice = createSlice({
       state.createSuccess = false;
       state.updateSuccess = false;
       state.deleteSuccess = false;
+      state.uploadSuccess = false;
     }
   },
 });
