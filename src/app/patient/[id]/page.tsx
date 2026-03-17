@@ -30,6 +30,8 @@ import { buildNextReceptionNumber } from "@/lib/reception/receptionNumber";
 
 import {
   toApiDateTime,
+  toLocalDateTime,
+  toTodayDateTime,
   resolveErrorMessage,
   departments,
   defaultDepartment,
@@ -89,11 +91,8 @@ export default function PatientDetailPage() {
   const [reservationForm, setReservationForm] = React.useState<ReservationForm>({
     deptCode: defaultDepartment.name,
     doctorId: String(defaultDepartment.doctorId),
-    reservationId: "",
     scheduledAt: "",
-    arrivalAt: "",
     note: "",
-    memo: "",
   });
 
   const [editDialogOpen, setEditDialogOpen] = React.useState(false);
@@ -240,11 +239,8 @@ export default function PatientDetailPage() {
     setReservationForm({
       deptCode: defaultDepartment.name,
       doctorId: String(defaultDepartment.doctorId),
-      reservationId: "",
       scheduledAt: "",
-      arrivalAt: "",
       note: "",
-      memo: "",
     });
     setReservationDialogOpen(true);
   };
@@ -294,7 +290,7 @@ export default function PatientDetailPage() {
         doctorName: resolvedDept.doctor,
         reservedAt,
         status: "RESERVED",
-        note: reservationForm.note?.trim() || reservationForm.memo?.trim() || null,
+        note: reservationForm.note?.trim() || null,
       });
 
       setReservationDialogOpen(false);
@@ -325,12 +321,12 @@ export default function PatientDetailPage() {
         receptionNo: nextReceptionNo,
         patientId: p.patientId,
         patientName: p.name,
-        visitType: receptionForm.visitType,
+        visitType: "OUTPATIENT",
         departmentId: resolvedDept.id,
         departmentName: resolvedDept.name,
         doctorId: Number(receptionForm.doctorId || resolvedDept.doctorId),
         doctorName: resolvedDept.doctor,
-        arrivedAt: toApiDateTime(receptionForm.arrivedAt) ?? new Date().toISOString().slice(0, 19),
+        arrivedAt: toTodayDateTime(receptionForm.arrivedAt) ?? toLocalDateTime(),
         status: "WAITING",
         note: receptionForm.note?.trim() || "환자 상세 화면에서 접수 등록",
       });

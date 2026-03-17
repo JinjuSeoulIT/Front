@@ -10,7 +10,7 @@ import type { RootState, AppDispatch } from "@/store/store";
 import { patientActions } from "@/features/patients/patientSlice";
 import type { Patient, PatientSearchPayload, PatientMultiSearchPayload } from "@/features/patients/patientTypes";
 import type { PatientForm as PatientFormPayload } from "@/features/patients/patientTypes";
-import { createPatientApi } from "@/lib/patientApi";
+import { createPatientApi } from "@/lib/reception/patientApi";
 import { createConsentApi } from "@/lib/consentApi";
 import MainLayout from "@/components/layout/MainLayout";
 import PatientSearchCard from "@/components/patient/PatientSearchCard";
@@ -69,7 +69,7 @@ export default function PatientsPage() {
 
   const onSearch = () => {
     const kw = keyword.trim();
-    if (!kw) return alert("검색어는 필수입니다.");
+    if (!kw) return alert("검색어를 입력하세요.");
     dispatch(patientActions.searchPatientsRequest({ type: searchType, keyword: kw }));
   };
 
@@ -164,7 +164,7 @@ export default function PatientsPage() {
           <Box>
             <Typography sx={{ fontWeight: 800, fontSize: 20 }}>환자관리</Typography>
             <Typography sx={{ color: "text.secondary", fontSize: 13, mt: 0.25 }}>
-              검색 · 목록 · 상세를 한 화면에서 처리하는 원무/접수용 워크벤치
+              검색, 목록, 상세를 한 화면에서 처리하는 원무/접수용 워크벤치
             </Typography>
           </Box>
           <Stack direction="row" spacing={1} sx={{ flexWrap: "wrap" }}>

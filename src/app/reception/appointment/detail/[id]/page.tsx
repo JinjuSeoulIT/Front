@@ -121,22 +121,6 @@ export default function ReservationDetailPage() {
               </Button>
               <Button
                 variant="outlined"
-                color="success"
-                disabled={!p}
-                onClick={() => onChangeStatus("COMPLETED")}
-              >
-                완료
-              </Button>
-              <Button
-                variant="outlined"
-                color="warning"
-                disabled={!p}
-                onClick={() => onChangeStatus("INACTIVE")}
-              >
-                비활성
-              </Button>
-              <Button
-                variant="outlined"
                 color="error"
                 disabled={!p}
                 onClick={() => onChangeStatus("CANCELED")}

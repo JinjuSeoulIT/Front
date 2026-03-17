@@ -22,6 +22,16 @@ export default function EditEmergencyReceptionPage() {
   }, [dispatch, receptionId]);
 
   const current = selected && String(selected.receptionId) === receptionId ? selected : null;
+  const currentWithName = current as (typeof current & {
+    patientName?: string | null;
+    name?: string | null;
+    patient?: { name?: string | null } | null;
+  }) | null;
+  const initialPatientName =
+    currentWithName?.patientName?.trim() ||
+    currentWithName?.name?.trim() ||
+    currentWithName?.patient?.name?.trim() ||
+    "";
 
   const onSubmit = (form: EmergencyReceptionFormPayload) => {
     dispatch(emergencyReceptionActions.updateEmergencyReceptionRequest({ receptionId, form }));
@@ -33,14 +43,18 @@ export default function EditEmergencyReceptionPage() {
       <EmergencyReceptionForm
         title="응급 접수 수정"
         submitLabel="저장"
+        receptionId={receptionId}
         initial={{
           receptionNo: current?.receptionNo ?? "",
           patientId: current?.patientId ? String(current.patientId) : "",
-          patientName: "",
-          departmentId: current?.departmentId ? String(current.departmentId) : "",
+          patientName: initialPatientName,
+          departmentId: current?.departmentId ? String(current.departmentId) : "5",
+          doctorId: current?.doctorId ? String(current.doctorId) : "",
+          scheduledAt: current?.scheduledAt ?? "",
           arrivedAt: current?.arrivedAt ?? "",
           status: current?.status ?? "REGISTERED",
           note: current?.note ?? "",
+          triageNote: current?.triageNote ?? "",
           triageLevel: current?.triageLevel ? String(current.triageLevel) : "",
           chiefComplaint: current?.chiefComplaint ?? "",
           vitalTemp: current?.vitalTemp != null ? String(current.vitalTemp) : "",

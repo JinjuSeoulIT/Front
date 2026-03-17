@@ -137,14 +137,6 @@ export default function InpatientReceptionDetailPage() {
               </Button>
               <Button
                 variant="outlined"
-                color="warning"
-                disabled={!p}
-                onClick={() => onChangeStatus("INACTIVE")}
-              >
-                비활성
-              </Button>
-              <Button
-                variant="outlined"
                 color="error"
                 disabled={!p}
                 onClick={() => onChangeStatus("CANCELED")}

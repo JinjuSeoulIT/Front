@@ -3,6 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import {
+  Avatar,
   Box,
   Card,
   CardContent,
@@ -18,12 +19,11 @@ import {
   TableRow,
   Tooltip,
   Typography,
-  Pagination,
 } from "@mui/material";
 import OpenInNewIcon from "@mui/icons-material/OpenInNew";
 import BlockOutlinedIcon from "@mui/icons-material/BlockOutlined";
 import type { Patient } from "@/features/patients/patientTypes";
-import { sexLabel, safe, statusChipLabel } from "./PatientListUtils";
+import { patientStatusMeta, resolvePhotoUrl, sexLabel, safe } from "./PatientListUtils";
 
 type Props = {
   list: Patient[];
@@ -33,8 +33,6 @@ type Props = {
   onNavigateToDetail: (patientId: number) => void;
 };
 
-const ROWS_PER_PAGE = 10;
-
 export default function PatientTable({
   list,
   selected,
@@ -42,29 +40,7 @@ export default function PatientTable({
   onDeactivate,
   onNavigateToDetail,
 }: Props) {
-  const [page, setPage] = React.useState(1); // 1-based for Pagination
-
   const primary = selected ?? list[0] ?? null;
-
-  const paginatedList = React.useMemo(() => {
-    const start = (page - 1) * ROWS_PER_PAGE;
-    return list.slice(start, start + ROWS_PER_PAGE);
-  }, [list, page]);
-
-  const emptyRowCount = Math.max(0, ROWS_PER_PAGE - paginatedList.length);
-
-  const pageCount = Math.max(1, Math.ceil(list.length / ROWS_PER_PAGE));
-
-  React.useEffect(() => {
-    setPage((prev) => {
-      const next = Math.min(prev, pageCount);
-      return next < 1 ? 1 : next;
-    });
-  }, [pageCount]);
-
-  const handleChangePage = (_: React.ChangeEvent<unknown>, newPage: number) => {
-    setPage(newPage);
-  };
 
   return (
     <Card variant="outlined" sx={{ borderRadius: 2 }}>
@@ -81,10 +57,11 @@ export default function PatientTable({
 
         <Divider />
 
-        <TableContainer sx={{ maxHeight: { xs: 420, lg: 560 } }}>
+        <TableContainer sx={{ maxHeight: { xs: 420, lg: 640 } }}>
           <Table stickyHeader size="small" aria-label="patient list">
             <TableHead>
               <TableRow>
+                <TableCell sx={{ width: 56 }}>사진</TableCell>
                 <TableCell sx={{ width: 120 }}>환자번호</TableCell>
                 <TableCell sx={{ width: 110 }}>이름</TableCell>
                 <TableCell sx={{ width: 70 }}>성별</TableCell>
@@ -96,8 +73,9 @@ export default function PatientTable({
               </TableRow>
             </TableHead>
             <TableBody>
-              {paginatedList.map((p) => {
+              {list.map((p) => {
                 const isSelected = primary?.patientId === p.patientId;
+                const statusMeta = patientStatusMeta(p.statusCode);
                 return (
                   <TableRow
                     key={p.patientId}
@@ -110,6 +88,14 @@ export default function PatientTable({
                     onClick={() => onSelect(p)}
                     onDoubleClick={() => onNavigateToDetail(p.patientId)}
                   >
+                    <TableCell>
+                      <Avatar
+                        src={resolvePhotoUrl(p.photoUrl) || undefined}
+                        sx={{ width: 28, height: 28 }}
+                      >
+                        {p.name?.slice(0, 1) ?? "?"}
+                      </Avatar>
+                    </TableCell>
                     <TableCell>{safe(p.patientNo)}</TableCell>
                     <TableCell sx={{ fontWeight: 700 }}>{p.name}</TableCell>
                     <TableCell>{sexLabel(p.gender)}</TableCell>
@@ -118,9 +104,9 @@ export default function PatientTable({
                     <TableCell>
                       <Chip
                         size="small"
-                        label={statusChipLabel(p.statusCode)}
-                        variant={p.statusCode === "ACTIVE" || !p.statusCode ? "filled" : "outlined"}
-                        color={p.statusCode === "INACTIVE" ? "warning" : "default"}
+                        label={statusMeta.label}
+                        variant={statusMeta.variant}
+                        color={statusMeta.color}
                       />
                     </TableCell>
                     <TableCell>
@@ -159,45 +145,18 @@ export default function PatientTable({
                 );
               })}
 
-              {paginatedList.length === 0 && (
+              {list.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={8}>
+                  <TableCell colSpan={9}>
                     <Typography sx={{ color: "text.secondary" }}>
                       조회된 환자가 없습니다.
                     </Typography>
                   </TableCell>
                 </TableRow>
               )}
-
-              {paginatedList.length > 0 &&
-                Array.from({ length: emptyRowCount }).map((_, idx) => (
-                  <TableRow key={`empty-${idx}`} sx={{ "& td": { borderBottom: "none", height: 40 } }}>
-                    <TableCell colSpan={8} />
-                  </TableRow>
-                ))}
             </TableBody>
           </Table>
         </TableContainer>
-
-        <Box
-          sx={{
-            borderTop: "1px solid",
-            borderColor: "divider",
-            display: "flex",
-            justifyContent: "center",
-            py: 1,
-          }}
-        >
-          <Pagination
-            count={pageCount}
-            page={page}
-            onChange={handleChangePage}
-            shape="rounded"
-            size="small"
-            siblingCount={4}
-            boundaryCount={1}
-          />
-        </Box>
       </CardContent>
     </Card>
   );

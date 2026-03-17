@@ -185,14 +185,6 @@ export default function ReceptionDetailPage() {
               </Button>
               <Button
                 variant="outlined"
-                color="warning"
-                onClick={() => onChangeStatus("INACTIVE")}
-                disabled={!p}
-              >
-                비활성
-              </Button>
-              <Button
-                variant="outlined"
                 color="error"
                 onClick={() => onChangeStatus("CANCELED")}
                 disabled={!p}

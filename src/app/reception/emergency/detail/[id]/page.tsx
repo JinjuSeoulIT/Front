@@ -150,7 +150,10 @@ export default function EmergencyReceptionDetailPage() {
                 <Row label="접수번호" value={p.receptionNo} />
                 <Row label="환자 이름" value={patientName} />
                 <Row label="상태" value={statusLabel(p.status)} />
-                <Row label="중증도" value={String(p.triageLevel)} />
+                <Row
+                  label="중증도"
+                  value={p.triageLevel == null ? "-" : String(p.triageLevel)}
+                />
                 <Row label="주호소" value={p.chiefComplaint ?? "-"} />
                 <Row label="메모" value={p.note ?? "-"} />
               </Stack>
@@ -171,24 +174,8 @@ export default function EmergencyReceptionDetailPage() {
               </Button>
               <Button
                 variant="outlined"
-                color="success"
-                disabled={!p}
-                onClick={() => onChangeStatus("REGISTERED")}
-              >
-                완료
-              </Button>
-              <Button
-                variant="outlined"
-                color="warning"
-                disabled={!p}
-                onClick={() => onChangeStatus("INACTIVE")}
-              >
-                비활성
-              </Button>
-              <Button
-                variant="outlined"
                 color="error"
-                disabled={!p}
+                disabled={!p || p.status === "CANCELED"}
                 onClick={() => onChangeStatus("CANCELED")}
               >
                 취소

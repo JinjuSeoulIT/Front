@@ -10,6 +10,7 @@ import {
   CardContent,
   Chip,
   Divider,
+  IconButton,
   MenuItem,
   Stack,
   TextField,
@@ -17,6 +18,7 @@ import {
 } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import RefreshIcon from "@mui/icons-material/Refresh";
+import BlockOutlinedIcon from "@mui/icons-material/BlockOutlined";
 import { useDispatch, useSelector } from "react-redux";
 import type { RootState, AppDispatch } from "@/store/store";
 import { reservationActions } from "@/features/Reservations/ReservationSlice";
@@ -212,29 +214,28 @@ export default function ReservationList({
     );
   };
 
-  const onCompleteReservation = () => {
-    if (!primary) return;
-    const normalized = normalizeStatus(primary.status);
-    if (normalized === "COMPLETED" || normalized === "CANCELED") return;
-    const ok = window.confirm("예약을 완료 처리하시겠습니까?");
+  const onCancelReservationItem = (item: Reservation) => {
+    const normalized = normalizeStatus(item.status);
+    if (normalized === "CANCELED") return;
+    const ok = window.confirm("예약을 취소하시겠습니까?");
     if (!ok) return;
 
     const payload: ReservationForm = {
-      reservationNo: primary.reservationNo,
-      patientId: primary.patientId ?? null,
-      patientName: primary.patientName ?? null,
-      departmentId: primary.departmentId,
-      departmentName: primary.departmentName ?? null,
-      doctorId: primary.doctorId ?? null,
-      doctorName: primary.doctorName ?? null,
-      reservedAt: primary.reservedAt,
-      status: "COMPLETED",
-      note: primary.note ?? null,
+      reservationNo: item.reservationNo,
+      patientId: item.patientId ?? null,
+      patientName: item.patientName ?? null,
+      departmentId: item.departmentId,
+      departmentName: item.departmentName ?? null,
+      doctorId: item.doctorId ?? null,
+      doctorName: item.doctorName ?? null,
+      reservedAt: item.reservedAt,
+      status: "CANCELED",
+      note: item.note ?? null,
     };
 
     dispatch(
       reservationActions.updateReservationRequest({
-        reservationId: String(primary.reservationId),
+        reservationId: String(item.reservationId),
         form: payload,
       })
     );
@@ -318,14 +319,6 @@ export default function ReservationList({
                 sx={{ color: "#2b5aa9" }}
               >
                 초기화
-              </Button>
-              <Button
-                variant="contained"
-                component={Link}
-                href="/reception/appointment/create"
-                sx={{ bgcolor: "#1f7a3f" }}
-              >
-                신규 예약
               </Button>
             </Stack>
             <Box sx={{ flex: 1 }} />
@@ -436,25 +429,13 @@ export default function ReservationList({
                   예약 수정
                 </Button>
                 <Button
-                  variant="contained"
-                  onClick={onCompleteReservation}
-                  disabled={
-                    !primary ||
-                    ["COMPLETED", "CANCELED"].includes(normalizeStatus(primary.status) ?? "") ||
-                    loading
-                  }
-                  sx={{ bgcolor: "#2b5aa9" }}
+                  variant="outlined"
+                  color="error"
+                  onClick={onCancelReservation}
+                  disabled={!primary || normalizeStatus(primary.status) === "CANCELED" || loading}
                 >
-                  완료 처리
+                  예약 취소
                 </Button>
-                  <Button
-                    variant="outlined"
-                    color="error"
-                    onClick={onCancelReservation}
-                    disabled={!primary || normalizeStatus(primary.status) === "CANCELED" || loading}
-                  >
-                    예약 취소
-                  </Button>
               </Stack>
             </CardContent>
           </Card>
@@ -498,13 +479,34 @@ export default function ReservationList({
                         <Avatar sx={{ width: 40, height: 40, bgcolor: "#d7e6ff", color: "#2b5aa9" }}>
                           {p.patientName ? p.patientName.slice(0, 1) : String(p.patientId ?? "?").slice(-2)}
                         </Avatar>
-                        <Box sx={{ minWidth: 0 }}>
-                          <Typography fontWeight={700} noWrap>
-                            {p.reservationNo}
-                          </Typography>
-                          <Typography sx={{ color: "#7b8aa9", fontSize: 12 }} noWrap>
-                            환자 {p.patientName ?? p.patientId} · {p.reservedAt} · {statusLabel(p.status)}
-                          </Typography>
+                        <Box
+                          sx={{
+                            minWidth: 0,
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "space-between",
+                            gap: 1,
+                          }}
+                        >
+                          <Box sx={{ minWidth: 0 }}>
+                            <Typography fontWeight={700} noWrap>
+                              {p.reservationNo}
+                            </Typography>
+                            <Typography sx={{ color: "#7b8aa9", fontSize: 12 }} noWrap>
+                              환자 {p.patientName ?? p.patientId} · {p.reservedAt} · {statusLabel(p.status)}
+                            </Typography>
+                          </Box>
+                          <IconButton
+                            size="small"
+                            color="warning"
+                            disabled={loading || normalizeStatus(p.status) === "CANCELED"}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onCancelReservationItem(p);
+                            }}
+                          >
+                            <BlockOutlinedIcon fontSize="small" />
+                          </IconButton>
                         </Box>
                       </Box>
                     );

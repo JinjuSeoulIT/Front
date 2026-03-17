@@ -80,6 +80,26 @@ export function toApiDateTime(value?: string): string | undefined {
   return value.length === 16 ? `${value}:00` : value;
 }
 
+export function toTodayDateTime(value?: string): string | undefined {
+  if (!value) return undefined;
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+  const timeWithSeconds = value.length === 5 ? `${value}:00` : value;
+  return `${year}-${month}-${day}T${timeWithSeconds}`;
+}
+
+export function toLocalDateTime(date = new Date()): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  const hours = String(date.getHours()).padStart(2, "0");
+  const minutes = String(date.getMinutes()).padStart(2, "0");
+  const seconds = String(date.getSeconds()).padStart(2, "0");
+  return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`;
+}
+
 export function resolveErrorMessage(err: unknown, fallback: string): string {
   if (axios.isAxiosError(err)) {
     const data = err.response?.data as { message?: string; error?: string; detail?: string } | undefined;
@@ -104,11 +124,8 @@ export type ReceptionForm = {
 export type ReservationForm = {
   deptCode: string;
   doctorId: string;
-  reservationId: string;
   scheduledAt: string;
-  arrivalAt: string;
   note: string;
-  memo: string;
 };
 export const departments: Department[] = [
   { id: 1, name: "내과", doctor: "송태민", doctorId: 1 },

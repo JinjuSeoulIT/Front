@@ -824,20 +824,6 @@ export default function ReceptionList({
                 >
                   접수 수정
                 </Button>
-                <Button
-                  variant="outlined"
-                  sx={{ color: "#2b5aa9" }}
-                  component={Link}
-                  href="/reservations"
-                >
-                  예약 관리
-                </Button>
-                <Button variant="outlined" sx={{ color: "#2b5aa9" }}>
-                  검사 기록
-                </Button>
-                <Button variant="outlined" sx={{ color: "#2b5aa9" }}>
-                  처방 이력
-                </Button>
               </Stack>
             </CardContent>
           </Card>

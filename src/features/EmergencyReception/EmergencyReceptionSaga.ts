@@ -25,10 +25,22 @@ function* fetchEmergencyReceptionSaga(action: PayloadAction<{ receptionId: strin
     );
     yield put(actions.fetchEmergencyReceptionSuccess(p));
   } catch (err: any) {
+    try {
+      // Fallback: detail endpoint can return 400 for some statuses, while list still contains the record.
+      const list: EmergencyReception[] = yield call(api.fetchEmergencyReceptionsApi);
+      const target = list.find(
+        (item) => String(item.receptionId) === String(action.payload.receptionId)
+      );
+      if (target) {
+        yield put(actions.fetchEmergencyReceptionSuccess(target));
+        return;
+      }
+    } catch {
+      // keep original error
+    }
     yield put(actions.fetchEmergencyReceptionFailure(err.message ?? "응급 접수 조회 실패"));
   }
 }
-
 function* createEmergencyReceptionSaga(action: PayloadAction<EmergencyReceptionForm>) {
   try {
     yield call(api.createEmergencyReceptionApi, action.payload);

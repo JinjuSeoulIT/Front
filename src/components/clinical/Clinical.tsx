@@ -47,7 +47,7 @@ import ChecklistOutlinedIcon from "@mui/icons-material/ChecklistOutlined";
 import ChatOutlinedIcon from "@mui/icons-material/ChatOutlined";
 import DescriptionOutlinedIcon from "@mui/icons-material/DescriptionOutlined";
 import CalendarMonthOutlinedIcon from "@mui/icons-material/CalendarMonthOutlined";
-import { fetchPatientsApi } from "@/lib/patientApi";
+import { fetchPatientsApi } from "@/lib/reception/patientApi";
 import type { Patient } from "@/features/patients/patientTypes";
 import {
   fetchClinicalOrdersApi,
