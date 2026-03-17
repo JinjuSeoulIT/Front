@@ -7,12 +7,14 @@ import type {
   DoctorUpdateNumber,
   FileUploadResDTO,
   DoctorIdNumber,
+  SearchDoctorPayload,
 
 } from "./doctortypes";
 
 export interface DoctorState {
   // 목록
-  doctorList: DoctorResponse[];
+  doctorList   : DoctorResponse[];
+  doctorSearch : DoctorResponse[];
 
   //
   doctorDetail:  DoctorResponse | null;
@@ -38,7 +40,8 @@ export interface DoctorState {
 }
 
 const initialState: DoctorState = {
-  doctorList: [],
+  doctorList:   [],
+  doctorSearch: [],
 
 
 
@@ -68,6 +71,20 @@ const doctorSlice = createSlice({
   name: "doctor",
   initialState,
   reducers: {
+    
+    //검색
+    searchDoctorListRequest(state, action: PayloadAction<SearchDoctorPayload>) {
+      state.loading = true;
+      state.error = null;
+    },
+    searchDoctorListSuccess(state, action: PayloadAction<DoctorResponse[]>) {
+      state.loading = false;
+      state.doctorSearch = action.payload;
+    },
+    searchDoctorListFailure(state, action: PayloadAction<string>) {
+      state.loading = false;
+      state.error = action.payload;
+    },
     
     //목록
     DoctorListRequest: (state) => {
@@ -183,6 +200,10 @@ const doctorSlice = createSlice({
 });
 
 export const {
+  searchDoctorListRequest,
+  searchDoctorListSuccess,
+  searchDoctorListFailure,
+
   // 목록
   DoctorListRequest,
   DoctorListSuccess,

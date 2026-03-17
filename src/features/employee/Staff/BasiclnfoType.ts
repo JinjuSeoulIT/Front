@@ -106,3 +106,12 @@ export type ApiResponse<T> = {
   message: string;
   data: T;
 };
+
+
+//서치바 검색
+export type staffSearchType = "all" | "name" | "staffId" | "dept" | "doctorType"| "nurseType";
+
+export type SearchStaffPayload = {
+  search: string;
+  searchType: staffSearchType;
+};

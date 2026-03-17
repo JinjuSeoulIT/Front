@@ -1,77 +1,142 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useRouter } from "next/navigation";
-import { Box, Button, Paper, Stack, Table, TableBody, TableCell, TableHead, TableRow, Typography } from "@mui/material";
+import { Alert, Box, Button, MenuItem, Paper, Stack, Table, TableBody, TableCell, TableHead, TableRow, TextField, Typography } from "@mui/material";
 
 import type { RootState } from "@/store/rootReducer";
-import {DoctorListRequest, resetSuccessEnd } from "@/features/employee/doctor/doctorSlice";
-import DoctorDelete from "./doctorDelete";
+import {DoctorListRequest, resetSuccessEnd, searchDoctorListRequest } from "@/features/employee/doctor/doctorSlice";
+
+
+import { DoctorSearchType, SearchDoctorPayload } from "@/features/employee/doctor/doctortypes";
+// import DoctorSearchBar from "./doctorSearchBar";
 
 const DoctorList = () => {
   const dispatch = useDispatch();
   const router = useRouter();
 
-  const { doctorList, loading, deleteSuccess } = useSelector((state: RootState) => state.doctor);
+  const { doctorList, doctorSearch, loading ,error } = useSelector((state: RootState) => state.doctor);
 
+  //서치바 검색
+  const [search, setSearch] = useState("");
+  const [searchType, setSearchType] = useState<DoctorSearchType>("all");
   
-  //     // 삭제 대상 이동다이얼그램 컴포넌트
-  // const [doctorDelete, setdoctorDelete] = useState<string | null>(null);
+
 
   useEffect(() => {
     dispatch(DoctorListRequest());
   }, [dispatch]);
 
+  //홈   라우팅
   const handleHome = () => router.push("/staff/employee");
-
+  //생성 라우팅
   const handleCreate = () => router.push("/staff/employee/Basiclnfo/list");
-
+  //상세 라우팅
   const handleDetail = (staffId: string) => router.push(`/staff/employee/doctor/SignUp/${staffId}/detail`);
-
+  //수정 라우팅
   const handleEdit = (staffId: string) => router.push(`/staff/employee/doctor/SignUp/${staffId}/edit`);
 
 
 
-  //   //삭제
-  // const handleOpenDeleteDialog = (staffId: string) => {
-  //   setdoctorDelete(staffId);
-  // };
-  // const handleCloseDeleteDialog = () => {
-  //   if (loading) return;
-  //   setdoctorDelete(null);
-  // };
+//검색바
+  const handleSubmit = (event: FormEvent) => {
+    event.preventDefault();
 
-  useEffect(() => {
-    if (!deleteSuccess) return;
+  if (!search.trim()) {
     dispatch(DoctorListRequest());
     dispatch(resetSuccessEnd());
-  }, [deleteSuccess, dispatch]);
+    return;
+  }
+    const doctorReq: SearchDoctorPayload = {
+      search: search.trim(),
+      searchType,
+    };
+    console.log("doctorReq", doctorReq);
+    dispatch(searchDoctorListRequest(doctorReq));
+  };
+
+const doctors = search.trim() ? doctorSearch : doctorList;
+
 
   return (
-    <Box sx={{ maxWidth: 980, mx: "auto", px: 2, py: 2 }}>
-      <Paper sx={{ p: 3, borderRadius: 3, border: "1px solid #dbe5f5" }}>
+
+      /*MUI 스타일 */
+
+      //박스크기
+      <Box sx={{ maxWidth: 1480, mx: "auto", px: 2, py: 2 }}>
+
+      {/*테두리*/}
+      <Paper sx={{ p: 3, borderRadius: 3, border: "1px solid #0f69fa" }}> 
+          {/*제목과 버튼 제목 가로정렬            양쪽끝 벌리기            가운데 맞춤*/}
         <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
+          
+
           <Typography variant="h6" fontWeight={800}>의사 목록</Typography>
-          <Button variant="contained" onClick={handleHome}>메인홈</Button>
+          
+          <Button variant="contained" 
+          disabled={loading} //이동중
+          onClick={handleHome} sx={{ mb: 2 }}>메인홈
+          
+          </Button>
+          </Stack>
+
+
+
+
+
+        {/*검색바 */}
+        <Box component="form" onSubmit={handleSubmit}  sx={{ mb: 2 }}>
+        {/*가로 세로 정렬 */}
+        <Stack direction={{ xs: "column", md: "row" }} spacing={2}>
+        
+        <TextField  
+          select
+          label="검색조건"
+          value={searchType}
+          onChange={(event) =>setSearchType(event.target.value as DoctorSearchType)}
+          sx={{ minWidth: 180 }}
+        >
+          {/*서치 검색UI */}
+          <MenuItem value="all">전체</MenuItem>
+          <MenuItem value="name">이름</MenuItem>
+          <MenuItem value="specialty">진료과</MenuItem>
+          <MenuItem value="staffId">사원번호</MenuItem>
+          <MenuItem value="dept">부서</MenuItem>
+        </TextField>
+
+
+        <TextField
+          label="검색어"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)} fullWidth/>
+        <Button type="submit" variant="contained">
+          검색
+        </Button>
         </Stack>
+        </Box>
 
-        <Table size="small">
-          <TableHead>
-            <TableRow>
-              <TableCell>직원번호</TableCell>
-              <TableCell>의사이름</TableCell>
-              <TableCell>부서</TableCell>
-              <TableCell>면허번호</TableCell>
-              <TableCell>직업</TableCell>
-              <TableCell>전문분야</TableCell>
-              <TableCell>액션</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
 
-            {doctorList.map((doctor) => (
-              <TableRow key={doctor.staffId}>
+                {/*테이블 UI */}
+                <Table size="small">
+                <TableHead>
+                <TableRow>
+                <TableCell>직원번호</TableCell>
+                <TableCell>의사이름</TableCell>
+                <TableCell>부서</TableCell>
+                <TableCell>면허번호</TableCell>
+                <TableCell>직업</TableCell>
+                <TableCell>전문분야</TableCell>
+                <TableCell>액션</TableCell>
+                </TableRow>
+                </TableHead>
+                <TableBody>
+
+                {/*맵핑 UI */}
+
+                
+                {doctors.map((doctor) => (
+                <TableRow key={doctor.staffId}>
                 
                 <TableCell>{doctor.staffId}</TableCell>
                 <TableCell>{doctor.name}</TableCell>
@@ -80,43 +145,25 @@ const DoctorList = () => {
                 <TableCell>{doctor.doctorType ?? "DOCTOR"}</TableCell>
                 <TableCell>{doctor.specialtyId}</TableCell>
                 <TableCell>
-                  <Button size="small" onClick={() => handleDetail(doctor.staffId)}>상세</Button>
-                  <Button size="small" onClick={() => handleEdit(doctor.staffId)}>수정</Button>
-              
-
-{/*    
-                  <Button
-                    size="small"
-                    //삭제 컴포넌트 이동
-                    color="error"
-                    onClick={() => handleOpenDeleteDialog(doctor.staffId)}
-                    disabled={loading}
-                  >
-                    삭제
-                  </Button> */}
-
-    
+                <Button size="small" onClick={() => handleDetail(doctor.staffId)}>상세</Button>
+                <Button size="small" onClick={() => handleEdit(doctor.staffId)}>수정</Button>
                 </TableCell>
-              </TableRow>
+                </TableRow>
             ))}
-          </TableBody>
-        </Table>
+            </TableBody>
+            </Table>
 
-        <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 2 }}>
+
+
+          <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 2 }}>
           <Button variant="contained" onClick={handleCreate}>의사 등록</Button>
-        </Box>
+          </Box>
+
+          {error && <Alert severity="error">{error}</Alert>}
       </Paper>
 
 
-{/* 
-   <DoctorDelete
-        open={!!doctorDelete}
-        staffId={doctorDelete}
-        onClose={handleCloseDeleteDialog}
-      /> */}
-
-    </Box>
-
+</Box>
 
 
   );

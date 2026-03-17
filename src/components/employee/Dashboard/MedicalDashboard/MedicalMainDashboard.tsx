@@ -50,7 +50,8 @@ const MedicalMainDashboard = () => {
       //환자 상태  (타입 "WAITING" / "TREATING"/ "DONE")
       <MedicalSummaryCards State={State} />
 
-    
+      {/* //환자 목록
+      <MedicalPatient receptions={receptions} /> */}
 
       //업무 목록
       <MedicalQuickMenu />

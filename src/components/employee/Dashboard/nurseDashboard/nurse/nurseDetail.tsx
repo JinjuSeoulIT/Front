@@ -36,15 +36,14 @@ const NurseDetail = ({ staffId }: NurseIdNumber) => {
           <Typography variant="h6" fontWeight={800}>간호사 상세</Typography>
         </Stack>
 
-        {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
-        {loading && <Box sx={{ display: "flex", justifyContent: "center", py: 4 }}><CircularProgress /></Box>}
+    
 
 
 
 
-
-        {!loading && nurseDetail && (
-          <Stack spacing={3}>
+            
+            {!loading && nurseDetail && (
+            <Stack spacing={3}>
             <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", mb: 1 }}>
               {nurseDetail.nurseFileUrl ? (
                 <Box component="img" src={nurseDetail.nurseFileUrl} alt="간호사 프로필" 
@@ -115,8 +114,14 @@ const NurseDetail = ({ staffId }: NurseIdNumber) => {
               <Button variant="contained" onClick={goEdit} sx={{ bgcolor: "#2b5aa9" }}>수정</Button>
             </Stack>
 
+        {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+        {loading && <Box sx={{ display: "flex", justifyContent: "center", py: 4 }}>
+          <CircularProgress />
+          </Box>}
+
             <NurseUpload staffId={staffId} />
           </Stack>
+          
         )}
       </Paper>
     </Box>

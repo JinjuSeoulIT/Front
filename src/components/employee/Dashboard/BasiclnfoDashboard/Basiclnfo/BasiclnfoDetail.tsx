@@ -86,9 +86,9 @@ const BasicInfoDetail = ({ staffId }: Props) => {
 
             <Divider sx={{ my: 1 }} />
             <Typography><strong>우편번호:</strong> {StaffDetail.zipCode}</Typography>
-            <Typography><strong>주소1:</strong> {StaffDetail.address1}</Typography>
-            <Typography><strong>주소2:</strong> {StaffDetail.address2}</Typography>
-            <Typography><strong>상태:</strong> {StaffDetail.status}</Typography>
+            <Typography><strong>주소1:</strong>    {StaffDetail.address1}</Typography>
+            <Typography><strong>주소2:</strong>    {StaffDetail.address2}</Typography>
+            <Typography><strong>상태:</strong>     {StaffDetail.status}</Typography>
           </Stack>
 
         )}

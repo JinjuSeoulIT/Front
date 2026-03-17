@@ -28,7 +28,7 @@ const BasicInfoDelete = ({ open, staffId, onClose }: Props) => {
 
 
 
-   const handleConfirmDelete = () => {
+  const handleConfirmDelete = () => {
       if (!staffId) return;
       dispatch(deleteStaffRequest({ staffId }));
     };

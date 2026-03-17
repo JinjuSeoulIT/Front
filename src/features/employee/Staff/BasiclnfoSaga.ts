@@ -4,6 +4,7 @@ import type { SagaIterator } from "redux-saga";
 import axios from "axios";
 import type {
   ApiResponse,
+  SearchStaffPayload,
   staffCreateRequest,
   staffIdnNumber,
   staffIdNumber,
@@ -13,9 +14,10 @@ import {
   createStaffApi,
   deleteStaffApi,
   DetailStaffApi,
+  searchStaffListApi,
   StafflistApi,
   updateStaffApi,
-} from "@/lib/employeeBasiclnfo";
+} from "@/lib/employeeBasiclnfoAPI";
 import {
   createStaffFail,
   createStaffRequest,
@@ -26,6 +28,9 @@ import {
   DetailStaffFailure,
   DetailStaffRequest,
   DetailStaffSuccess,
+  searchStaffListFailure,
+  searchStaffListRequest,
+  searchStaffListSuccess,
   StafflistFailure,
   StafflistRequest,
   StafflistSuccess,
@@ -34,17 +39,25 @@ import {
   updateStaffSuccess,
 } from "./BasiclnfoSlict";
 
-type ApiErrorPayload = { message?: string };
 
-function getErrorMessage(error: unknown, fallback: string): string {
-  if (axios.isAxiosError<ApiErrorPayload>(error)) {
-    const apiMessage = error.response?.data?.message;
-    if (apiMessage) return apiMessage;
-    const status = error.response?.status;
-    if (status) return `${fallback} (HTTP ${status})`;
-  }
-  return fallback;
-}
+
+
+function* searchStaffListSaga(action: PayloadAction<SearchStaffPayload>): SagaIterator {
+  try {
+    const { search, searchType } = action.payload;
+
+    const response: ApiResponse<staffResponse[]> = yield call(searchStaffListApi, search, searchType);
+    if(response.success){
+    yield put(searchStaffListSuccess(response.data));
+    }else{
+    yield put(searchStaffListFailure(response.message));
+    }
+    } catch (error: unknown) {
+    yield put(searchStaffListFailure( "공통조회 검색 실패 500"));
+    }
+    }
+
+
 
 function* StaffListSaga(): SagaIterator {
   try {
@@ -55,7 +68,7 @@ function* StaffListSaga(): SagaIterator {
       yield put(StafflistFailure(res.message));
     }
   } catch (error: unknown) {
-    yield put(StafflistFailure(getErrorMessage(error, "직원 목록 조회 실패")));
+    yield put(StafflistFailure( "직원 목록 조회 실패"));
   }
 }
 
@@ -68,7 +81,7 @@ function* detailStaffSaga(action: PayloadAction<string>): SagaIterator {
       yield put(DetailStaffFailure(res.message));
     }
   } catch (error: unknown) {
-    yield put(DetailStaffFailure(getErrorMessage(error, "직원 상세 조회 실패")));
+    yield put(DetailStaffFailure( "직원 상세 조회 실패"));
   }
 }
 
@@ -81,7 +94,7 @@ function* createStaffSaga(action: PayloadAction<staffCreateRequest>): SagaIterat
       yield put(createStaffFail(res.message));
     }
   } catch (error: unknown) {
-    yield put(createStaffFail(getErrorMessage(error, "직원 생성 실패")));
+    yield put(createStaffFail( "직원 생성 실패"));
   }
 }
 
@@ -95,7 +108,7 @@ function* updateStaffSaga(action: PayloadAction<staffIdnNumber>): SagaIterator {
       yield put(updateStaffFailure(res.message));
     }
   } catch (error: unknown) {
-    yield put(updateStaffFailure(getErrorMessage(error, "직원 수정 실패")));
+    yield put(updateStaffFailure( "직원 수정 실패"));
   }
 }
 
@@ -110,12 +123,13 @@ function* deleteStaffSaga(action: PayloadAction<staffIdNumber>): SagaIterator {
       yield put(deleteStaffFailure(res.message));
     }
   } catch (error: unknown) {
-    yield put(deleteStaffFailure(getErrorMessage(error, "직원 삭제 실패")));
+    yield put(deleteStaffFailure( "직원 삭제 실패"));
   }
 }
 
 export function* watchEmployeeStaffSaga() {
   yield all([
+    takeLatest(searchStaffListRequest.type, searchStaffListSaga),
     takeLatest(StafflistRequest.type, StaffListSaga),
     takeLatest(DetailStaffRequest.type, detailStaffSaga),
     takeLatest(createStaffRequest.type, createStaffSaga),

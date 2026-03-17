@@ -23,7 +23,7 @@ const EmployeeCommonDashboard = () => {
         <Divider sx={{ mb: 2 }} />
 
         <Stack spacing={1.5}>
-          {menus.map((menu) => (
+            {menus.map((menu) => (
             <Button
               key={menu.title}
               variant="contained"

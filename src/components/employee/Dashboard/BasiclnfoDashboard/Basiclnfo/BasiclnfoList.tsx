@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useRouter } from "next/navigation";
 import {
   Alert,
   Box,
   Button,
+  MenuItem,
   Paper,
   Stack,
   Table,
@@ -14,15 +15,16 @@ import {
   TableCell,
   TableHead,
   TableRow,
+  TextField,
   Typography,
 } from "@mui/material";
 import type { RootState } from "@/store/rootReducer";
 import {
+  resetSuccessEnd,
+  searchStaffListRequest,
   StafflistRequest,
 } from "@/features/employee/Staff/BasiclnfoSlict";
-import { staffResponse } from "@/features/employee/Staff/BasiclnfoType";
-import { deleteDoctorRequest } from "@/features/employee/doctor/doctorSlice";
-import { deleteNurseRequest } from "@/features/employee/nurse/nurseSlice";
+import { SearchStaffPayload, staffResponse, staffSearchType } from "@/features/employee/Staff/BasiclnfoType";
 import BasicInfoDelete from "./BasiclnfoDelete";
 
 
@@ -30,13 +32,14 @@ const BasicInfoList = () => {
   const dispatch = useDispatch();
   const router = useRouter();
 
-  const { Stafflist, loading, error } = useSelector((state: RootState) => state.staff);
+  const { Stafflist,  StaffSearch, loading, error } = useSelector((state: RootState) => state.staff);
 
-        // 삭제 대상 이동다이얼그램 컴포넌트
+  // 삭제 대상 이동다이얼그램 컴포넌트
   const [staffDelete, setstaffDelete] = useState<string | null>(null);
 
-
-
+  //서치바 검색
+  const [search, setSearch] = useState("");
+  const [searchType, setSearchType] = useState<staffSearchType>("all");
 
 
   useEffect(() => {
@@ -89,7 +92,7 @@ const handleDetail = (staff: staffResponse) => {
 
 
 
-
+//삭제 [모달창]
   const handleOpenDeleteDialog = (staffId: string) => {
     setstaffDelete(staffId);
   };
@@ -99,23 +102,29 @@ const handleDetail = (staff: staffResponse) => {
   };
 
 
+
+
+//검색바
+  const handleSubmit = (event: FormEvent) => {
+  event.preventDefault();
+
+  console.log(search);
+  console.log(searchType);
   
-//   //삭제
-// const handleDelete = (staff: staffResponse) => {
-//   const jobType = getJobType(staff);
+  if (!search.trim()) {
+    dispatch(StafflistRequest());
+    dispatch(resetSuccessEnd());
+    return;
+  }
+    const StaffReq: SearchStaffPayload = {
+      search: search.trim(),
+      searchType,
+    };
+    console.log("StaffReq", StaffReq);
+    dispatch(searchStaffListRequest(StaffReq));
+  };
 
-// if (jobType === "DOCTOR" && staff.doctorType) {
-//   dispatch(deleteDoctorRequest({ staffId: staff.staffId}));
-//   return;
-// }
-
-// if (jobType === "NURSE" && staff.nurseType) {
-//   dispatch(deleteNurseRequest({staffId: staff.staffId}));
-//   return;
-// }
-// };
-
-
+const staffs = search.trim() ? StaffSearch : Stafflist;
 
 
 
@@ -158,6 +167,42 @@ const handleDetail = (staff: staffResponse) => {
           </Alert>
         )}
 
+       {/*검색바 */}
+        <Box component="form" onSubmit={handleSubmit}  sx={{ mb: 2 }}>
+        {/*가로 세로 정렬 */}
+        <Stack direction={{ xs: "column", md: "row" }} spacing={2}>
+        
+        <TextField  
+          select
+          label="검색조건"
+          value={searchType}
+          onChange={(event) =>setSearchType(event.target.value as staffSearchType)}
+          sx={{ minWidth: 180 }}
+        >
+          {/*서치 검색UI */}
+          <MenuItem value="all">전체</MenuItem>
+          <MenuItem value="name">이름</MenuItem>
+          <MenuItem value="status">상태</MenuItem>
+          <MenuItem value="staffId">사원번호</MenuItem>
+          <MenuItem value="dept">부서</MenuItem>
+          <MenuItem value="nurseType">간호사</MenuItem>
+          <MenuItem value="doctorType">의사</MenuItem>
+        </TextField>
+
+
+        <TextField
+          label="검색어"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)} fullWidth/>
+        <Button type="submit" variant="contained">
+          검색
+        </Button>
+        </Stack>
+        </Box>
+
+
+
+
         <Table size="small">
           <TableHead>
             <TableRow>
@@ -165,15 +210,16 @@ const handleDetail = (staff: staffResponse) => {
               <TableCell>부서</TableCell>
               <TableCell>이름</TableCell>
               <TableCell>연락처</TableCell>
-              <TableCell>이메일</TableCell>
-              <TableCell>상태</TableCell>
+              {/* <TableCell>이메일</TableCell> */}
+              {/* <TableCell>상태</TableCell> */}
               <TableCell>직업</TableCell>
               <TableCell align="center">관리</TableCell>
             </TableRow>
           </TableHead>
 
-          <TableBody>
-            {Stafflist.map((staff: staffResponse) => {
+
+          <TableBody> 
+            {staffs.map((staff: staffResponse) => {
               const jobType = getJobType(staff);
 
               return (
@@ -182,8 +228,9 @@ const handleDetail = (staff: staffResponse) => {
                   <TableCell>{staff.deptId}</TableCell>
                   <TableCell>{staff.name}</TableCell>
                   <TableCell>{staff.phone}</TableCell>
-                  <TableCell>{staff.email}</TableCell>
-                  <TableCell>{staff.status}</TableCell>
+                  {/* <TableCell>{staff.email}</TableCell> */}
+                  {/* <TableCell>{staff.status}</TableCell> */}
+                  
                   <TableCell>{jobType ?? "미등록"}</TableCell>
                   <TableCell>
                     <Button size="small" onClick={() => handleDetail(staff)}>
