@@ -79,7 +79,7 @@ type Props = {
   onClose?: () => void;
 };
 
-export default function PatientInsurance({ patientId, onClose }: Props) {
+export default function PatientInsuranceContent({ patientId, onClose }: Props) {
   const dispatch = useDispatch<AppDispatch>();
 
   const {
