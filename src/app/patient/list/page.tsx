@@ -113,10 +113,15 @@ export default function PatientsPage() {
     ];
     for (const { code, checked } of consentTypes) {
       if (checked) {
-        await createConsentApi(patientId, {
-          patientId,
-          consentType: code,
-        });
+        try {
+          await createConsentApi(patientId, {
+            patientId,
+            consentType: code,
+          });
+        } catch (e) {
+          const msg = e instanceof Error ? e.message : "동의서 등록 실패";
+          throw new Error(`동의서(${code}) 등록 실패: ${msg}`);
+        }
       }
     }
   };
