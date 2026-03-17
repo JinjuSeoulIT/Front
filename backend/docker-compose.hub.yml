@@ -19,9 +19,23 @@ services:
       start_period: 40s
     restart: unless-stopped
 
+  oracle-bootstrap:
+    image: gvenzl/oracle-xe:21-slim
+    container_name: hospital-oracle-bootstrap
+    depends_on:
+      oracle-db:
+        condition: service_healthy
+    volumes:
+      - ./docker/oracle/bootstrap:/bootstrap:ro
+    entrypoint: >
+      /bin/bash -lc "
+      sqlplus -s system/oracle@//oracle-db:1521/XEPDB1 @/bootstrap/90_local_auth_bootstrap.sql
+      "
+
   redis:
     image: redis:7-alpine
     container_name: hospital-redis
+    command: redis-server --requirepass 111111
     ports:
       - "6379:6379"
     restart: unless-stopped
@@ -59,6 +73,8 @@ services:
     depends_on:
       oracle-db:
         condition: service_healthy
+      oracle-bootstrap:
+        condition: service_completed_successfully
       redis:
         condition: service_started
       minio:
@@ -67,8 +83,8 @@ services:
         condition: service_completed_successfully
     environment:
       SERVER_PORT: 8081
-      SPRING_DATASOURCE_URL: jdbc:log4jdbc:oracle:thin:@//oracle-db:1521/XE
-      SPRING_DATASOURCE_USERNAME: cmh
+      SPRING_DATASOURCE_URL: jdbc:log4jdbc:oracle:thin:@//oracle-db:1521/XEPDB1
+      SPRING_DATASOURCE_USERNAME: hospital
       SPRING_DATASOURCE_PASSWORD: "1111"
       SPRING_DATA_REDIS_HOST: redis
       SPRING_DATA_REDIS_PORT: 6379

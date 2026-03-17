@@ -4,6 +4,7 @@ import app.common.ApiResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
@@ -16,6 +17,15 @@ public class GlobalExceptionHandler {
         log.error("Unhandled Exception", ex);
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(new ApiResponse<>(false, "시스템 오류가 발생했습니다.", null));
+    }
+
+    @ExceptionHandler(ResponseStatusException.class)
+    public ResponseEntity<ApiResponse<Void>> handleResponseStatus(ResponseStatusException ex) {
+        String message = ex.getReason() == null || ex.getReason().isBlank()
+                ? ex.getStatus().getReasonPhrase()
+                : ex.getReason();
+        return ResponseEntity.status(ex.getStatus())
+                .body(new ApiResponse<>(false, message, null));
     }
 
     @ExceptionHandler(IllegalArgumentException.class)

@@ -53,11 +53,10 @@ services:
       exit 0;
       "
 
-  backend:
+  auth-server:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    container_name: hospital-backend
     depends_on:
       oracle-db:
         condition: service_healthy
@@ -67,8 +66,9 @@ services:
         condition: service_started
       minio-init:
         condition: service_completed_successfully
-    environment:
+    environment: &backend_common_env
       SERVER_PORT: 8081
+      APP_SERVER_ROLE: auth
       SPRING_DATASOURCE_URL: jdbc:log4jdbc:oracle:thin:@//oracle-db:1521/XE
       SPRING_DATASOURCE_USERNAME: cmh
       SPRING_DATASOURCE_PASSWORD: "1111"
@@ -80,32 +80,108 @@ services:
       APP_STORAGE_TYPE: minio
       MINIO_INTERNAL_URL: http://minio:9000
       MINIO_ENDPOINT: http://minio:9000
-      MINIO_PUBLIC_URL: ${MINIO_PUBLIC_URL:-http://127.0.0.1:9000}
+      MINIO_PUBLIC_URL: ${MINIO_PUBLIC_URL:-http://localhost:9000}
       MINIO_ACCESS_KEY: minioadmin
       MINIO_SECRET_KEY: minioadmin123
       MINIO_BUCKET_STAFF: staff-profile
       MINIO_BUCKET_PATIENT: hospital-files
       APP_JWT_SECRET: hospital-demo-jwt-secret-key-change-me-2026-hospital
-      OAUTH_NAVER_CLIENT_ID: ${OAUTH_NAVER_CLIENT_ID:-dummy-naver-client-id}
-      OAUTH_NAVER_CLIENT_SECRET: ${OAUTH_NAVER_CLIENT_SECRET:-dummy-naver-client-secret}
-      OAUTH_GOOGLE_CLIENT_ID: ${OAUTH_GOOGLE_CLIENT_ID:-dummy-google-client-id}
-      OAUTH_GOOGLE_CLIENT_SECRET: ${OAUTH_GOOGLE_CLIENT_SECRET:-dummy-google-client-secret}
-      OAUTH_GOOGLE_REDIRECT_URI: ${OAUTH_GOOGLE_REDIRECT_URI:-}
-      OAUTH_KAKAO_CLIENT_ID: ${OAUTH_KAKAO_CLIENT_ID:-dummy-kakao-client-id}
-      OAUTH_KAKAO_CLIENT_SECRET: ${OAUTH_KAKAO_CLIENT_SECRET:-dummy-kakao-client-secret}
-      OAUTH_NAVER_REDIRECT_URI: ${OAUTH_NAVER_REDIRECT_URI:-}
+      APP_JWT_EXPIRATION_MS: ${APP_JWT_EXPIRATION_MS:-28800000}
+      APP_AUTH_COOKIE_MAX_AGE_SECONDS: ${APP_AUTH_COOKIE_MAX_AGE_SECONDS:-28800}
+      APP_AUTH_SESSION_IDLE_SECONDS: ${APP_AUTH_SESSION_IDLE_SECONDS:-7200}
+      APP_AUTH_SESSION_ABSOLUTE_SECONDS: ${APP_AUTH_SESSION_ABSOLUTE_SECONDS:-43200}
+      APP_AUTH_CSRF_COOKIE_MAX_AGE_SECONDS: ${APP_AUTH_CSRF_COOKIE_MAX_AGE_SECONDS:-43200}
+      OAUTH_NAVER_CLIENT_ID: ${OAUTH_NAVER_CLIENT_ID:-}
+      OAUTH_NAVER_CLIENT_SECRET: ${OAUTH_NAVER_CLIENT_SECRET:-}
+      OAUTH_GOOGLE_CLIENT_ID: ${OAUTH_GOOGLE_CLIENT_ID:-}
+      OAUTH_GOOGLE_CLIENT_SECRET: ${OAUTH_GOOGLE_CLIENT_SECRET:-}
+      OAUTH_KAKAO_CLIENT_ID: ${OAUTH_KAKAO_CLIENT_ID:-}
+      OAUTH_KAKAO_CLIENT_SECRET: ${OAUTH_KAKAO_CLIENT_SECRET:-}
+      OAUTH_KAKAO_REDIRECT_URI: ${OAUTH_KAKAO_REDIRECT_URI:-}
       SPRING_MAIL_HOST: ${SPRING_MAIL_HOST:-smtp.gmail.com}
       SPRING_MAIL_PORT: ${SPRING_MAIL_PORT:-587}
       SPRING_MAIL_USERNAME: ${SPRING_MAIL_USERNAME:-}
       SPRING_MAIL_PASSWORD: ${SPRING_MAIL_PASSWORD:-}
-      APP_VERIFY_EMAIL_MOCK: ${APP_VERIFY_EMAIL_MOCK:-true}
-      APP_VERIFY_SMS_MOCK: ${APP_VERIFY_SMS_MOCK:-true}
+      APP_VERIFY_EMAIL_MOCK: ${APP_VERIFY_EMAIL_MOCK:-false}
+      APP_VERIFY_SMS_MOCK: ${APP_VERIFY_SMS_MOCK:-false}
       APP_VERIFY_SMS_PROVIDER_URL: ${APP_VERIFY_SMS_PROVIDER_URL:-}
       APP_VERIFY_SMS_PROVIDER_AUTH_TOKEN: ${APP_VERIFY_SMS_PROVIDER_AUTH_TOKEN:-}
+      JAVA_TOOL_OPTIONS: -Duser.timezone=UTC -Doracle.jdbc.timezoneAsRegion=false
       APP_OAUTH_AUTO_CREATE: "false"
       APP_OAUTH_REDIRECT_SUCCESS: ${APP_OAUTH_REDIRECT_SUCCESS:-}
       APP_OAUTH_REDIRECT_FAILURE: ${APP_OAUTH_REDIRECT_FAILURE:-}
       APP_CORS_ALLOWED_ORIGIN_PATTERNS: ${APP_CORS_ALLOWED_ORIGIN_PATTERNS:-*}
+    restart: unless-stopped
+
+  backend-1:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    depends_on: &backend_common_depends
+      oracle-db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      minio:
+        condition: service_started
+      minio-init:
+        condition: service_completed_successfully
+    environment:
+      <<: *backend_common_env
+      APP_SERVER_ROLE: app
+    restart: unless-stopped
+
+  backend-2:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    depends_on: *backend_common_depends
+    environment:
+      <<: *backend_common_env
+      APP_SERVER_ROLE: app
+    restart: unless-stopped
+
+  backend-3:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    depends_on: *backend_common_depends
+    environment:
+      <<: *backend_common_env
+      APP_SERVER_ROLE: app
+    restart: unless-stopped
+
+  backend-4:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    depends_on: *backend_common_depends
+    environment:
+      <<: *backend_common_env
+      APP_SERVER_ROLE: app
+    restart: unless-stopped
+
+  backend-5:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    depends_on: *backend_common_depends
+    environment:
+      <<: *backend_common_env
+      APP_SERVER_ROLE: app
+    restart: unless-stopped
+
+  api-gateway:
+    image: nginx:1.27-alpine
+    depends_on:
+      - auth-server
+      - backend-1
+      - backend-2
+      - backend-3
+      - backend-4
+      - backend-5
+    volumes:
+      - ./backend/docker/nginx/api-gateway.conf:/etc/nginx/nginx.conf:ro
     ports:
       - "8081:8081"
     restart: unless-stopped
@@ -115,16 +191,28 @@ services:
       context: .
       dockerfile: Dockerfile.frontend
       args:
-        BACKEND_API_ORIGIN: http://backend:8081
+        BACKEND_API_ORIGIN: http://api-gateway:8081
         NEXT_PUBLIC_ENABLE_DEV_SWITCH: "true"
     container_name: hospital-frontend
     depends_on:
-      - backend
+      - api-gateway
     environment:
-      BACKEND_API_ORIGIN: http://backend:8081
+      BACKEND_API_ORIGIN: http://api-gateway:8081
       NEXT_PUBLIC_ENABLE_DEV_SWITCH: "true"
     ports:
       - "3001:3001"
+    restart: unless-stopped
+
+  ngrok:
+    image: ngrok/ngrok:latest
+    container_name: hospital-ngrok
+    depends_on:
+      - frontend
+    environment:
+      NGROK_AUTHTOKEN: ${NGROK_AUTHTOKEN}
+    command: ["http", "--url=acknowledgingly-interbank-diann.ngrok-free.dev", "host.docker.internal:3001"]
+    ports:
+      - "4040:4040"
     restart: unless-stopped
 
 volumes:

@@ -47,6 +47,8 @@ export default function StaffNoticesPage() {
   const [loading, setLoading] = React.useState(false);
   const [errorMessage, setErrorMessage] = React.useState<string | null>(null);
   const [hideNotices, setHideNotices] = React.useState(false);
+  const [onlyNotices, setOnlyNotices] = React.useState(false);
+  const [compactContent, setCompactContent] = React.useState(false);
   const [form, setForm] = React.useState({
     title: "",
     tag: "공지",
@@ -59,6 +61,11 @@ export default function StaffNoticesPage() {
     const notices = items.filter((item) => item.postType === "공지" || item.postType === "필독");
     const normals = items.filter((item) => item.postType !== "공지" && item.postType !== "필독");
 
+    if (onlyNotices) {
+      const start = (page - 1) * PAGE_SIZE;
+      return notices.slice(start, start + PAGE_SIZE);
+    }
+
     if (hideNotices) {
       const start = (page - 1) * PAGE_SIZE;
       return normals.slice(start, start + PAGE_SIZE);
@@ -68,7 +75,17 @@ export default function StaffNoticesPage() {
     const normalSlots = Math.max(1, PAGE_SIZE - pinned.length);
     const normalStart = (page - 1) * normalSlots;
     return [...pinned, ...normals.slice(normalStart, normalStart + normalSlots)];
-  }, [hideNotices, items, page]);
+  }, [hideNotices, items, onlyNotices, page]);
+
+  const noticeCount = React.useMemo(
+    () => items.filter((item) => item.postType === "공지" || item.postType === "필독").length,
+    [items]
+  );
+  const normalCount = React.useMemo(
+    () => items.filter((item) => item.postType !== "공지" && item.postType !== "필독").length,
+    [items]
+  );
+  const totalCount = onlyNotices ? noticeCount : hideNotices ? normalCount : noticeCount + normalCount;
 
   const loadPage = React.useCallback(async (nextPage: number, nextKeyword: string) => {
     setLoading(true);
@@ -83,9 +100,11 @@ export default function StaffNoticesPage() {
       const rows = result.items || [];
       const noticeCount = rows.filter((item) => item.postType === "공지" || item.postType === "필독").length;
       const normalCount = rows.length - noticeCount;
-      const pinnedCount = hideNotices ? 0 : Math.min(PINNED_NOTICE_COUNT, noticeCount);
-      const normalSlots = hideNotices ? PAGE_SIZE : Math.max(1, PAGE_SIZE - pinnedCount);
-      const totalPages = Math.max(1, Math.ceil(normalCount / normalSlots));
+      const pinnedCount = hideNotices || onlyNotices ? 0 : Math.min(PINNED_NOTICE_COUNT, noticeCount);
+      const normalSlots = hideNotices || onlyNotices ? PAGE_SIZE : Math.max(1, PAGE_SIZE - pinnedCount);
+      const totalPages = onlyNotices
+        ? Math.max(1, Math.ceil(noticeCount / PAGE_SIZE))
+        : Math.max(1, Math.ceil(normalCount / normalSlots));
 
       setItems(rows);
       setPage(Math.min(nextPage, totalPages));
@@ -97,11 +116,11 @@ export default function StaffNoticesPage() {
     } finally {
       setLoading(false);
     }
-  }, [hideNotices]);
+  }, [hideNotices, onlyNotices]);
 
   React.useEffect(() => {
     void loadPage(1, keyword);
-  }, [hideNotices, keyword, loadPage]);
+  }, [hideNotices, keyword, loadPage, onlyNotices]);
 
   const isOwner = React.useCallback(
     (item: StaffBoardPost) => {
@@ -197,20 +216,50 @@ export default function StaffNoticesPage() {
             <Typography sx={{ fontSize: 24, fontWeight: 900 }}>공지사항</Typography>
             <Typography sx={{ color: "var(--muted)", mt: 0.5 }}>전 직원 공지와 일반 게시글을 관리합니다.</Typography>
           </Box>
-          <Button variant="contained" onClick={openCreate}>등록</Button>
+          <Typography sx={{ color: "var(--text)", fontSize: 15, fontWeight: 800, whiteSpace: "nowrap" }}>
+            검색된 데이터 {totalCount}건
+          </Typography>
         </Stack>
 
-        <Stack direction="row" spacing={1} alignItems="center">
+        <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
+          <FormControlLabel
+            control={<Checkbox checked={compactContent} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCompactContent(e.target.checked)} />}
+            label="내용 간단히 보기"
+            sx={{ ml: 0.5, whiteSpace: "nowrap" }}
+          />
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={hideNotices}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                  const checked = e.target.checked;
+                  setHideNotices(checked);
+                  if (checked) setOnlyNotices(false);
+                }}
+              />
+            }
+            label="공지 숨기기"
+            sx={{ ml: 0.5, whiteSpace: "nowrap" }}
+          />
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={onlyNotices}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                  const checked = e.target.checked;
+                  setOnlyNotices(checked);
+                  if (checked) setHideNotices(false);
+                }}
+              />
+            }
+            label="공지만 보기"
+            sx={{ ml: 0.5, whiteSpace: "nowrap" }}
+          />
           <TextField
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
             placeholder="제목/내용 검색"
-            fullWidth
-          />
-          <FormControlLabel
-            control={<Checkbox checked={hideNotices} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setHideNotices(e.target.checked)} />}
-            label="공지 숨기기"
-            sx={{ ml: 0.5, whiteSpace: "nowrap" }}
+            sx={{ width: { xs: "100%", md: 420 } }}
           />
           <Button
             variant="outlined"
@@ -221,6 +270,7 @@ export default function StaffNoticesPage() {
           >
             검색
           </Button>
+          <Button variant="contained" onClick={openCreate}>등록</Button>
         </Stack>
 
         {visibleItems.map((item) => (
@@ -237,16 +287,29 @@ export default function StaffNoticesPage() {
             <CardContent sx={{ py: 1.25, px: 1.75, "&:last-child": { pb: 1.25 } }}>
               <Stack direction={{ xs: "column", md: "row" }} justifyContent="space-between" spacing={1.25}>
                 <Box sx={{ minWidth: 0, flex: 1 }}>
-                  <Typography sx={{ fontWeight: 800, fontSize: 20, color: item.postType === "필독" || item.postType === "공지" ? "#f8fbff" : "inherit" }}>
+                  <Typography
+                    sx={{
+                      fontWeight: 800,
+                      fontSize: 20,
+                      color:
+                        item.postType === "필독"
+                          ? "#ff6b6b"
+                          : item.postType === "공지"
+                          ? "#f8fbff"
+                          : "inherit",
+                    }}
+                  >
                     {item.postType === "필독"
                       ? `[필독] ${item.title}`
                       : item.postType === "공지"
                       ? `[공지] ${item.title}`
                       : item.title}
                   </Typography>
-                  <Typography sx={{ color: item.postType === "필독" || item.postType === "공지" ? "rgba(248,251,255,0.82)" : "var(--muted)", fontSize: 12, mt: 0.25, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                    {item.content || "(내용 없음)"}
-                  </Typography>
+                  {!compactContent ? (
+                    <Typography sx={{ color: item.postType === "필독" || item.postType === "공지" ? "rgba(248,251,255,0.82)" : "var(--muted)", fontSize: 12, mt: 0.25, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                      {item.content || "(내용 없음)"}
+                    </Typography>
+                  ) : null}
                 </Box>
                 <Stack spacing={0.25} sx={{ minWidth: { xs: "auto", md: 210 }, textAlign: { xs: "left", md: "right" } }}>
                   <Typography sx={{ color: item.postType === "필독" || item.postType === "공지" ? "rgba(248,251,255,0.9)" : "var(--muted)", fontSize: 12 }}>

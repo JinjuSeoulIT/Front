@@ -190,7 +190,26 @@ export default function MainLayout({
         >
           <IconButton
             onClick={() => setSidebarOpen(true)}
-            sx={{ bgcolor: "rgba(255,255,255,0.95)", border: "1px solid var(--line)" }}
+            aria-label="사이드바 펼치기"
+            sx={{
+              opacity: 0.28,
+              color: "rgba(31, 42, 54, 0.72)",
+              bgcolor: "transparent",
+              border: "1px solid transparent",
+              transition: "opacity .2s ease, background-color .2s ease, color .2s ease, border-color .2s ease",
+              "&:hover": {
+                opacity: 1,
+                color: "#ffffff",
+                bgcolor: "var(--brand)",
+                borderColor: "var(--brand)",
+              },
+              "&:focus-visible": {
+                opacity: 1,
+                color: "#ffffff",
+                bgcolor: "var(--brand)",
+                borderColor: "var(--brand)",
+              },
+            }}
           >
             <MenuRoundedIcon />
           </IconButton>

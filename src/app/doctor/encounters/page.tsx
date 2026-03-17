@@ -20,7 +20,7 @@ export default function DoctorEncounterPage() {
       <EncounterWorkspace
         includeInactiveDefault={false}
         initialEncounterId={encounterId}
-        autoOpenInitialDetail
+        autoOpenInitialDetail={false}
         restoreDraftOnOpen={restoreDraft}
       />
     </MainLayout>

@@ -13,6 +13,7 @@ import {
   DialogTitle,
   IconButton,
   Stack,
+  TablePagination,
   Table,
   TableBody,
   TableCell,
@@ -48,6 +49,13 @@ export default function PatientMemosPage() {
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
   const [memos, setMemos] = React.useState<PatientMemo[]>([]);
+  const [page, setPage] = React.useState(0);
+  const rowsPerPage = 10;
+
+  const pagedMemos = React.useMemo(
+    () => memos.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage),
+    [memos, page]
+  );
 
   const [memoDialogOpen, setMemoDialogOpen] = React.useState(false);
   const [memoDialogMode, setMemoDialogMode] = React.useState<"create" | "edit">(
@@ -63,6 +71,7 @@ export default function PatientMemosPage() {
       setError(null);
       const res = await fetchPatientMemosApi(patientId);
       setMemos(res);
+      setPage(0);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load memos");
     } finally {
@@ -185,7 +194,7 @@ export default function PatientMemosPage() {
                 </TableRow>
               )}
 
-              {memos.map((item) => (
+              {pagedMemos.map((item) => (
                 <TableRow key={item.memoId} hover>
                   <TableCell sx={{ whiteSpace: "pre-line" }}>
                     {item.memo}
@@ -210,6 +219,15 @@ export default function PatientMemosPage() {
               ))}
             </TableBody>
           </Table>
+          <TablePagination
+            component="div"
+            count={memos.length}
+            page={page}
+            onPageChange={(_, nextPage) => setPage(nextPage)}
+            rowsPerPage={rowsPerPage}
+            rowsPerPageOptions={[10]}
+            labelRowsPerPage="페이지당 행 수"
+          />
         </CardContent>
       </Card>
 

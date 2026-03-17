@@ -20,6 +20,7 @@ import HistoryRoundedIcon from "@mui/icons-material/HistoryRounded";
 import BookmarkAddedRoundedIcon from "@mui/icons-material/BookmarkAddedRounded";
 import DescriptionRoundedIcon from "@mui/icons-material/DescriptionRounded";
 import { fetchEncountersApi, type MedicalEncounter } from "@/lib/medicalEncounterApi";
+import CountUpNumber from "@/components/common/CountUpNumber";
 import {
   listEncounterDrafts,
   listFavoriteDiagnoses,
@@ -189,17 +190,28 @@ export default function DoctorDashboard() {
 
       <Box sx={{ display: "grid", gap: 1.25, gridTemplateColumns: { xs: "1fr 1fr", md: "repeat(4, 1fr)" } }}>
         {[
-          { label: "전체", value: `${totalCount}건`, icon: <MedicalServicesRoundedIcon fontSize="small" /> },
-          { label: "대기", value: `${waitingCount}건`, icon: <TodayRoundedIcon fontSize="small" /> },
-          { label: "진료중", value: `${inProgressCount}건`, icon: <HistoryRoundedIcon fontSize="small" /> },
-          { label: "완료", value: `${doneCount}건`, icon: <BookmarkAddedRoundedIcon fontSize="small" /> },
+          { label: "전체", value: totalCount, icon: <MedicalServicesRoundedIcon fontSize="small" /> },
+          { label: "대기", value: waitingCount, icon: <TodayRoundedIcon fontSize="small" /> },
+          { label: "진료중", value: inProgressCount, icon: <HistoryRoundedIcon fontSize="small" /> },
+          { label: "완료", value: doneCount, icon: <BookmarkAddedRoundedIcon fontSize="small" /> },
         ].map((item) => (
-          <Box key={item.label} sx={{ p: 1.4, borderRadius: 2, border: "1px solid var(--line)", bgcolor: "rgba(255,255,255,0.9)" }}>
-            <Stack direction="row" spacing={1} alignItems="center">
+          <Box
+            key={item.label}
+            sx={{
+              p: 1.4,
+              pl: 1.8,
+              borderRadius: 2,
+              border: "1px solid var(--line)",
+              bgcolor: "rgba(255,255,255,0.9)",
+            }}
+          >
+            <Stack direction="row" spacing={1} alignItems="center" sx={{ pl: 0.2 }}>
               <Box sx={{ color: "var(--brand)" }}>{item.icon}</Box>
               <Typography sx={{ fontSize: 12, color: "var(--muted)" }}>{item.label}</Typography>
             </Stack>
-            <Typography sx={{ mt: 0.5, fontSize: 18, fontWeight: 900 }}>{item.value}</Typography>
+            <Typography sx={{ mt: 0.5, pl: 0.2, fontSize: 18, fontWeight: 900 }}>
+              <CountUpNumber value={item.value} suffix="건" />
+            </Typography>
           </Box>
         ))}
       </Box>

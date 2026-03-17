@@ -1,6 +1,6 @@
 import axios from "axios";
 import type { ApiResponse } from "@/features/patients/patientTypes";
-import { getAccessToken } from "@/lib/session";
+import { applyAuthInterceptors } from "@/lib/apiInterceptors";
 
 export type StaffBoardCategory = "NOTICE" | "SCHEDULE" | "EVENT";
 
@@ -46,13 +46,7 @@ const api = axios.create({
   baseURL: process.env.NEXT_PUBLIC_STAFF_API_BASE_URL ?? "",
 });
 
-api.interceptors.request.use((config) => {
-  const token = getAccessToken();
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
-});
+applyAuthInterceptors(api);
 
 const parseError = (error: unknown, fallback: string) => {
   if (axios.isAxiosError<ApiResponse<unknown>>(error)) {

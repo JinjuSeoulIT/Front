@@ -1,7 +1,14 @@
 "use client";
 
-import StaffPage from "@/app/staff/page";
+import * as React from "react";
+import { useRouter } from "next/navigation";
 
 export default function StaffSettingPage() {
-  return <StaffPage />;
+  const router = useRouter();
+
+  React.useEffect(() => {
+    router.replace("/staff/dept");
+  }, [router]);
+
+  return null;
 }

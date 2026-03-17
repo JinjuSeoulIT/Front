@@ -10,6 +10,7 @@ import {
   CardContent,
   Chip,
   Divider,
+  Pagination,
   Stack,
   Typography,
 } from "@mui/material";
@@ -49,6 +50,14 @@ export default function PatientStatusHistoryPage() {
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
   const [history, setHistory] = React.useState<PatientStatusHistory[]>([]);
+  const [page, setPage] = React.useState(1);
+  const rowsPerPage = 10;
+
+  const pageCount = Math.max(1, Math.ceil(history.length / rowsPerPage));
+  const pagedHistory = React.useMemo(
+    () => history.slice((page - 1) * rowsPerPage, page * rowsPerPage),
+    [history, page]
+  );
 
   const loadHistory = React.useCallback(async () => {
     if (!patientId) return;
@@ -57,6 +66,7 @@ export default function PatientStatusHistoryPage() {
       setError(null);
       const res = await fetchPatientStatusHistoryApi(patientId);
       setHistory(res);
+      setPage(1);
     } catch (err) {
       setError(err instanceof Error ? err.message : "상태 변경 이력 조회 실패");
     } finally {
@@ -138,7 +148,7 @@ export default function PatientStatusHistoryPage() {
             )}
 
             <Stack spacing={1.5}>
-              {history.map((item) => (
+              {pagedHistory.map((item) => (
                 <Box
                   key={item.historyId}
                   sx={{
@@ -195,6 +205,16 @@ export default function PatientStatusHistoryPage() {
                 </Box>
               ))}
             </Stack>
+            {history.length > rowsPerPage ? (
+              <Stack direction="row" justifyContent="center" sx={{ mt: 2 }}>
+                <Pagination
+                  count={pageCount}
+                  page={page}
+                  onChange={(_, nextPage) => setPage(nextPage)}
+                  color="primary"
+                />
+              </Stack>
+            ) : null}
           </CardContent>
         </Card>
       </Stack>

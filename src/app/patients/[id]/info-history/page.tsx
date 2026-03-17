@@ -10,6 +10,7 @@ import {
   CardContent,
   Chip,
   Divider,
+  Pagination,
   Stack,
   Typography,
 } from "@mui/material";
@@ -37,6 +38,14 @@ export default function PatientInfoHistoryPage() {
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
   const [history, setHistory] = React.useState<PatientInfoHistory[]>([]);
+  const [page, setPage] = React.useState(1);
+  const rowsPerPage = 10;
+
+  const pageCount = Math.max(1, Math.ceil(history.length / rowsPerPage));
+  const pagedHistory = React.useMemo(
+    () => history.slice((page - 1) * rowsPerPage, page * rowsPerPage),
+    [history, page]
+  );
 
   const loadHistory = React.useCallback(async () => {
     if (!patientId) return;
@@ -45,6 +54,7 @@ export default function PatientInfoHistoryPage() {
       setError(null);
       const res = await fetchPatientInfoHistoryApi(patientId);
       setHistory(res);
+      setPage(1);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load info history");
     } finally {
@@ -126,7 +136,7 @@ export default function PatientInfoHistoryPage() {
             )}
 
             <Stack spacing={1.5}>
-              {history.map((item) => (
+              {pagedHistory.map((item) => (
                 <Box
                   key={item.historyId}
                   sx={{
@@ -188,6 +198,16 @@ export default function PatientInfoHistoryPage() {
                 </Box>
               ))}
             </Stack>
+            {history.length > rowsPerPage ? (
+              <Stack direction="row" justifyContent="center" sx={{ mt: 2 }}>
+                <Pagination
+                  count={pageCount}
+                  page={page}
+                  onChange={(_, nextPage) => setPage(nextPage)}
+                  color="primary"
+                />
+              </Stack>
+            ) : null}
           </CardContent>
         </Card>
       </Stack>

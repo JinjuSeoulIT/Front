@@ -8,18 +8,47 @@ export type SessionUser = {
 const TOKEN_KEY = "his.accessToken";
 const USER_KEY = "his.user";
 const PASSWORD_CHANGE_REQUIRED_KEY = "his.passwordChangeRequired";
-const TOKEN_COOKIE_KEY = "his_access_token";
 const FORCE_PASSWORD_COOKIE_KEY = "his_force_password_change";
-const COOKIE_MAX_AGE = 60 * 60 * 12;
+const CSRF_COOKIE_KEY = "XSRF-TOKEN";
+
+const readStored = (key: string): string | null => {
+  const sessionValue = sessionStorage.getItem(key);
+  if (sessionValue !== null) return sessionValue;
+  return localStorage.getItem(key);
+};
+
+const writeStored = (key: string, value: string, persist: boolean) => {
+  if (persist) {
+    localStorage.setItem(key, value);
+    sessionStorage.removeItem(key);
+    return;
+  }
+  sessionStorage.setItem(key, value);
+  localStorage.removeItem(key);
+};
+
+const removeStored = (key: string) => {
+  sessionStorage.removeItem(key);
+  localStorage.removeItem(key);
+};
 
 export const getAccessToken = (): string | null => {
   if (typeof window === "undefined") return null;
-  return localStorage.getItem(TOKEN_KEY);
+  return readStored(TOKEN_KEY);
+};
+
+export const saveAccessToken = (token: string, persist = false) => {
+  if (typeof window === "undefined") return;
+  if (!token) {
+    removeStored(TOKEN_KEY);
+    return;
+  }
+  writeStored(TOKEN_KEY, token, persist);
 };
 
 export const getSessionUser = (): SessionUser | null => {
   if (typeof window === "undefined") return null;
-  const raw = localStorage.getItem(USER_KEY);
+  const raw = readStored(USER_KEY);
   if (!raw) return null;
 
   try {
@@ -29,27 +58,31 @@ export const getSessionUser = (): SessionUser | null => {
   }
 };
 
-export const setPasswordChangeRequired = (required: boolean) => {
+export const setPasswordChangeRequired = (required: boolean, persist = false) => {
   if (typeof window === "undefined") return;
-  localStorage.setItem(PASSWORD_CHANGE_REQUIRED_KEY, required ? "1" : "0");
-  document.cookie = `${FORCE_PASSWORD_COOKIE_KEY}=${required ? "1" : "0"}; Path=/; Max-Age=${COOKIE_MAX_AGE}; SameSite=Lax`;
+  writeStored(PASSWORD_CHANGE_REQUIRED_KEY, required ? "1" : "0", persist);
+  document.cookie = `${FORCE_PASSWORD_COOKIE_KEY}=${required ? "1" : "0"}; Path=/; SameSite=Lax`;
 };
 
 export const isPasswordChangeRequired = (): boolean => {
   if (typeof window === "undefined") return false;
-  return localStorage.getItem(PASSWORD_CHANGE_REQUIRED_KEY) === "1";
+  return readStored(PASSWORD_CHANGE_REQUIRED_KEY) === "1";
 };
 
-export const saveSession = (token: string, user: SessionUser, options?: { passwordChangeRequired?: boolean }) => {
+export const saveSession = (
+  token: string,
+  user: SessionUser,
+  options?: { passwordChangeRequired?: boolean; persist?: boolean }
+) => {
   if (typeof window === "undefined") return;
+  const persist = Boolean(options?.persist);
   if (token) {
-    localStorage.setItem(TOKEN_KEY, token);
-    document.cookie = `${TOKEN_COOKIE_KEY}=${encodeURIComponent(token)}; Path=/; Max-Age=${COOKIE_MAX_AGE}; SameSite=Lax`;
+    writeStored(TOKEN_KEY, token, persist);
   } else {
-    localStorage.removeItem(TOKEN_KEY);
+    removeStored(TOKEN_KEY);
   }
-  localStorage.setItem(USER_KEY, JSON.stringify(user));
-  setPasswordChangeRequired(Boolean(options?.passwordChangeRequired));
+  writeStored(USER_KEY, JSON.stringify(user), persist);
+  setPasswordChangeRequired(Boolean(options?.passwordChangeRequired), persist);
 };
 
 export const saveSessionUserOnly = (user: SessionUser, options?: { passwordChangeRequired?: boolean }) => {
@@ -58,9 +91,25 @@ export const saveSessionUserOnly = (user: SessionUser, options?: { passwordChang
 
 export const clearSession = () => {
   if (typeof window === "undefined") return;
-  localStorage.removeItem(TOKEN_KEY);
-  localStorage.removeItem(USER_KEY);
-  localStorage.removeItem(PASSWORD_CHANGE_REQUIRED_KEY);
-  document.cookie = `${TOKEN_COOKIE_KEY}=; Path=/; Max-Age=0; SameSite=Lax`;
+  removeStored(TOKEN_KEY);
+  removeStored(USER_KEY);
+  removeStored(PASSWORD_CHANGE_REQUIRED_KEY);
   document.cookie = `${FORCE_PASSWORD_COOKIE_KEY}=; Path=/; Max-Age=0; SameSite=Lax`;
+};
+
+export const getCookieValue = (name: string): string | null => {
+  if (typeof window === "undefined") return null;
+  const target = `${name}=`;
+  const pieces = document.cookie.split(";");
+  for (const piece of pieces) {
+    const trimmed = piece.trim();
+    if (trimmed.startsWith(target)) {
+      return decodeURIComponent(trimmed.substring(target.length));
+    }
+  }
+  return null;
+};
+
+export const getCsrfToken = (): string | null => {
+  return getCookieValue(CSRF_COOKIE_KEY);
 };

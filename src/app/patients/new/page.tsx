@@ -3,7 +3,7 @@
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import MainLayout from "@/components/layout/MainLayout";
-import PatientForm from "@/components/PatientForm";
+import PatientForm from "@/components/patient/PatientForm";
 import { useDispatch, useSelector } from "react-redux";
 import type { RootState, AppDispatch } from "@/store/store";
 import { patientActions } from "@/features/patients/patientSlice";

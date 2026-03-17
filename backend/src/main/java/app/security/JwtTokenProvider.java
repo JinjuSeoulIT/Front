@@ -22,6 +22,9 @@ public class JwtTokenProvider {
     @Value("${app.jwt.expiration-ms:43200000}")
     private long jwtExpirationMs;
 
+    @Value("${app.jwt.refresh-expiration-ms:1209600000}")
+    private long refreshExpirationMs;
+
     private Key signingKey;
 
     @PostConstruct
@@ -30,8 +33,16 @@ public class JwtTokenProvider {
     }
 
     public String createToken(String username, Map<String, Object> claims) {
+        return createToken(username, claims, jwtExpirationMs);
+    }
+
+    public String createRefreshToken(String username, Map<String, Object> claims) {
+        return createToken(username, claims, refreshExpirationMs);
+    }
+
+    public String createToken(String username, Map<String, Object> claims, long expirationMs) {
         Date now = new Date();
-        Date expiry = new Date(now.getTime() + jwtExpirationMs);
+        Date expiry = new Date(now.getTime() + expirationMs);
 
         return Jwts.builder()
                 .setSubject(username)
@@ -61,5 +72,9 @@ public class JwtTokenProvider {
 
     public long getExpirationSeconds() {
         return jwtExpirationMs / 1000;
+    }
+
+    public long getRefreshExpirationSeconds() {
+        return refreshExpirationMs / 1000;
     }
 }

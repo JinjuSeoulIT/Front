@@ -13,18 +13,18 @@ export const getDefaultPathByRole = (role?: string | null) => {
   if (normalized === "ADMIN") return "/";
   if (normalized === "DOCTOR") return "/doctor";
   if (normalized === "NURSE") return "/nurse";
-  if (normalized === "STAFF") return "/staff";
+  if (normalized === "STAFF") return "/board/notices";
   if (normalized === "RECEPTION") return "/reception";
   return "/reception";
 };
 
 const ACCESS_RULES: Record<string, string[]> = {
   ADMIN: ["*"],
-  DOCTOR: ["/", "/doctor", "/doctor/*", "/patients", "/patients/*", "/consents", "/consents/*", "/insurances", "/insurances/*", "/display", "/staff/notices", "/staff/schedule", "/staff/events", "/board/notices", "/board/schedule", "/board/events", "/board/docs", "/board/leave", "/board/shifts", "/board/shifts/*", "/board/training", "/board/handover", "/board/meetings", "/my_account"],
-  NURSE: ["/", "/nurse", "/nurse/*", "/patients", "/patients/*", "/display", "/staff/notices", "/staff/schedule", "/staff/events", "/board/notices", "/board/schedule", "/board/events", "/board/docs", "/board/leave", "/board/shifts", "/board/shifts/*", "/board/training", "/board/handover", "/board/meetings", "/my_account"],
-  RECEPTION: ["/", "/reception", "/reception/*", "/patients", "/patients/*", "/consents", "/consents/*", "/insurances", "/insurances/*", "/display", "/staff/notices", "/staff/schedule", "/staff/events", "/board/notices", "/board/schedule", "/board/events", "/board/docs", "/board/leave", "/board/shifts", "/board/shifts/*", "/board/training", "/board/handover", "/board/meetings", "/my_account"],
-  STAFF: ["/", "/staff", "/staff/notices", "/staff/schedule", "/staff/events", "/board/notices", "/board/schedule", "/board/events", "/board/docs", "/board/leave", "/board/shifts", "/board/shifts/*", "/board/training", "/board/handover", "/board/meetings", "/my_account"],
-  UNKNOWN: ["/", "/reception", "/my_account"],
+  DOCTOR: ["/", "/doctor", "/doctor/*", "/patients", "/patients/*", "/consents", "/consents/*", "/insurances", "/insurances/*", "/display", "/board", "/board/notices", "/board/schedule", "/board/events", "/board/docs", "/board/leave", "/board/shifts", "/board/shifts/*", "/board/training", "/board/handover", "/board/meetings", "/my_account"],
+  NURSE: ["/", "/nurse", "/nurse/*", "/patients", "/patients/*", "/display", "/board", "/board/notices", "/board/schedule", "/board/events", "/board/docs", "/board/leave", "/board/shifts", "/board/shifts/*", "/board/training", "/board/handover", "/board/meetings", "/my_account"],
+  RECEPTION: ["/", "/reception", "/reception/*", "/patients", "/patients/*", "/consents", "/consents/*", "/insurances", "/insurances/*", "/display", "/board", "/board/notices", "/board/schedule", "/board/events", "/board/docs", "/board/leave", "/board/shifts", "/board/shifts/*", "/board/training", "/board/handover", "/board/meetings", "/my_account"],
+  STAFF: ["/", "/board", "/board/notices", "/board/schedule", "/board/events", "/board/docs", "/board/leave", "/board/shifts", "/board/shifts/*", "/board/training", "/board/handover", "/board/meetings", "/my_account"],
+  UNKNOWN: ["/", "/reception", "/board", "/my_account"],
 };
 
 export const canAccessPath = (role: string | null | undefined, pathname: string) => {
@@ -43,12 +43,12 @@ export const canAccessPath = (role: string | null | undefined, pathname: string)
 
 export const getVisibleModulesByRole = (role?: string | null) => {
   const normalized = normalizeRole(role);
-  if (normalized === "ADMIN") return ["doctor", "nurse", "staff", "reception", "admin"];
-  if (normalized === "DOCTOR") return ["doctor", "staff"];
-  if (normalized === "NURSE") return ["nurse", "staff"];
-  if (normalized === "RECEPTION") return ["reception", "staff"];
-  if (normalized === "STAFF") return ["staff"];
-  return ["reception", "staff"];
+  if (normalized === "ADMIN") return ["reception", "board", "doctor", "nurse", "admin"];
+  if (normalized === "DOCTOR") return ["board", "doctor"];
+  if (normalized === "NURSE") return ["board", "nurse"];
+  if (normalized === "RECEPTION") return ["reception", "board"];
+  if (normalized === "STAFF") return ["board"];
+  return ["board", "reception"];
 };
 
 export const deriveOperationalRole = (

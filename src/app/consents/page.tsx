@@ -1,5 +1,5 @@
 ﻿import MainLayout from "@/components/layout/MainLayout";
-import PatientSelectList from "@/components/PatientSelectList";
+import PatientSelectList from "@/components/patient/PatientSelectList";
 
 export default function ConsentsPage() {
   return (

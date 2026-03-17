@@ -11,6 +11,10 @@ RUN gradle bootWar --no-daemon
 FROM eclipse-temurin:21-jre
 WORKDIR /app
 
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends fonts-nanum \
+    && rm -rf /var/lib/apt/lists/*
+
 COPY --from=builder /app/build/libs/*.war app.war
 
 EXPOSE 8081

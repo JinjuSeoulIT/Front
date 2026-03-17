@@ -29,6 +29,7 @@ import {
   TextField,
   Tooltip,
   Typography,
+  TablePagination,
 } from "@mui/material";
 import GroupsOutlinedIcon from "@mui/icons-material/GroupsOutlined";
 import HistoryOutlinedIcon from "@mui/icons-material/HistoryOutlined";
@@ -132,6 +133,8 @@ export default function StaffPage() {
 
   const [staffs, setStaffs] = React.useState<StaffListItem[]>([]);
   const [selectedId, setSelectedId] = React.useState<number | null>(null);
+  const [page, setPage] = React.useState(0);
+  const [rowsPerPage, setRowsPerPage] = React.useState(10);
   const [detailModalOpen, setDetailModalOpen] = React.useState(false);
   const [tab, setTab] = React.useState<"overview" | "history">("overview");
   const [detailSectionTab, setDetailSectionTab] = React.useState<"profile" | "security" | "credentials" | "admin">("profile");
@@ -201,6 +204,8 @@ export default function StaffPage() {
   const [staffListTab, setStaffListTab] = React.useState<"ACTIVE" | "INACTIVE">("ACTIVE");
   const [departmentListTab, setDepartmentListTab] = React.useState<"ACTIVE" | "INACTIVE">("ACTIVE");
   const [positionListTab, setPositionListTab] = React.useState<"ACTIVE" | "INACTIVE">("ACTIVE");
+  const [departmentPage, setDepartmentPage] = React.useState(0);
+  const [positionPage, setPositionPage] = React.useState(0);
   const [departmentKeyword, setDepartmentKeyword] = React.useState("");
   const [positionKeyword, setPositionKeyword] = React.useState("");
   const [usernameCheckLoading, setUsernameCheckLoading] = React.useState(false);
@@ -218,7 +223,10 @@ export default function StaffPage() {
   const me = React.useMemo(() => getSessionUser(), []);
   const role = normalizeRole(me?.role);
   const isAdmin = role === "ADMIN";
-  const isSettingsPage = pathname.startsWith("/staff/setting");
+  const isDeptPage = pathname.startsWith("/staff/dept");
+  const isPositionPage = pathname.startsWith("/staff/position");
+  const isLegacySettingsPage = pathname.startsWith("/staff/setting");
+  const isSettingsPage = isDeptPage || isPositionPage || isLegacySettingsPage;
   const isApprovalPage = pathname.startsWith("/staff/approval");
 
   const selectedStaff = React.useMemo(
@@ -262,10 +270,37 @@ export default function StaffPage() {
     const status = (s.statusCode ?? s.status ?? "").toUpperCase();
     return status !== "ACTIVE" && status !== "PENDING_APPROVAL";
   });
+  const paginatedActiveStaffs = activeStaffs.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
+  const paginatedInactiveStaffs = inactiveStaffs.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
   const activeDepartments = visibleDepartments.filter((d) => (d.isActive ?? "Y") === "Y");
   const inactiveDepartments = visibleDepartments.filter((d) => (d.isActive ?? "Y") !== "Y");
   const activePositions = visiblePositions.filter((p) => (p.isActive ?? "Y") === "Y");
   const inactivePositions = visiblePositions.filter((p) => (p.isActive ?? "Y") !== "Y");
+  const masterRowsPerPage = 10;
+  const departmentRows = departmentListTab === "ACTIVE" ? activeDepartments : inactiveDepartments;
+  const positionRows = positionListTab === "ACTIVE" ? activePositions : inactivePositions;
+  const paginatedDepartmentRows = departmentRows.slice(
+    departmentPage * masterRowsPerPage,
+    departmentPage * masterRowsPerPage + masterRowsPerPage
+  );
+  const paginatedPositionRows = positionRows.slice(
+    positionPage * masterRowsPerPage,
+    positionPage * masterRowsPerPage + masterRowsPerPage
+  );
+
+  React.useEffect(() => {
+    const maxDepartmentPage = Math.max(0, Math.ceil(departmentRows.length / masterRowsPerPage) - 1);
+    if (departmentPage > maxDepartmentPage) {
+      setDepartmentPage(maxDepartmentPage);
+    }
+  }, [departmentRows.length, departmentPage]);
+
+  React.useEffect(() => {
+    const maxPositionPage = Math.max(0, Math.ceil(positionRows.length / masterRowsPerPage) - 1);
+    if (positionPage > maxPositionPage) {
+      setPositionPage(maxPositionPage);
+    }
+  }, [positionRows.length, positionPage]);
   const positionStaffCountMap = React.useMemo(() => {
     const map = new Map<number, number>();
     for (const staff of staffs) {
@@ -374,8 +409,12 @@ export default function StaffPage() {
       router.replace("/staff/notices");
       return;
     }
+    if (isPositionPage) {
+      setViewTab("POSITION");
+      return;
+    }
     setViewTab("DEPARTMENT");
-  }, [isSettingsPage, isAdmin, router]);
+  }, [isSettingsPage, isPositionPage, isAdmin, router]);
 
   const moveStaffPanel = React.useCallback((panel: "staff" | "approval") => {
     setPanelQuery(panel);
@@ -994,21 +1033,7 @@ export default function StaffPage() {
           </Alert>
         </Snackbar>
 
-        {isSettingsPage ? (
-          <Tabs
-            value={viewTab === "POSITION" ? "POSITION" : "DEPARTMENT"}
-            onChange={(_, v) => setViewTab(v === "POSITION" ? "POSITION" : "DEPARTMENT")}
-            sx={{
-              bgcolor: "rgba(255,255,255,0.65)",
-              borderRadius: 2,
-              px: 1,
-              border: "1px solid var(--line)",
-            }}
-          >
-            <Tab value="DEPARTMENT" label="부서 관리" />
-            <Tab value="POSITION" label="직책 관리" />
-          </Tabs>
-        ) : (
+        {!isSettingsPage ? (
           <Tabs
             value={viewTab === "APPROVAL" ? "APPROVAL" : "STAFF"}
             onChange={(_, v) => moveStaffPanel(v === "APPROVAL" ? "approval" : "staff")}
@@ -1022,7 +1047,7 @@ export default function StaffPage() {
             <Tab value="STAFF" label="의료진" />
             {isAdmin ? <Tab value="APPROVAL" label="가입 승인" /> : null}
           </Tabs>
-        )}
+        ) : null}
 
             {!isSettingsPage && viewTab === "STAFF" ? (
         <Card sx={{ borderRadius: 3, border: "1px solid var(--line)", minHeight: 540 }}>
@@ -1121,7 +1146,10 @@ export default function StaffPage() {
 
             <Tabs
               value={staffListTab}
-              onChange={(_, v) => setStaffListTab(v === "INACTIVE" ? "INACTIVE" : "ACTIVE")}
+              onChange={(_, v) => {
+                setStaffListTab(v === "INACTIVE" ? "INACTIVE" : "ACTIVE");
+                setPage(0);
+              }}
               sx={{ mb: 1 }}
             >
               <Tab value="ACTIVE" label={`재직 목록(${activeStaffs.length})`} />
@@ -1129,7 +1157,7 @@ export default function StaffPage() {
             </Tabs>
 
             <Stack spacing={1}>
-              {(staffListTab === "ACTIVE" ? activeStaffs : inactiveStaffs).map((staff) => {
+              {(staffListTab === "ACTIVE" ? paginatedActiveStaffs : paginatedInactiveStaffs).map((staff) => {
                 const selected = selectedId === staff.id;
                 return (
                   <Box
@@ -1196,6 +1224,19 @@ export default function StaffPage() {
                   {staffListTab === "ACTIVE" ? "조회된 의료진이 없습니다." : "비활성 의료진이 없습니다."}
                 </Typography>
               ) : null}
+              <TablePagination
+                component="div"
+                count={(staffListTab === "ACTIVE" ? activeStaffs : inactiveStaffs).length}
+                page={page}
+                onPageChange={(_, newPage) => setPage(newPage)}
+                rowsPerPage={rowsPerPage}
+                onRowsPerPageChange={(e) => {
+                  setRowsPerPage(parseInt(e.target.value, 10));
+                  setPage(0);
+                }}
+                rowsPerPageOptions={[10, 15, 25]}
+                labelRowsPerPage="페이지당 행 수"
+              />
             </Stack>
           </CardContent>
         </Card>
@@ -1231,19 +1272,25 @@ export default function StaffPage() {
                 label="부서 검색"
                 placeholder="부서명/내선"
                 value={departmentKeyword}
-                onChange={(e) => setDepartmentKeyword(e.target.value)}
+                onChange={(e) => {
+                  setDepartmentKeyword(e.target.value);
+                  setDepartmentPage(0);
+                }}
                 sx={{ mb: 1.5, maxWidth: 360 }}
               />
               <Tabs
                 value={departmentListTab}
-                onChange={(_, v) => setDepartmentListTab(v === "INACTIVE" ? "INACTIVE" : "ACTIVE")}
+                onChange={(_, v) => {
+                  setDepartmentListTab(v === "INACTIVE" ? "INACTIVE" : "ACTIVE");
+                  setDepartmentPage(0);
+                }}
                 sx={{ mb: 1 }}
               >
                 <Tab value="ACTIVE" label={`활성 부서(${activeDepartments.length})`} />
                 <Tab value="INACTIVE" label={`비활성 부서(${inactiveDepartments.length})`} />
               </Tabs>
               <Stack spacing={1}>
-                {(departmentListTab === "ACTIVE" ? activeDepartments : inactiveDepartments).map((dept) => (
+                {paginatedDepartmentRows.map((dept) => (
                   <Stack
                     key={dept.id}
                     direction="row"
@@ -1305,11 +1352,20 @@ export default function StaffPage() {
                     </Stack>
                   </Stack>
                 ))}
-                {(departmentListTab === "ACTIVE" ? activeDepartments : inactiveDepartments).length === 0 ? (
+                {departmentRows.length === 0 ? (
                   <Typography sx={{ color: "var(--muted)", py: 2, textAlign: "center" }}>
                     {departmentListTab === "ACTIVE" ? "활성 부서가 없습니다." : "비활성 부서가 없습니다."}
                   </Typography>
                 ) : null}
+                <TablePagination
+                  component="div"
+                  count={departmentRows.length}
+                  page={departmentPage}
+                  onPageChange={(_, nextPage) => setDepartmentPage(nextPage)}
+                  rowsPerPage={masterRowsPerPage}
+                  rowsPerPageOptions={[10]}
+                  labelRowsPerPage="페이지당 행 수"
+                />
               </Stack>
             </CardContent>
           </Card>
@@ -1331,19 +1387,25 @@ export default function StaffPage() {
                 label="직책 검색"
                 placeholder="직책명/직책 코드"
                 value={positionKeyword}
-                onChange={(e) => setPositionKeyword(e.target.value)}
+                onChange={(e) => {
+                  setPositionKeyword(e.target.value);
+                  setPositionPage(0);
+                }}
                 sx={{ mb: 1.5, maxWidth: 360 }}
               />
               <Tabs
                 value={positionListTab}
-                onChange={(_, v) => setPositionListTab(v === "INACTIVE" ? "INACTIVE" : "ACTIVE")}
+                onChange={(_, v) => {
+                  setPositionListTab(v === "INACTIVE" ? "INACTIVE" : "ACTIVE");
+                  setPositionPage(0);
+                }}
                 sx={{ mb: 1 }}
               >
                 <Tab value="ACTIVE" label={`활성 직책(${activePositions.length})`} />
                 <Tab value="INACTIVE" label={`비활성 직책(${inactivePositions.length})`} />
               </Tabs>
               <Stack spacing={1}>
-                {(positionListTab === "ACTIVE" ? activePositions : inactivePositions).map((position) => (
+                {paginatedPositionRows.map((position) => (
                   <Stack
                     key={position.id}
                     direction="row"
@@ -1405,11 +1467,20 @@ export default function StaffPage() {
                     </Stack>
                   </Stack>
                 ))}
-                {(positionListTab === "ACTIVE" ? activePositions : inactivePositions).length === 0 ? (
+                {positionRows.length === 0 ? (
                   <Typography sx={{ color: "var(--muted)", py: 2, textAlign: "center" }}>
                     {positionListTab === "ACTIVE" ? "활성 직책이 없습니다." : "비활성 직책이 없습니다."}
                   </Typography>
                 ) : null}
+                <TablePagination
+                  component="div"
+                  count={positionRows.length}
+                  page={positionPage}
+                  onPageChange={(_, nextPage) => setPositionPage(nextPage)}
+                  rowsPerPage={masterRowsPerPage}
+                  rowsPerPageOptions={[10]}
+                  labelRowsPerPage="페이지당 행 수"
+                />
               </Stack>
             </CardContent>
           </Card>
@@ -2108,55 +2179,90 @@ export default function StaffPage() {
 
                   {detailSectionTab === "credentials" ? (
                   <Box>
-                    <Typography fontWeight={800}>면허/자격 파일(MinIO)</Typography>
+                    <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 1 }}>
+                      <Typography fontWeight={800}>면허/자격 파일(MinIO)</Typography>
+                      <Chip
+                        size="small"
+                        color="primary"
+                        variant="outlined"
+                        label={`총 ${credentials.length}건`}
+                        sx={{ fontWeight: 700 }}
+                      />
+                    </Stack>
                     {isAdmin ? (
-                      <Stack spacing={1} sx={{ mt: 1 }}>
-                        <Stack direction={{ xs: "column", md: "row" }} spacing={1}>
-                          <FormControl size="small" sx={{ minWidth: 150 }}>
-                            <InputLabel id="credential-type-label">유형</InputLabel>
-                            <Select
-                              labelId="credential-type-label"
-                              label="유형"
-                              value={credentialType}
-                              onChange={(e) => setCredentialType(e.target.value as "LICENSE" | "CERT")}
-                            >
-                              <MenuItem value="LICENSE">면허</MenuItem>
-                              <MenuItem value="CERT">자격</MenuItem>
-                            </Select>
-                          </FormControl>
-                          <TextField size="small" label="명칭" value={credentialName} onChange={(e) => setCredentialName(e.target.value)} fullWidth />
-                          <TextField size="small" label="번호" value={credentialNumber} onChange={(e) => setCredentialNumber(e.target.value)} fullWidth />
+                      <Box sx={{ p: 1.25, border: "1px solid var(--line)", borderRadius: 2, bgcolor: "rgba(148,163,184,0.05)" }}>
+                        <Typography sx={{ fontSize: 12, color: "var(--muted)", mb: 1 }}>신규 면허/자격 등록</Typography>
+                        <Stack spacing={1}>
+                          <Stack direction={{ xs: "column", md: "row" }} spacing={1}>
+                            <FormControl size="small" sx={{ minWidth: 150 }}>
+                              <InputLabel id="credential-type-label">유형</InputLabel>
+                              <Select
+                                labelId="credential-type-label"
+                                label="유형"
+                                value={credentialType}
+                                onChange={(e) => setCredentialType(e.target.value as "LICENSE" | "CERT")}
+                              >
+                                <MenuItem value="LICENSE">면허</MenuItem>
+                                <MenuItem value="CERT">자격</MenuItem>
+                              </Select>
+                            </FormControl>
+                            <TextField size="small" label="명칭" value={credentialName} onChange={(e) => setCredentialName(e.target.value)} fullWidth />
+                            <TextField size="small" label="번호" value={credentialNumber} onChange={(e) => setCredentialNumber(e.target.value)} fullWidth />
+                          </Stack>
+                          <Stack direction={{ xs: "column", md: "row" }} spacing={1}>
+                            <TextField size="small" label="발급기관" value={credentialIssuer} onChange={(e) => setCredentialIssuer(e.target.value)} fullWidth />
+                            <TextField size="small" type="date" label="만료일" InputLabelProps={{ shrink: true }} value={credentialExpiresAt} onChange={(e) => setCredentialExpiresAt(e.target.value)} sx={{ width: { md: 180 } }} />
+                          </Stack>
+                          <Stack direction={{ xs: "column", md: "row" }} spacing={1} alignItems={{ xs: "stretch", md: "center" }}>
+                            <Button variant="outlined" component="label" size="small" sx={{ width: { md: 140 } }}>
+                              파일 선택
+                              <input hidden type="file" onChange={(e) => setCredentialFile(e.target.files?.[0] ?? null)} />
+                            </Button>
+                            <Typography sx={{ fontSize: 12, color: "var(--muted)", flex: 1 }}>
+                              {credentialFile ? `선택 파일: ${credentialFile.name}` : "선택된 파일 없음"}
+                            </Typography>
+                            <Button variant="contained" size="small" onClick={handleCreateCredential} sx={{ minWidth: 110 }}>
+                              파일 등록
+                            </Button>
+                          </Stack>
                         </Stack>
-                        <Stack direction={{ xs: "column", md: "row" }} spacing={1}>
-                          <TextField size="small" label="발급기관" value={credentialIssuer} onChange={(e) => setCredentialIssuer(e.target.value)} fullWidth />
-                          <TextField size="small" type="date" label="만료일" InputLabelProps={{ shrink: true }} value={credentialExpiresAt} onChange={(e) => setCredentialExpiresAt(e.target.value)} sx={{ width: { md: 180 } }} />
-                          <Button variant="outlined" component="label" size="small">
-                            파일 선택
-                            <input hidden type="file" onChange={(e) => setCredentialFile(e.target.files?.[0] ?? null)} />
-                          </Button>
-                          <Button variant="contained" size="small" onClick={handleCreateCredential}>파일 등록</Button>
-                        </Stack>
-                        <Typography sx={{ fontSize: 12, color: "var(--muted)" }}>
-                          {credentialFile ? `선택 파일: ${credentialFile.name}` : "선택된 파일 없음"}
-                        </Typography>
-                      </Stack>
+                      </Box>
                     ) : null}
-                    <Stack spacing={0.75} sx={{ mt: 1 }}>
+                    <Stack spacing={1} sx={{ mt: 1 }}>
                       {credentialLoading ? (
                         <Typography sx={{ color: "var(--muted)", fontSize: 12 }}>자격 파일 조회 중...</Typography>
                       ) : credentials.length ? (
                         credentials.map((item) => (
-                          <Box key={item.id} sx={{ p: 1, border: "1px solid var(--line)", borderRadius: 1.5 }}>
-                            <Typography sx={{ fontSize: 13, fontWeight: 700 }}>
-                              [{item.credType === "LICENSE" ? "면허" : "자격"}] {toText(item.name)}
+                          <Box key={item.id} sx={{ p: 1.25, border: "1px solid var(--line)", borderRadius: 2, bgcolor: "rgba(148,163,184,0.04)" }}>
+                            <Stack direction="row" justifyContent="space-between" alignItems="center" spacing={1}>
+                              <Typography sx={{ fontSize: 13, fontWeight: 800 }}>
+                                {toText(item.name)}
+                              </Typography>
+                              <Chip
+                                size="small"
+                                label={item.credType === "LICENSE" ? "면허" : "자격"}
+                                color={item.credType === "LICENSE" ? "primary" : "default"}
+                                sx={{ fontWeight: 700 }}
+                              />
+                            </Stack>
+                            <Typography sx={{ fontSize: 12, color: "var(--muted)", mt: 0.4 }}>
+                              번호 {toText(item.credNumber)} · 발급기관 {toText(item.issuer)}
                             </Typography>
-                            <Typography sx={{ fontSize: 12, color: "var(--muted)" }}>
-                              {toText(item.issuer)} · 만료 {formatDateTime(item.expiresAt)}
+                            <Typography sx={{ fontSize: 12, color: "var(--muted)", mt: 0.2 }}>
+                              만료일 {formatDateTime(item.expiresAt)}
                             </Typography>
                             {item.evidenceUrl ? (
-                              <Typography sx={{ fontSize: 12 }}>
-                                <a href={item.evidenceUrl} target="_blank" rel="noreferrer">첨부파일 열기</a>
-                              </Typography>
+                              <Button
+                                size="small"
+                                variant="text"
+                                sx={{ mt: 0.4, px: 0, minWidth: 0, fontWeight: 700 }}
+                                component="a"
+                                href={item.evidenceUrl}
+                                target="_blank"
+                                rel="noreferrer"
+                              >
+                                첨부파일 열기
+                              </Button>
                             ) : null}
                           </Box>
                         ))

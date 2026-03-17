@@ -6,10 +6,12 @@ import type {
   ApiResponse,
 } from "../features/patients/patientTypes";
 
-import { getAccessToken } from "@/lib/session";
+import { applyAuthInterceptors } from "@/lib/apiInterceptors";
 const api = axios.create({  
   baseURL: process.env.NEXT_PUBLIC_PATIENTS_API_BASE_URL ?? "",
 });
+
+applyAuthInterceptors(api);
 
 api.interceptors.request.use((config) => {
   console.log("[patient] axios request", {
@@ -49,13 +51,22 @@ const buildFormData = (
   return formData;
 };
 
+const normalizePatientList = (result: unknown): Patient[] => {
+  if (Array.isArray(result)) return result as Patient[];
+  if (result && typeof result === "object") {
+    const maybeItems = (result as { items?: unknown }).items;
+    if (Array.isArray(maybeItems)) return maybeItems as Patient[];
+  }
+  return [];
+};
+
 // List
 export const fetchPatientsApi = async (): Promise<Patient[]> => {
   const res = await api.get<ApiResponse<Patient[]>>("/api/patients");
   if (!res.data.success) {
     throw new Error(res.data.message || "Fetch failed");
   }
-  return res.data.result;
+  return normalizePatientList(res.data.result);
 };
 
 // Detail
@@ -68,15 +79,19 @@ export const fetchPatientApi = async (patientId: number): Promise<Patient> => {
 };
 
 // Create (multipart)
-export const createPatientApi = async (form: PatientForm): Promise<void> => {
+export const createPatientApi = async (form: PatientForm): Promise<Patient> => {
   const { photoFile, ...payload } = form;
-  const res = await api.post<ApiResponse<void>>(
+  const res = await api.post<ApiResponse<Patient>>(
     "/api/patients",
     buildFormData(payload, photoFile ?? null)
   );
   if (!res.data.success) {
     throw new Error(res.data.message || "Create failed");
   }
+  if (!res.data.result) {
+    throw new Error("Create succeeded but no patient returned");
+  }
+  return res.data.result;
 };
 
 // Update
@@ -134,7 +149,7 @@ export const searchPatientsApi = async (
   if (!res.data.success) {
     return [];
   }
-  return res.data.result;
+  return normalizePatientList(res.data.result);
 };
 
 export type PatientMultiSearchPayload = {
@@ -153,7 +168,7 @@ export const searchPatientsMultiApi = async (
   if (!res.data.success) {
     return [];
   }
-  return res.data.result;
+  return normalizePatientList(res.data.result);
 };
 
 export type PatientVipChangePayload = {

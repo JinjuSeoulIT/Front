@@ -36,6 +36,12 @@ BEGIN
     grant_if_table_exists('CMH', 'POSITIONS');
     grant_if_table_exists('CMH', 'STAFF_STATUS_CODES');
     grant_if_table_exists('CMH', 'STAFF');
+    grant_if_table_exists('CMH', 'AUTH_ROLE');
+    grant_if_table_exists('CMH', 'MENU');
+    grant_if_table_exists('CMH', 'AUTH_ROLE_MENU_PERMISSION');
+    grant_if_table_exists('CMH', 'AUTH_USER_MENU_PERMISSION');
+    grant_if_table_exists('CMH', 'AUTH_SESSION');
+    grant_if_table_exists('CMH', 'LOGIN_HISTORY');
     grant_if_table_exists('CMH', 'STAFF_CREDENTIAL');
     grant_if_table_exists('CMH', 'STAFF_HISTORY');
     grant_if_table_exists('CMH', 'STAFF_CHANGE_REQUEST');
@@ -52,7 +58,6 @@ BEGIN
     grant_if_table_exists('CMH', 'MEDICAL_ENCOUNTER_HISTORY');
     grant_if_table_exists('CMH', 'MEDICAL_ENCOUNTER_DIAGNOSIS');
     grant_if_table_exists('CMH', 'MEDICAL_ENCOUNTER_ASSET');
-
     grant_if_table_exists('LHS', 'MENU');
 
     SELECT COUNT(*) INTO v_menu_cnt FROM ALL_TABLES WHERE OWNER='LHS' AND TABLE_NAME='MENU';
@@ -63,6 +68,7 @@ BEGIN
     grant_if_sequence_exists('CMH', 'DEPT_SEQ');
     grant_if_sequence_exists('CMH', 'POSITION_SEQ');
     grant_if_sequence_exists('CMH', 'STAFF_SEQ');
+    grant_if_sequence_exists('CMH', 'STAFF_ID_SEQ');
     grant_if_sequence_exists('CMH', 'STAFF_CREDENTIAL_SEQ');
     grant_if_sequence_exists('CMH', 'STAFF_HISTORY_SEQ');
     grant_if_sequence_exists('CMH', 'STAFF_CHANGE_REQ_SEQ');
@@ -76,5 +82,6 @@ BEGIN
     grant_if_sequence_exists('CMH', 'MEDICAL_ENCOUNTER_HIS_SEQ');
     grant_if_sequence_exists('CMH', 'MEDICAL_ENC_DIAG_SEQ');
     grant_if_sequence_exists('CMH', 'MEDICAL_ENC_ASSET_SEQ');
+    grant_if_sequence_exists('CMH', 'LOGIN_HISTORY_SEQ');
 END;
 /

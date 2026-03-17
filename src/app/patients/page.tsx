@@ -1,5 +1,5 @@
 ﻿import MainLayout from "@/components/layout/MainLayout";
-import PatientList from "@/components/PatientList";
+import PatientList from "@/components/patient/PatientList";
 
 export default function PatientsPage() {
   return (
@@ -8,4 +8,3 @@ export default function PatientsPage() {
     </MainLayout>
   );
 }
-

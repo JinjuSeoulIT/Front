@@ -50,6 +50,7 @@ BEGIN
     add_column_if_missing('CMH', 'STAFF_COMMON_DOC', 'ATTACH_FILE_NAME', 'VARCHAR2(200)');
     add_column_if_missing('CMH', 'STAFF_COMMON_DOC', 'ATTACH_MIME_TYPE', 'VARCHAR2(100)');
     add_column_if_missing('CMH', 'STAFF_COMMON_DOC', 'ATTACH_BASE64', 'CLOB');
+    add_column_if_missing('CMH', 'STAFF_COMMON_DOC', 'ATTACH_DOWNLOAD_COUNT', 'NUMBER DEFAULT 0');
 
     add_constraint_if_missing(
         'CMH',

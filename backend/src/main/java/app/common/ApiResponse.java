@@ -13,9 +13,8 @@ public class ApiResponse<T> {
     private String message;
     private T result;
 
-    public ApiResponse<T> ok()
-    {
-        ApiResponse response = new ApiResponse();
+    public ApiResponse<T> ok() {
+        ApiResponse<T> response = new ApiResponse<>();
 
         response.success = true;
         response.message = "success";
@@ -24,9 +23,8 @@ public class ApiResponse<T> {
         return response;
     }
 
-    public ApiResponse<T> ok(T data)
-    {
-        ApiResponse response = new ApiResponse();
+    public ApiResponse<T> ok(T data) {
+        ApiResponse<T> response = new ApiResponse<>();
 
         response.success = true;
         response.message = "success";
@@ -35,9 +33,8 @@ public class ApiResponse<T> {
         return response;
     }
 
-    public ApiResponse<T> ok(String message)
-    {
-        ApiResponse response = new ApiResponse();
+    public ApiResponse<T> ok(String message) {
+        ApiResponse<T> response = new ApiResponse<>();
 
         response.success = true;
         response.message = message;
@@ -46,9 +43,18 @@ public class ApiResponse<T> {
         return response;
     }
 
-    public ApiResponse<T> error(String message)
-    {
-        ApiResponse response = new ApiResponse();
+    public ApiResponse<T> ok(String message, T data) {
+        ApiResponse<T> response = new ApiResponse<>();
+
+        response.success = true;
+        response.message = message;
+        response.result = data;
+
+        return response;
+    }
+
+    public ApiResponse<T> error(String message) {
+        ApiResponse<T> response = new ApiResponse<>();
 
         response.success = false;
         response.message = message;
@@ -57,4 +63,3 @@ public class ApiResponse<T> {
         return response;
     }
 }
-

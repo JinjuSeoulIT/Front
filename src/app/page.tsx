@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import {
   Box,
+  Button,
   Card,
   CardContent,
   Stack,
@@ -14,17 +15,36 @@ import LocalHospitalOutlinedIcon from "@mui/icons-material/LocalHospitalOutlined
 import MedicalServicesOutlinedIcon from "@mui/icons-material/MedicalServicesOutlined";
 import FactCheckOutlinedIcon from "@mui/icons-material/FactCheckOutlined";
 import AdminPanelSettingsOutlinedIcon from "@mui/icons-material/AdminPanelSettingsOutlined";
-import BadgeOutlinedIcon from "@mui/icons-material/BadgeOutlined";
+import DescriptionOutlinedIcon from "@mui/icons-material/DescriptionOutlined";
 import { getSessionUser } from "@/lib/session";
 import { getVisibleModulesByRole, normalizeRole } from "@/lib/roleAccess";
 
 const IDLE_TIMEOUT_KEY = "his.homeIdleTimeoutSec";
+const ADMIN_WELCOME_HIDE_DATE_KEY = "his.adminWelcomeHideDate";
 
-const ROLES = [
+const MODULE_CARDS = [
+  {
+    key: "reception",
+    label: "원무",
+    desc: "접수/수납/보험/환자관리",
+    href: "/reception",
+    icon: <FactCheckOutlinedIcon />,
+    tone:
+      "linear-gradient(135deg, rgba(217, 119, 6, 0.22), rgba(217, 119, 6, 0))",
+  },
+  {
+    key: "board",
+    label: "게시판",
+    desc: "공지/일정/당직/인계 등 공용업무",
+    href: "/board",
+    icon: <DescriptionOutlinedIcon />,
+    tone:
+      "linear-gradient(135deg, rgba(20, 104, 84, 0.22), rgba(20, 104, 84, 0))",
+  },
   {
     key: "doctor",
-    label: "의사",
-    desc: "진료/차트/오더 중심 화면",
+    label: "진료",
+    desc: "의사 워크스페이스/진단/처방",
     href: "/doctor",
     icon: <LocalHospitalOutlinedIcon />,
     tone:
@@ -40,26 +60,8 @@ const ROLES = [
       "linear-gradient(135deg, rgba(23, 162, 142, 0.22), rgba(23, 162, 142, 0))",
   },
   {
-    key: "staff",
-    label: "공통",
-    desc: "공지/일정/문서/휴가/결재 등 공통업무",
-    href: "/board/notices",
-    icon: <BadgeOutlinedIcon />,
-    tone:
-      "linear-gradient(135deg, rgba(24, 90, 158, 0.18), rgba(24, 90, 158, 0))",
-  },
-  {
-    key: "reception",
-    label: "원무",
-    desc: "접수/수납/보험/환자관리",
-    href: "/reception",
-    icon: <FactCheckOutlinedIcon />,
-    tone:
-      "linear-gradient(135deg, rgba(217, 119, 6, 0.22), rgba(217, 119, 6, 0))",
-  },
-  {
     key: "admin",
-    label: "관리자",
+    label: "관리",
     desc: "운영 KPI, 권한, 감사 로그",
     href: "/admin",
     icon: <AdminPanelSettingsOutlinedIcon />,
@@ -73,9 +75,9 @@ export default function HomePage() {
   const [role, setRole] = useState<string | null>(null);
   const [displayName, setDisplayName] = useState("선생님");
   const [now, setNow] = useState(() => new Date());
-  const [autoRedirecting, setAutoRedirecting] = useState(false);
   const [isStandby, setIsStandby] = useState(false);
   const [idleSeconds, setIdleSeconds] = useState(10);
+  const [hideAdminWelcome, setHideAdminWelcome] = useState(false);
 
   useEffect(() => {
     const user = getSessionUser();
@@ -96,19 +98,18 @@ export default function HomePage() {
     if (Number.isFinite(parsed) && parsed >= 5 && parsed <= 1800) {
       setIdleSeconds(parsed);
     }
+
+    const today = new Date().toISOString().slice(0, 10);
+    const hiddenDate = window.localStorage.getItem(ADMIN_WELCOME_HIDE_DATE_KEY);
+    if (hiddenDate === today) {
+      setHideAdminWelcome(true);
+    }
   }, []);
 
   const visibleModules = useMemo(() => {
     const allowed = new Set(getVisibleModulesByRole(role));
-    return ROLES.filter((item) => allowed.has(item.key));
+    return MODULE_CARDS.filter((item) => allowed.has(item.key));
   }, [role]);
-
-  useEffect(() => {
-    if (!role) return;
-    if (visibleModules.length !== 1) return;
-    setAutoRedirecting(true);
-    router.replace(visibleModules[0].href);
-  }, [role, router, visibleModules]);
 
   const dateText = useMemo(
     () =>
@@ -133,11 +134,15 @@ export default function HomePage() {
 
   const isAdmin = normalizeRole(role) === "ADMIN";
   useEffect(() => {
-    if (isAdmin) setIsStandby(true);
-  }, [isAdmin]);
+    if (isAdmin) {
+      setIsStandby(!hideAdminWelcome);
+      return;
+    }
+    setIsStandby(false);
+  }, [hideAdminWelcome, isAdmin]);
 
   useEffect(() => {
-    if (!isAdmin || isStandby) return;
+    if (!isAdmin || isStandby || hideAdminWelcome) return;
     let timerId: number | null = null;
 
     const scheduleIdle = () => {
@@ -162,12 +167,18 @@ export default function HomePage() {
       window.removeEventListener("click", onActivity);
       window.removeEventListener("touchstart", onActivity);
     };
-  }, [idleSeconds, isAdmin, isStandby]);
+  }, [hideAdminWelcome, idleSeconds, isAdmin, isStandby]);
+
+  const dismissAdminWelcomeToday = () => {
+    const today = new Date().toISOString().slice(0, 10);
+    window.localStorage.setItem(ADMIN_WELCOME_HIDE_DATE_KEY, today);
+    setHideAdminWelcome(true);
+  };
 
   return (
     <MainLayout showSidebar={false}>
       <Stack spacing={3}>
-        {isAdmin ? (
+        {isAdmin && !hideAdminWelcome ? (
           <Card
             onClick={() => {
               if (isStandby) setIsStandby(false);
@@ -187,31 +198,43 @@ export default function HomePage() {
               alignItems: "flex-start",
             }}
           >
-            <CardContent sx={{ p: 4, pt: isStandby ? 3 : 4 }}>
-              <Stack direction="row" spacing={2} alignItems="flex-start" justifyContent="space-between" sx={{ width: "100%", pl: 1, pr: 1, mt: 0.5 }}>
-                <Stack spacing={0.5}>
-                  <Typography sx={{ fontSize: 13, color: "var(--muted)" }}>{dateText}</Typography>
-                  <Typography sx={{ fontSize: { xs: 52, md: 68 }, fontWeight: 900, letterSpacing: -1.2, lineHeight: 1.05 }}>{timeText}</Typography>
-                  <Typography sx={{ fontSize: 15, color: "var(--muted)" }}>{displayName} 선생님</Typography>
-                  <Typography sx={{ fontSize: 16, fontWeight: 800 }}>오늘 하루도 화이팅하세요!</Typography>
-                </Stack>
+            <CardContent sx={{ p: 4, pt: isStandby ? 3 : 4, position: "relative", width: "100%" }}>
+              <Stack
+                direction="row"
+                spacing={1}
+                sx={{
+                  position: "absolute",
+                  top: { xs: 12, md: 16 },
+                  right: { xs: 12, md: 16 },
+                  flexShrink: 0,
+                  zIndex: 1,
+                }}
+              >
+                <Button
+                  size="small"
+                  variant="outlined"
+                  onClick={() => setHideAdminWelcome(true)}
+                >
+                  닫기
+                </Button>
+                <Button
+                  size="small"
+                  variant="text"
+                  onClick={dismissAdminWelcomeToday}
+                >
+                  오늘은 보지 않기
+                </Button>
+              </Stack>
+              <Stack spacing={0.5} sx={{ pl: 1, pr: 1, mt: 0.5 }}>
+                <Typography sx={{ fontSize: 13, color: "var(--muted)" }}>{dateText}</Typography>
+                <Typography sx={{ fontSize: { xs: 52, md: 68 }, fontWeight: 900, letterSpacing: -1.2, lineHeight: 1.05 }}>{timeText}</Typography>
+                <Typography sx={{ fontSize: 15, color: "var(--muted)" }}>{displayName} 선생님</Typography>
+                <Typography sx={{ fontSize: 16, fontWeight: 800 }}>오늘 하루도 화이팅하세요!</Typography>
               </Stack>
             </CardContent>
           </Card>
         ) : null}
-        {autoRedirecting ? (
-          <Box
-            sx={{
-              p: 3,
-              borderRadius: 3,
-              border: "1px solid var(--line)",
-              bgcolor: "rgba(255,255,255,0.82)",
-            }}
-          >
-            <Typography sx={{ fontWeight: 700 }}>역할 홈으로 이동 중입니다...</Typography>
-          </Box>
-        ) : null}
-        {!isAdmin || !isStandby ? (
+        {!isAdmin || !isStandby || hideAdminWelcome ? (
           <Box
             sx={{
               display: "grid",

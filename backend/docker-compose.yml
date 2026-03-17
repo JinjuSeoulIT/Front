@@ -19,12 +19,18 @@ services:
       start_period: 40s
     restart: unless-stopped
 
-  redis:
-    image: redis:7-alpine
-    container_name: hospital-redis
-    ports:
-      - "6379:6379"
-    restart: unless-stopped
+  oracle-bootstrap:
+    image: gvenzl/oracle-xe:21-slim
+    container_name: hospital-oracle-bootstrap
+    depends_on:
+      oracle-db:
+        condition: service_healthy
+    volumes:
+      - ./docker/oracle/bootstrap:/bootstrap:ro
+    entrypoint: >
+      /bin/bash -lc "
+      sqlplus -s system/oracle@//oracle-db:1521/XEPDB1 @/bootstrap/90_local_auth_bootstrap.sql
+      "
 
   minio:
     image: minio/minio:latest
@@ -53,52 +59,85 @@ services:
       exit 0;
       "
 
-  backend:
+  auth-server:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: hospital-backend
     depends_on:
-      oracle-db:
-        condition: service_healthy
-      redis:
-        condition: service_started
+      oracle-bootstrap:
+        condition: service_completed_successfully
       minio:
         condition: service_started
       minio-init:
         condition: service_completed_successfully
-    environment:
+    environment: &backend_common_env
       SERVER_PORT: 8081
-      SPRING_DATASOURCE_URL: jdbc:log4jdbc:oracle:thin:@//oracle-db:1521/XE
-      SPRING_DATASOURCE_USERNAME: cmh
-      SPRING_DATASOURCE_PASSWORD: "1111"
-      SPRING_DATA_REDIS_HOST: redis
-      SPRING_DATA_REDIS_PORT: 6379
-      SPRING_REDIS_HOST: redis
-      SPRING_REDIS_PORT: 6379
+      APP_SERVER_ROLE: auth
+      SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL:-jdbc:log4jdbc:oracle:thin:@//localhost:1521/XEPDB1}
+      SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME:-cmh}
+      SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD:-1111}
+      SPRING_DATA_REDIS_HOST: ${SPRING_DATA_REDIS_HOST:-192.168.1.67}
+      SPRING_DATA_REDIS_PORT: ${SPRING_DATA_REDIS_PORT:-6379}
+      SPRING_DATA_REDIS_PASSWORD: ${SPRING_DATA_REDIS_PASSWORD:-111111}
+      SPRING_REDIS_HOST: ${SPRING_REDIS_HOST:-192.168.1.67}
+      SPRING_REDIS_PORT: ${SPRING_REDIS_PORT:-6379}
+      SPRING_REDIS_PASSWORD: ${SPRING_REDIS_PASSWORD:-111111}
       SPRING_CACHE_TYPE: redis
       APP_STORAGE_TYPE: minio
       MINIO_INTERNAL_URL: http://minio:9000
       MINIO_ENDPOINT: http://minio:9000
+      MINIO_PUBLIC_URL: ${MINIO_PUBLIC_URL:-http://localhost:9000}
       MINIO_ACCESS_KEY: minioadmin
       MINIO_SECRET_KEY: minioadmin123
       MINIO_BUCKET_STAFF: staff-profile
       MINIO_BUCKET_PATIENT: hospital-files
       APP_JWT_SECRET: hospital-demo-jwt-secret-key-change-me-2026-hospital
-      OAUTH_GOOGLE_CLIENT_ID: ${OAUTH_GOOGLE_CLIENT_ID:-dummy-google-client-id}
-      OAUTH_GOOGLE_CLIENT_SECRET: ${OAUTH_GOOGLE_CLIENT_SECRET:-dummy-google-client-secret}
-      OAUTH_NAVER_CLIENT_ID: ${OAUTH_NAVER_CLIENT_ID:-dummy-naver-client-id}
-      OAUTH_NAVER_CLIENT_SECRET: ${OAUTH_NAVER_CLIENT_SECRET:-dummy-naver-client-secret}
-      OAUTH_KAKAO_CLIENT_ID: ${OAUTH_KAKAO_CLIENT_ID:-dummy-kakao-client-id}
-      OAUTH_KAKAO_CLIENT_SECRET: ${OAUTH_KAKAO_CLIENT_SECRET:-dummy-kakao-client-secret}
+      APP_JWT_EXPIRATION_MS: ${APP_JWT_EXPIRATION_MS:-28800000}
+      APP_AUTH_COOKIE_MAX_AGE_SECONDS: ${APP_AUTH_COOKIE_MAX_AGE_SECONDS:-28800}
+      APP_AUTH_SESSION_IDLE_SECONDS: ${APP_AUTH_SESSION_IDLE_SECONDS:-7200}
+      APP_AUTH_SESSION_ABSOLUTE_SECONDS: ${APP_AUTH_SESSION_ABSOLUTE_SECONDS:-43200}
+      APP_AUTH_CSRF_COOKIE_MAX_AGE_SECONDS: ${APP_AUTH_CSRF_COOKIE_MAX_AGE_SECONDS:-43200}
+      OAUTH_GOOGLE_CLIENT_ID: ${OAUTH_GOOGLE_CLIENT_ID:-}
+      OAUTH_GOOGLE_CLIENT_SECRET: ${OAUTH_GOOGLE_CLIENT_SECRET:-}
+      OAUTH_NAVER_CLIENT_ID: ${OAUTH_NAVER_CLIENT_ID:-}
+      OAUTH_NAVER_CLIENT_SECRET: ${OAUTH_NAVER_CLIENT_SECRET:-}
+      OAUTH_KAKAO_CLIENT_ID: ${OAUTH_KAKAO_CLIENT_ID:-}
+      OAUTH_KAKAO_CLIENT_SECRET: ${OAUTH_KAKAO_CLIENT_SECRET:-}
+      OAUTH_KAKAO_REDIRECT_URI: ${OAUTH_KAKAO_REDIRECT_URI:-}
       SPRING_MAIL_HOST: ${SPRING_MAIL_HOST:-smtp.gmail.com}
       SPRING_MAIL_PORT: ${SPRING_MAIL_PORT:-587}
       SPRING_MAIL_USERNAME: ${SPRING_MAIL_USERNAME:-}
       SPRING_MAIL_PASSWORD: ${SPRING_MAIL_PASSWORD:-}
-      APP_VERIFY_EMAIL_MOCK: ${APP_VERIFY_EMAIL_MOCK:-true}
-      APP_VERIFY_SMS_MOCK: ${APP_VERIFY_SMS_MOCK:-true}
+      APP_VERIFY_EMAIL_MOCK: ${APP_VERIFY_EMAIL_MOCK:-false}
+      APP_VERIFY_SMS_MOCK: ${APP_VERIFY_SMS_MOCK:-false}
       APP_VERIFY_SMS_PROVIDER_URL: ${APP_VERIFY_SMS_PROVIDER_URL:-}
       APP_VERIFY_SMS_PROVIDER_AUTH_TOKEN: ${APP_VERIFY_SMS_PROVIDER_AUTH_TOKEN:-}
+      JAVA_TOOL_OPTIONS: -Duser.timezone=UTC -Doracle.jdbc.timezoneAsRegion=false
+    restart: unless-stopped
+
+  backend-1:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    depends_on: &backend_common_depends
+      oracle-bootstrap:
+        condition: service_completed_successfully
+      minio:
+        condition: service_started
+      minio-init:
+        condition: service_completed_successfully
+    environment:
+      <<: *backend_common_env
+      APP_SERVER_ROLE: app
+    restart: unless-stopped
+
+  api-gateway:
+    image: nginx:1.27-alpine
+    depends_on:
+      - auth-server
+      - backend-1
+    volumes:
+      - ./docker/nginx/api-gateway.conf:/etc/nginx/nginx.conf:ro
     ports:
       - "8081:8081"
     restart: unless-stopped

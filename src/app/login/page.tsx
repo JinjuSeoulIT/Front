@@ -36,16 +36,18 @@ import {
   sendRegisterEmailCodeApi,
   verifyRegisterEmailCodeApi,
 } from "@/lib/authApi";
-import {
-  fetchDepartmentsApi,
-  fetchMyStaffProfileApi,
-  fetchPositionsApi,
-} from "@/lib/staffApi";
-import { deriveOperationalRole } from "@/lib/roleAccess";
-import { saveSession, saveSessionUserOnly } from "@/lib/session";
+import { saveAccessToken, saveSession, saveSessionUserOnly } from "@/lib/session";
 
 const SAVED_USERNAME_KEY = "login.savedUsername";
+const REMEMBER_LOGIN_KEY = "login.rememberLogin";
 const LOGIN_ONBOARDING_SEEN_KEY = "onboarding.login.seen.v1";
+
+const getSafeNextPath = (value: string | null): string => {
+  if (!value || !value.startsWith("/") || value.startsWith("//") || value.startsWith("/login")) {
+    return "/";
+  }
+  return value;
+};
 
 export default function LoginPage() {
   const router = useRouter();
@@ -65,8 +67,8 @@ export default function LoginPage() {
   const [socialVerified, setSocialVerified] = useState(false);
   const [socialVerifyToken, setSocialVerifyToken] = useState("");
   const [socialVerifiedName, setSocialVerifiedName] = useState("");
-  const [socialProvider, setSocialProvider] = useState<"naver" | "google" | "">("");
   const [rememberUsername, setRememberUsername] = useState(false);
+  const [rememberLogin, setRememberLogin] = useState(false);
   const [registerForm, setRegisterForm] = useState({
     username: "",
     fullName: "",
@@ -89,40 +91,6 @@ export default function LoginPage() {
   const [themeMode, setThemeMode] = useState<"light" | "dark" | "system">("system");
   const [prefersDark, setPrefersDark] = useState(false);
 
-  const resolveOperationalRole = async (
-    authRole: string,
-    profile: {
-      domainRole?: string | null;
-      positionName?: string | null;
-      departmentName?: string | null;
-      positionId?: number | null;
-      deptId?: number | null;
-    }
-  ) => {
-    let resolved = deriveOperationalRole(
-      authRole,
-      profile.domainRole,
-      profile.positionName,
-      profile.departmentName
-    );
-    if (resolved !== "STAFF") return resolved;
-
-    if (!profile.positionName && !profile.departmentName && (profile.positionId || profile.deptId)) {
-      const [positions, departments] = await Promise.all([
-        fetchPositionsApi(false).catch(() => []),
-        fetchDepartmentsApi(false).catch(() => []),
-      ]);
-      const positionName = profile.positionId
-        ? positions.find((p) => p.id === profile.positionId)?.title
-        : undefined;
-      const departmentName = profile.deptId
-        ? departments.find((d) => d.id === profile.deptId)?.name
-        : undefined;
-      resolved = deriveOperationalRole(authRole, profile.domainRole, positionName, departmentName);
-    }
-    return resolved;
-  };
-
   const resolvedTheme = themeMode === "system" ? (prefersDark ? "dark" : "light") : themeMode;
   const isDark = resolvedTheme === "dark";
   const pageBackground = isDark
@@ -137,6 +105,8 @@ export default function LoginPage() {
   const fieldLabel = isDark ? "#94a3b8" : "#64748b";
   const loginButtonBg = isDark ? "#334155" : "#2563eb";
   const loginButtonHover = isDark ? "#3f4d63" : "#1d4ed8";
+  const loginButtonText = isDark ? "#ffffff" : "#f8fafc";
+  const loginButtonDisabledBg = isDark ? "#1e293b" : "#cbd5e1";
 
   useEffect(() => {
     const media = window.matchMedia("(prefers-color-scheme: dark)");
@@ -161,16 +131,12 @@ export default function LoginPage() {
       if (params.get("oauth") === "register_social_ok") {
         const verifyToken = params.get("verifyToken") || "";
         const verifiedName = params.get("verifiedName") || "";
-        const provider = (params.get("provider") || "").toLowerCase();
         setRegisterOpen(true);
         setRegisterFlow("social");
         setRegisterError(null);
         if (verifyToken) {
           setSocialVerified(true);
           setSocialVerifyToken(verifyToken);
-          if (provider === "naver" || provider === "google") {
-            setSocialProvider(provider);
-          }
           setSocialVerifiedName(verifiedName);
           if (verifiedName) {
             setRegisterForm((prev) => ({ ...prev, fullName: prev.fullName || verifiedName }));
@@ -188,19 +154,17 @@ export default function LoginPage() {
 
     const run = async () => {
       try {
+        const nextPath = getSafeNextPath(params.get("next"));
+        const token = params.get("token") || "";
+        if (!token) {
+          throw new Error("missing_oauth_token");
+        }
+        saveAccessToken(token, true);
+        window.history.replaceState({}, "", "/login");
         const me = await getMeApi();
         if (!mounted) return;
-        let resolvedRole = me.role;
-        if (deriveOperationalRole(me.role) === "STAFF") {
-          try {
-            const profile = await fetchMyStaffProfileApi();
-            resolvedRole = await resolveOperationalRole(me.role, profile);
-          } catch {
-            // ignore and fallback to auth role
-          }
-        }
-        saveSessionUserOnly({ ...me, role: resolvedRole }, { passwordChangeRequired: false });
-        router.push("/");
+        saveSessionUserOnly(me, { passwordChangeRequired: false });
+        router.push(nextPath);
       } catch {
         if (!mounted) return;
         setError("소셜 로그인 세션을 확인하지 못했습니다. 다시 시도해주세요.");
@@ -218,6 +182,8 @@ export default function LoginPage() {
       setUsername(saved);
       setRememberUsername(true);
     }
+    const savedRememberLogin = window.localStorage.getItem(REMEMBER_LOGIN_KEY);
+    setRememberLogin(savedRememberLogin === "1");
 
     const seen = window.localStorage.getItem(LOGIN_ONBOARDING_SEEN_KEY);
     if (!seen) {
@@ -252,24 +218,17 @@ export default function LoginPage() {
       } else {
         window.localStorage.removeItem(SAVED_USERNAME_KEY);
       }
-      let resolvedRole = result.user.role;
-      if (deriveOperationalRole(result.user.role) === "STAFF") {
-        try {
-          const profile = await fetchMyStaffProfileApi();
-          resolvedRole = await resolveOperationalRole(result.user.role, profile);
-        } catch {
-          // ignore and fallback to auth role
-        }
-      }
-      saveSession(result.accessToken, { ...result.user, role: resolvedRole }, {
+      window.localStorage.setItem(REMEMBER_LOGIN_KEY, rememberLogin ? "1" : "0");
+      saveSession(result.accessToken, result.user, {
         passwordChangeRequired: result.passwordChangeRequired,
+        persist: rememberLogin,
       });
       if (result.passwordChangeRequired) {
         router.push("/my_account?forcePasswordChange=1");
         return;
       }
       const params = new URLSearchParams(window.location.search);
-      const nextPath = params.get("next") || "/";
+      const nextPath = getSafeNextPath(params.get("next"));
       router.push(nextPath);
     } catch (e) {
       const message = e instanceof Error ? e.message : "";
@@ -355,7 +314,6 @@ export default function LoginPage() {
       setSocialVerified(false);
       setSocialVerifyToken("");
       setSocialVerifiedName("");
-      setSocialProvider("");
       setRegisterNotice("가입 신청이 접수되었습니다. 관리자 승인 후 로그인할 수 있습니다.");
     } catch (e) {
       if (axios.isAxiosError(e)) {
@@ -572,6 +530,13 @@ export default function LoginPage() {
               label="아이디"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key !== "Enter") return;
+                e.preventDefault();
+                if (!loading && username && password) {
+                  void handleLogin();
+                }
+              }}
               fullWidth
               InputLabelProps={{ sx: { color: fieldLabel } }}
               sx={{ "& .MuiOutlinedInput-root": { bgcolor: fieldBg, color: fieldText } }}
@@ -581,35 +546,79 @@ export default function LoginPage() {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key !== "Enter") return;
+                e.preventDefault();
+                if (!loading && username && password) {
+                  void handleLogin();
+                }
+              }}
               fullWidth
               InputLabelProps={{ sx: { color: fieldLabel } }}
               sx={{ "& .MuiOutlinedInput-root": { bgcolor: fieldBg, color: fieldText } }}
             />
 
-            <FormControlLabel
-              sx={{ mt: -0.5 }}
-              control={
-                <Checkbox
-                  checked={rememberUsername}
-                  onChange={(e) => {
-                    const checked = e.target.checked;
-                    setRememberUsername(checked);
-                    if (!checked) {
-                      window.localStorage.removeItem(SAVED_USERNAME_KEY);
-                    }
-                  }}
-                  size="small"
-                  sx={{ color: isDark ? "#64748b" : "#475569" }}
-                />
-              }
-              label={<Typography sx={{ color: subColor, fontSize: 13 }}>아이디 저장</Typography>}
-            />
+            <Box
+              sx={{
+                mt: -0.5,
+                display: "flex",
+                alignItems: "center",
+                gap: 1.5,
+                "& .MuiFormControlLabel-root": {
+                  display: "inline-flex",
+                  width: "auto",
+                },
+              }}
+            >
+              <FormControlLabel
+                sx={{ m: 0, whiteSpace: "nowrap" }}
+                control={
+                  <Checkbox
+                    checked={rememberUsername}
+                    onChange={(e) => {
+                      const checked = e.target.checked;
+                      setRememberUsername(checked);
+                      if (!checked) {
+                        window.localStorage.removeItem(SAVED_USERNAME_KEY);
+                      }
+                    }}
+                    size="small"
+                    sx={{ color: isDark ? "#64748b" : "#475569" }}
+                  />
+                }
+                label={<Typography sx={{ color: subColor, fontSize: 13 }}>아이디 저장</Typography>}
+              />
+
+              <FormControlLabel
+                sx={{ m: 0, whiteSpace: "nowrap" }}
+                control={
+                  <Checkbox
+                    checked={rememberLogin}
+                    onChange={(e) => setRememberLogin(e.target.checked)}
+                    size="small"
+                    sx={{ color: isDark ? "#64748b" : "#475569" }}
+                  />
+                }
+                label={<Typography sx={{ color: subColor, fontSize: 13 }}>로그인 유지</Typography>}
+              />
+            </Box>
 
             <Button
               variant="contained"
               onClick={handleLogin}
               disabled={loading || !username || !password}
-              sx={{ bgcolor: loginButtonBg, color: "#f8fafc", py: 1.1, fontWeight: 800, "&:hover": { bgcolor: loginButtonHover } }}
+              sx={{
+                bgcolor: loginButtonBg,
+                color: loginButtonText,
+                py: 1.1,
+                fontWeight: 800,
+                "&:hover": { bgcolor: loginButtonHover },
+                "&.Mui-disabled": {
+                  bgcolor: loginButtonDisabledBg,
+                  color: loginButtonText,
+                  opacity: 1,
+                },
+              }}
             >
               {loading ? "로그인 중..." : "로그인"}
             </Button>

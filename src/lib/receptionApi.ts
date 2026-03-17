@@ -118,3 +118,47 @@ export const deleteVisitApi = async (id: number): Promise<void> => {
   }
 };
 
+export const deleteVisitsByPatientNameApi = async (patientName: string): Promise<number> => {
+  const res = await api.delete<ApiResponse<number>>(`/api/visits/by-patient?patientName=${encodeURIComponent(patientName)}`);
+  if (!res.data.success) {
+    throw new Error(res.data.message || "Delete failed");
+  }
+  return res.data.result;
+};
+
+export type PatientReceptionDetail = {
+  patientId: number;
+  patientNo: string | null;
+  name: string;
+  gender: string | null;
+  birthDate: string | null;
+  age: number | null;
+  phone: string | null;
+  guardianPhone: string | null;
+  residentNoFront: string | null;
+  address: string | null;
+  recentVisits: {
+    visitId: number;
+    visitNo: string | null;
+    visitType: string;
+    status: string;
+    createdAt: string | null;
+    memo: string | null;
+  }[];
+  waitingRooms: {
+    roomId: string;
+    roomName: string;
+    deptCode: string;
+    waitingCount: number;
+    isEmpty: boolean;
+  }[];
+};
+
+export const getPatientReceptionDetailApi = async (patientId: number): Promise<PatientReceptionDetail> => {
+  const res = await api.get<ApiResponse<PatientReceptionDetail>>(`/api/visits/patient/${patientId}/detail`);
+  if (!res.data.success) {
+    throw new Error(res.data.message || "Failed to get patient detail");
+  }
+  return res.data.result;
+};
+

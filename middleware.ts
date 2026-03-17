@@ -17,32 +17,40 @@ const isBypassPath = (pathname: string) => {
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
+  if (pathname === "/staff/notices") {
+    return NextResponse.redirect(new URL("/board/notices", request.url));
+  }
+  if (pathname === "/staff/schedule") {
+    return NextResponse.redirect(new URL("/board/schedule", request.url));
+  }
+  if (pathname === "/staff/events") {
+    return NextResponse.redirect(new URL("/board/events", request.url));
+  }
+  if (pathname === "/staff") {
+    return NextResponse.redirect(new URL("/admin", request.url));
+  }
+  if (pathname === "/staff/approval") {
+    return NextResponse.redirect(new URL("/admin", request.url));
+  }
+  if (pathname === "/board/requests" || pathname === "/board/approvals") {
+    return NextResponse.redirect(new URL("/board/docs", request.url));
+  }
+  if (pathname === "/nurse/register") {
+    return NextResponse.redirect(new URL("/nurse", request.url));
+  }
+  if (pathname === "/doctor/encounters/inactive") {
+    return NextResponse.redirect(new URL("/doctor/encounters", request.url));
+  }
+  if (pathname === "/patients/new") {
+    return NextResponse.redirect(new URL("/patients", request.url));
+  }
+
   if (isBypassPath(pathname)) {
     return NextResponse.next();
   }
 
   if (PUBLIC_PATHS.has(pathname)) {
-    const token = request.cookies.get("his_access_token")?.value;
-    const forcePasswordChange = request.cookies.get("his_force_password_change")?.value === "1";
-    if (token) {
-      if (forcePasswordChange) {
-        return NextResponse.redirect(new URL("/my_account?forcePasswordChange=1", request.url));
-      }
-      return NextResponse.redirect(new URL("/", request.url));
-    }
     return NextResponse.next();
-  }
-
-  const token = request.cookies.get("his_access_token")?.value;
-  if (!token) {
-    const loginUrl = new URL("/login", request.url);
-    loginUrl.searchParams.set("next", pathname);
-    return NextResponse.redirect(loginUrl);
-  }
-
-  const forcePasswordChange = request.cookies.get("his_force_password_change")?.value === "1";
-  if (forcePasswordChange && pathname !== "/my_account") {
-    return NextResponse.redirect(new URL("/my_account?forcePasswordChange=1", request.url));
   }
 
   return NextResponse.next();

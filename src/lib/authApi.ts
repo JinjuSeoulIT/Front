@@ -1,6 +1,6 @@
 import axios from "axios";
 import type { ApiResponse } from "@/features/patients/patientTypes";
-import { getAccessToken } from "@/lib/session";
+import { applyAuthInterceptors } from "@/lib/apiInterceptors";
 
 type LoginRequest = {
   username: string;
@@ -83,12 +83,14 @@ function resolveBackendOrigin() {
   }
 }
 
-api.interceptors.request.use((config) => {
-  const token = getAccessToken();
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
+applyAuthInterceptors(api, {
+  skipRedirectPaths: [
+    "/api/auth/login",
+    "/api/auth/register",
+    "/api/auth/oauth",
+    "/api/auth/email",
+    "/api/auth/phone",
+  ],
 });
 
 export const loginApi = async (payload: LoginRequest): Promise<LoginResult> => {
@@ -107,14 +109,7 @@ export const registerApi = async (payload: RegisterRequest): Promise<void> => {
 };
 
 export const getMeApi = async (): Promise<AuthUser> => {
-  const token = getAccessToken();
-  const res = await api.get<ApiResponse<AuthUser>>("/api/auth/me", token
-    ? {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      }
-    : undefined);
+  const res = await api.get<ApiResponse<AuthUser>>("/api/auth/me");
 
   if (!res.data.success || !res.data.result) {
     throw new Error(res.data.message || "Unauthorized");

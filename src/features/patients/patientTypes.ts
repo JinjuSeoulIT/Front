@@ -21,6 +21,11 @@ export interface Patient {
   isVip?: boolean | null;
   photoUrl?: string | null;
   statusCode?: string | null;
+  
+  // 추가 필드
+  age?: number | null;
+  recentVisitDate?: string | null;
+  residentNoFront?: string | null;
 }
 
 export interface PatientForm {

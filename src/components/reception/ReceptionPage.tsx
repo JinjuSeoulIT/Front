@@ -32,6 +32,7 @@ import {
   TableContainer,
   TableHead,
   TableRow,
+  TablePagination,
   Tabs,
   Tab,
   TextField,
@@ -137,23 +138,21 @@ export default function ReceptionPage({ mode, title }: Props) {
   const [multiName, setMultiName] = React.useState("");
   const [multiBirthDate, setMultiBirthDate] = React.useState("");
   const [multiPhone, setMultiPhone] = React.useState("");
+  const [searchedByName, setSearchedByName] = React.useState(false);
 
   const runPatientSearch = React.useCallback(async () => {
     const name = multiName.trim();
-    const birthDate = multiBirthDate.trim();
-    const phone = multiPhone.trim();
-    if (!name && !birthDate && !phone) {
-      alert("검색 조건을 입력하세요.");
+    if (!name) {
+      alert("이름으로 먼저 검색해주세요.");
       return;
     }
     try {
       setPatientLoading(true);
       setPatientError(null);
       const res = await searchPatientsMultiApi({
-        name: name || undefined,
-        birthDate: birthDate || undefined,
-        phone: phone || undefined,
+        name,
       });
+      setSearchedByName(true);
       if (res.length === 1) {
         setSelectedPatient(res[0]);
         setPatientSearchOpen(false);
@@ -187,6 +186,8 @@ export default function ReceptionPage({ mode, title }: Props) {
   const [selectedVisit, setSelectedVisit] = React.useState<VisitRes | null>(
     null
   );
+  const [visitPage, setVisitPage] = React.useState(0);
+  const visitRowsPerPage = 10;
   const [drawerOpen, setDrawerOpen] = React.useState(false);
 
   React.useEffect(() => {
@@ -195,7 +196,10 @@ export default function ReceptionPage({ mode, title }: Props) {
 
   const visitsByMode = React.useMemo(() => {
     return visits.filter((v) => {
-      if (mode === "OUTPATIENT") return v.visitType === "OUTPATIENT";
+      if (mode === "OUTPATIENT") {
+        const visitType = (v.visitType || "").toUpperCase();
+        return visitType === "OUTPATIENT" || visitType === "VISIT";
+      }
       if (mode === "OUTPATIENT_RESERVATION") return v.visitType === "RESERVATION";
       if (mode === "INPATIENT") return v.visitType === "INPATIENT";
       if (mode === "EMERGENCY") return v.visitType === "EMERGENCY";
@@ -242,6 +246,18 @@ export default function ReceptionPage({ mode, title }: Props) {
 
     return list;
   }, [visitsByMode, tab, visitKeyword]);
+
+  const pagedVisitRows = React.useMemo(() => {
+    const start = visitPage * visitRowsPerPage;
+    return visitFiltered.slice(start, start + visitRowsPerPage);
+  }, [visitFiltered, visitPage]);
+
+  React.useEffect(() => {
+    const maxPage = Math.max(0, Math.ceil(visitFiltered.length / visitRowsPerPage) - 1);
+    if (visitPage > maxPage) {
+      setVisitPage(maxPage);
+    }
+  }, [visitFiltered.length, visitPage]);
 
   const openVisitDrawer = (v: VisitRes) => {
     setSelectedVisit(v);
@@ -920,7 +936,10 @@ export default function ReceptionPage({ mode, title }: Props) {
 
                 <TextField
                   value={visitKeyword}
-                  onChange={(e) => setVisitKeyword(e.target.value)}
+                  onChange={(e) => {
+                    setVisitKeyword(e.target.value);
+                    setVisitPage(0);
+                  }}
                   size="small"
                   placeholder="환자명/ID 검색"
                   InputProps={{
@@ -941,7 +960,10 @@ export default function ReceptionPage({ mode, title }: Props) {
 
               <Tabs
                 value={tab}
-                onChange={(_, v) => setTab(v)}
+                onChange={(_, v) => {
+                  setTab(v);
+                  setVisitPage(0);
+                }}
                 variant="scrollable"
                 scrollButtons="auto"
                 sx={{ mb: 1 }}
@@ -966,7 +988,7 @@ export default function ReceptionPage({ mode, title }: Props) {
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                  {visitFiltered.map((v) => (
+                  {pagedVisitRows.map((v) => (
                     <TableRow
                       key={v.id}
                       hover
@@ -1043,6 +1065,15 @@ export default function ReceptionPage({ mode, title }: Props) {
                   </TableBody>
                 </Table>
               </TableContainer>
+              <TablePagination
+                component="div"
+                count={visitFiltered.length}
+                page={visitPage}
+                onPageChange={(_, nextPage) => setVisitPage(nextPage)}
+                rowsPerPage={visitRowsPerPage}
+                rowsPerPageOptions={[10]}
+                labelRowsPerPage="페이지당 행 수"
+              />
             </Paper>
           </Grid>
         </Grid>
@@ -1062,41 +1093,40 @@ export default function ReceptionPage({ mode, title }: Props) {
                   size="small"
                   value={multiName}
                   onChange={(e) => setMultiName(e.target.value)}
-                  fullWidth
+                  sx={{ width: { xs: "100%", md: 280 } }}
                 />
-                <TextField
-                  label="생년월일"
-                  type="date"
-                  size="small"
-                  InputLabelProps={{ shrink: true }}
-                  value={multiBirthDate}
-                  onChange={(e) => setMultiBirthDate(e.target.value)}
-                  fullWidth
-                />
-                <TextField
-                  label="연락처"
-                  size="small"
-                  value={multiPhone}
-                  onChange={(e) => setMultiPhone(e.target.value)}
-                  fullWidth
-                />
-              </Stack>
-              <Stack direction="row" spacing={1}>
-                <Button variant="contained" onClick={runPatientSearch}>
+                <Button
+                  variant="contained"
+                  onClick={runPatientSearch}
+                  disabled={!multiName.trim()}
+                  sx={{ minWidth: 88, alignSelf: { xs: "stretch", md: "center" } }}
+                >
                   검색
                 </Button>
-                <Button
-                  variant="outlined"
-                  onClick={() => {
-                    setMultiName("");
-                    setMultiBirthDate("");
-                    setMultiPhone("");
-                    setPatients([]);
-                  }}
-                >
-                  초기화
-                </Button>
               </Stack>
+              <Typography variant="caption" color="text.secondary">
+                이름으로 먼저 검색합니다. 동명이인일 때만 아래에서 생년월일/연락처로 좁혀 선택하세요.
+              </Typography>
+              {searchedByName && patients.length > 1 ? (
+                <Stack direction={{ xs: "column", md: "row" }} spacing={1}>
+                  <TextField
+                    label="생년월일(동명이인 구분)"
+                    type="date"
+                    size="small"
+                    InputLabelProps={{ shrink: true }}
+                    value={multiBirthDate}
+                    onChange={(e) => setMultiBirthDate(e.target.value)}
+                    fullWidth
+                  />
+                  <TextField
+                    label="연락처(동명이인 구분)"
+                    size="small"
+                    value={multiPhone}
+                    onChange={(e) => setMultiPhone(e.target.value)}
+                    fullWidth
+                  />
+                </Stack>
+              ) : null}
               <Stack direction="row" justifyContent="space-between" alignItems="center">
                 <Typography variant="body2" color="text.secondary">
                   환자 목록 ({filteredPatients.length})

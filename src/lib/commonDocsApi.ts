@@ -20,6 +20,7 @@ export type CommonDoc = {
   rejectionReason?: string | null;
   attachmentFileName?: string | null;
   attachmentMimeType?: string | null;
+  attachmentDownloadCount?: number | null;
   hasAttachment?: boolean;
   lines?: CommonDocLine[];
   authorId: string;
@@ -90,9 +91,17 @@ const parseError = (error: unknown, fallback: string) => {
   return new Error(fallback);
 };
 
-export const fetchCommonDocPageApi = async (page: number, size: number, keyword = "", box = "ALL"): Promise<CommonDocPage> => {
+export const fetchCommonDocPageApi = async (
+  page: number,
+  size: number,
+  keyword = "",
+  box = "ALL",
+  category?: string
+): Promise<CommonDocPage> => {
   try {
-    const res = await api.get<ApiResponse<CommonDocPage>>("/api/jpa/common-docs", { params: { page, size, keyword, box } });
+    const res = await api.get<ApiResponse<CommonDocPage>>("/api/jpa/common-docs", {
+      params: { page, size, keyword, box, category },
+    });
     if (!res.data.success || !res.data.result) throw new Error(res.data.message || "문서 목록 조회 실패");
     return res.data.result;
   } catch (error) {
@@ -136,5 +145,14 @@ export const deleteCommonDocApi = async (id: number): Promise<void> => {
     if (!res.data.success) throw new Error(res.data.message || "문서 삭제 실패");
   } catch (error) {
     throw parseError(error, "문서 삭제 실패");
+  }
+};
+
+export const downloadCommonDocAttachmentApi = async (id: number): Promise<Blob> => {
+  try {
+    const res = await api.get(`/api/jpa/common-docs/${id}/attachment`, { responseType: "blob" });
+    return res.data as Blob;
+  } catch (error) {
+    throw parseError(error, "첨부파일 다운로드 실패");
   }
 };

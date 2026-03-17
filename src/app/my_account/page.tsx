@@ -51,7 +51,6 @@ export default function MyAccountPage() {
   const [verifyCodeLoading, setVerifyCodeLoading] = React.useState(false);
   const [verifyNotice, setVerifyNotice] = React.useState<string | null>(null);
   const [emailVerified, setEmailVerified] = React.useState(false);
-  const [firstPasswordChanged, setFirstPasswordChanged] = React.useState(false);
 
   const [currentPassword, setCurrentPassword] = React.useState("");
   const [newPassword, setNewPassword] = React.useState("");
@@ -98,7 +97,6 @@ export default function MyAccountPage() {
     const forcedBySession = isPasswordChangeRequired();
     const required = forcedByQuery || forcedBySession;
     setForcePasswordChange(required);
-    setFirstPasswordChanged(false);
     if (required) {
       setPasswordDialogOpen(true);
     }
@@ -165,19 +163,19 @@ export default function MyAccountPage() {
       setShowNewPassword(false);
       setShowConfirmPassword(false);
       if (forcePasswordChange) {
-        setFirstPasswordChanged(true);
-        if (emailVerified) {
-          setPasswordDialogOpen(false);
-          setPasswordChangeRequired(false);
-          setForcePasswordChange(false);
-          setVerifyEmail("");
-          setVerifyCode("");
-          setVerifyNotice(null);
-          setEmailVerified(false);
-          setNotice("최초 비밀번호 변경 및 본인인증이 완료되었습니다.");
-        } else {
-          setNotice("비밀번호 변경이 완료되었습니다. 이어서 본인인증을 완료해주세요.");
+        setPasswordDialogOpen(false);
+        setPasswordChangeRequired(false);
+        setForcePasswordChange(false);
+        setVerifyEmail("");
+        setVerifyCode("");
+        setVerifyNotice(null);
+        setEmailVerified(false);
+        if (typeof window !== "undefined") {
+          const url = new URL(window.location.href);
+          url.searchParams.delete("forcePasswordChange");
+          window.history.replaceState({}, "", `${url.pathname}${url.search}`);
         }
+        setNotice("초기 비밀번호 변경이 완료되었습니다.");
       } else {
         setPasswordDialogOpen(false);
         setPasswordChangeRequired(false);
@@ -216,16 +214,6 @@ export default function MyAccountPage() {
       await verifyEmailCodeApi({ email: verifyEmail.trim(), code: verifyCode.trim() });
       setEmailVerified(true);
       setVerifyNotice("이메일 인증이 완료되었습니다.");
-      if (forcePasswordChange && firstPasswordChanged) {
-        setPasswordDialogOpen(false);
-        setPasswordChangeRequired(false);
-        setForcePasswordChange(false);
-        setVerifyEmail("");
-        setVerifyCode("");
-        setVerifyNotice(null);
-        setEmailVerified(false);
-        setNotice("최초 비밀번호 변경 및 본인인증이 완료되었습니다.");
-      }
     } catch (e) {
       setEmailVerified(false);
       setError(e instanceof Error ? e.message : "인증 코드 확인에 실패했습니다.");
@@ -381,9 +369,7 @@ export default function MyAccountPage() {
           <DialogContent sx={{ pt: 1 }}>
             <Stack spacing={1.5} sx={{ mt: 0.5 }}>
               <Alert severity="info" sx={{ borderRadius: 2 }}>
-                {forcePasswordChange && firstPasswordChanged
-                  ? "비밀번호 변경이 완료되었습니다. 본인인증을 마치면 계정 사용이 가능합니다."
-                  : "현재 비밀번호 확인 후 새 비밀번호를 설정합니다."}
+                현재 비밀번호 확인 후 새 비밀번호를 설정합니다.
               </Alert>
               {forcePasswordChange ? (
                 <Box sx={{ p: 1.25, borderRadius: 2, border: "1px solid var(--line)", bgcolor: "rgba(255,255,255,0.72)" }}>
@@ -432,7 +418,6 @@ export default function MyAccountPage() {
                 label="현재 비밀번호"
                 value={currentPassword}
                 onChange={(e) => setCurrentPassword(e.target.value)}
-                disabled={forcePasswordChange && firstPasswordChanged}
                 InputProps={{
                   endAdornment: (
                     <InputAdornment position="end">
@@ -449,7 +434,6 @@ export default function MyAccountPage() {
                 label="새 비밀번호"
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
-                disabled={forcePasswordChange && firstPasswordChanged}
                 InputProps={{
                   endAdornment: (
                     <InputAdornment position="end">
@@ -466,7 +450,6 @@ export default function MyAccountPage() {
                 label="새 비밀번호 확인"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
-                disabled={forcePasswordChange && firstPasswordChanged}
                 InputProps={{
                   endAdornment: (
                     <InputAdornment position="end">
@@ -517,9 +500,8 @@ export default function MyAccountPage() {
             <Button
               variant="contained"
               onClick={handlePasswordSave}
-              disabled={forcePasswordChange && firstPasswordChanged}
             >
-              {forcePasswordChange && firstPasswordChanged ? "비밀번호 변경 완료" : "변경"}
+              변경
             </Button>
           </DialogActions>
         </Dialog>

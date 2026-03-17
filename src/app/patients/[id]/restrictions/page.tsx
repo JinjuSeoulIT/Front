@@ -14,6 +14,7 @@ import {
   IconButton,
   MenuItem,
   Stack,
+  TablePagination,
   Table,
   TableBody,
   TableCell,
@@ -74,6 +75,13 @@ export default function PatientRestrictionsPage() {
   const [restrictions, setRestrictions] = React.useState<PatientRestriction[]>(
     []
   );
+  const [page, setPage] = React.useState(0);
+  const rowsPerPage = 10;
+
+  const pagedRestrictions = React.useMemo(
+    () => restrictions.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage),
+    [restrictions, page]
+  );
 
   const [dialogOpen, setDialogOpen] = React.useState(false);
   const [dialogMode, setDialogMode] = React.useState<"create" | "edit">("create");
@@ -93,6 +101,7 @@ export default function PatientRestrictionsPage() {
       setError(null);
       const res = await fetchPatientRestrictionsApi(patientId);
       setRestrictions(res);
+      setPage(0);
     } catch (err) {
       setError(err instanceof Error ? err.message : "제한 목록 조회 실패");
     } finally {
@@ -241,7 +250,7 @@ export default function PatientRestrictionsPage() {
                 </TableRow>
               )}
 
-              {restrictions.map((item) => (
+              {pagedRestrictions.map((item) => (
                 <TableRow key={item.restrictionId} hover>
                   <TableCell sx={{ fontWeight: 800 }}>
                     {restrictionLabel(item.restrictionType)}
@@ -279,6 +288,15 @@ export default function PatientRestrictionsPage() {
               ))}
             </TableBody>
           </Table>
+          <TablePagination
+            component="div"
+            count={restrictions.length}
+            page={page}
+            onPageChange={(_, nextPage) => setPage(nextPage)}
+            rowsPerPage={rowsPerPage}
+            rowsPerPageOptions={[10]}
+            labelRowsPerPage="페이지당 행 수"
+          />
         </CardContent>
       </Card>
 

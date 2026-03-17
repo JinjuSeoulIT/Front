@@ -14,11 +14,13 @@ import type {
   StaffSelfUpdateReq,
   StaffStatusUpdateReq,
 } from "@/features/staff/staffTypes";
-import { getAccessToken } from "@/lib/session";
+import { applyAuthInterceptors } from "@/lib/apiInterceptors";
 
 const api = axios.create({
   baseURL: process.env.NEXT_PUBLIC_STAFF_API_BASE_URL ?? "",
 });
+
+applyAuthInterceptors(api);
 
 const toApiError = (error: unknown, fallback: string) => {
   if (axios.isAxiosError<ApiResponse<unknown>>(error)) {
@@ -29,14 +31,6 @@ const toApiError = (error: unknown, fallback: string) => {
   return new Error(fallback);
 };
 
-api.interceptors.request.use((config) => {
-  const token = getAccessToken();
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
-});
-
 export type StaffSearchCondition =
   | "name"
   | "department"
@@ -45,12 +39,14 @@ export type StaffSearchCondition =
   | "staff_id";
 
 export const fetchStaffListApi = async (
-  activeOnly = true
+  activeOnly = true,
+  page = 0,
+  size = 10
 ): Promise<StaffListItem[]> => {
   const res = await api.get<ApiResponse<StaffListItem[]>>(
     "/api/jpa/medical-staff",
     {
-      params: { activeOnly },
+      params: { activeOnly, page, size },
     }
   );
   if (!res.data.success) {

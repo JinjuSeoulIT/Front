@@ -12,6 +12,7 @@ DECLARE
     END;
 BEGIN
     create_user_if_missing('CMH', '1111');
+    create_user_if_missing('HOSPITAL', '1111');
     create_user_if_missing('LHS', '1111');
 END;
 /

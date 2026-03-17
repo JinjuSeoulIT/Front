@@ -16,14 +16,8 @@ import {
   Divider,
   Drawer,
   IconButton,
-  MenuItem,
   Stack,
   Tab,
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableRow,
   Tabs,
   TextField,
   Tooltip,
@@ -66,6 +60,12 @@ import {
   type EncounterDraft,
   type FavoriteDiagnosis,
 } from "@/lib/doctorWorkspaceStore";
+import PatientRegisterModal from "@/app/nurse/register/PatientRegisterModal";
+import PatientSearchModal from "@/app/nurse/register/PatientSearchModal";
+import ReceptionModal from "@/app/nurse/register/ReceptionModal";
+import type { Patient, PatientForm } from "@/features/patients/patientTypes";
+import { createPatientApi } from "@/lib/patientApi";
+import { fetchPatientsPage } from "@/lib/patientPagingApi";
 
 const panelSx = {
   borderRadius: 3,
@@ -202,12 +202,10 @@ export default function EncounterWorkspace({
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [notice, setNotice] = React.useState<string | null>(null);
-  const [keyword, setKeyword] = React.useState("");
-  const [status, setStatus] = React.useState("");
-  const [sortOrder, setSortOrder] = React.useState<"LATEST" | "OLDEST">("LATEST");
-  const [listTab, setListTab] = React.useState<"ACTIVE" | "INACTIVE">(
-    includeInactiveDefault ? "INACTIVE" : "ACTIVE"
-  );
+  const [keyword] = React.useState("");
+  const [status, setStatus] = React.useState("WAITING");
+  const [sortOrder] = React.useState<"LATEST" | "OLDEST">("LATEST");
+  const showInactiveList = includeInactiveDefault;
   const [selectedId, setSelectedId] = React.useState<number | null>(null);
   const [detailOpen, setDetailOpen] = React.useState(false);
   const [detail, setDetail] = React.useState<MedicalEncounterDetail | null>(null);
@@ -252,13 +250,22 @@ export default function EncounterWorkspace({
   const restoreDraftAppliedRef = React.useRef<Record<number, boolean>>({});
   const draftSaveTimerRef = React.useRef<number | null>(null);
   const [draftSuggestion, setDraftSuggestion] = React.useState<EncounterDraft | null>(null);
+  const [isRegisterOpen, setIsRegisterOpen] = React.useState(false);
+  const [isSearchModalOpen, setIsSearchModalOpen] = React.useState(false);
+  const [searchModalPatients, setSearchModalPatients] = React.useState<Patient[]>([]);
+  const [searchModalPage, setSearchModalPage] = React.useState(1);
+  const [searchModalHasMore, setSearchModalHasMore] = React.useState(false);
+  const [loadingPatients, setLoadingPatients] = React.useState(false);
+  const [searchInput, setSearchInput] = React.useState("");
+  const [registerReceptionOpen, setRegisterReceptionOpen] = React.useState(false);
+  const [registerReceptionPatient, setRegisterReceptionPatient] = React.useState<Patient | null>(null);
   const detailId = detail?.id ?? null;
 
   const loadList = React.useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
-      const page = await fetchEncountersApi({ keyword, status, includeInactive: true, page: 0, size: 100 });
+      const page = await fetchEncountersApi({ keyword, includeInactive: true, page: 0, size: 100 });
       setRows(page.items);
       if (!selectedId && page.items.length) {
         setSelectedId(page.items[0].id);
@@ -271,10 +278,10 @@ export default function EncounterWorkspace({
     } finally {
       setLoading(false);
     }
-  }, [keyword, selectedId, status]);
+  }, [keyword, selectedId]);
 
   const displayedRows = React.useMemo(() => {
-    let filtered = rows.filter((r) => (listTab === "INACTIVE" ? r.isActive !== "Y" : r.isActive === "Y"));
+    let filtered = rows.filter((r) => (showInactiveList ? r.isActive !== "Y" : r.isActive === "Y"));
     if (status.trim()) {
       filtered = filtered.filter((r) => (r.status || "").toUpperCase() === status.trim().toUpperCase());
     }
@@ -284,19 +291,82 @@ export default function EncounterWorkspace({
       return sortOrder === "LATEST" ? bTime - aTime : aTime - bTime;
     });
     return sorted;
-  }, [rows, listTab, status, sortOrder]);
+  }, [rows, showInactiveList, status, sortOrder]);
 
-  const activeCount = React.useMemo(() => rows.filter((r) => r.isActive === "Y").length, [rows]);
-  const inactiveCount = React.useMemo(() => rows.filter((r) => r.isActive !== "Y").length, [rows]);
+  const loadSearchModalFirstPage = React.useCallback(async (query: string) => {
+    setLoadingPatients(true);
+    try {
+      setSearchInput(query);
+      const data = await fetchPatientsPage(query, 1, 50);
+      const items = Array.isArray(data?.items) ? data.items : [];
+      setSearchModalPatients(items);
+      setSearchModalHasMore(Boolean(data?.hasMore));
+      setSearchModalPage(1);
+    } catch {
+      setSearchModalPatients([]);
+      setSearchModalHasMore(false);
+      setSearchModalPage(1);
+    } finally {
+      setLoadingPatients(false);
+    }
+  }, []);
+
+  const loadSearchModalMore = React.useCallback(async () => {
+    if (!searchModalHasMore || loadingPatients) return;
+    setLoadingPatients(true);
+    try {
+      const next = searchModalPage + 1;
+      const data = await fetchPatientsPage(searchInput, next, 50);
+      const items = Array.isArray(data?.items) ? data.items : [];
+      setSearchModalPatients((prev) => [...prev, ...items]);
+      setSearchModalHasMore(Boolean(data?.hasMore));
+      setSearchModalPage(next);
+    } catch {
+      setSearchModalHasMore(false);
+    } finally {
+      setLoadingPatients(false);
+    }
+  }, [searchInput, searchModalHasMore, searchModalPage, loadingPatients]);
+
+  const handleRegisterSubmit = async (payload: PatientForm) => {
+    try {
+      await createPatientApi(payload);
+      setIsRegisterOpen(false);
+      setNotice("신규 환자를 등록했습니다.");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "환자 등록 실패");
+    }
+  };
+
+  const handleRegisterSubmitAndReception = async (payload: PatientForm) => {
+    try {
+      const saved = await createPatientApi(payload);
+      setIsRegisterOpen(false);
+      setRegisterReceptionPatient(saved);
+      setRegisterReceptionOpen(true);
+      setNotice("신규 환자 등록 후 접수를 진행하세요.");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "환자 등록 실패");
+    }
+  };
+
   const statusCounts = React.useMemo(() => {
-    const base = rows.filter((r) => (listTab === "INACTIVE" ? r.isActive !== "Y" : r.isActive === "Y"));
+    const base = rows.filter((r) => (showInactiveList ? r.isActive !== "Y" : r.isActive === "Y"));
     const map = new Map<string, number>();
     for (const r of base) {
       const key = (r.status || "-").toUpperCase();
       map.set(key, (map.get(key) ?? 0) + 1);
     }
     return Array.from(map.entries());
-  }, [rows, listTab]);
+  }, [rows, showInactiveList]);
+
+  const patientVisitHistory = React.useMemo(() => {
+    if (!detail?.patientId) return [] as MedicalEncounter[];
+    return rows
+      .filter((r) => r.patientId === detail.patientId)
+      .sort((a, b) => new Date(b.createdAt || b.updatedAt || 0).getTime() - new Date(a.createdAt || a.updatedAt || 0).getTime())
+      .slice(0, 8);
+  }, [rows, detail?.patientId]);
 
   const loadDetail = React.useCallback(async (id: number) => {
     try {
@@ -836,148 +906,227 @@ export default function EncounterWorkspace({
       <Box sx={{ display: "grid", gap: 2, gridTemplateColumns: "1fr" }}>
         <Card sx={panelSx}>
           <CardContent sx={{ p: 2.5 }}>
-            <Stack direction="row" spacing={1}>
-              <TextField
-                size="small"
-                label="검색"
-                placeholder="환자명/등록번호/진단코드"
-                value={keyword}
-                onChange={(e) => setKeyword(e.target.value)}
-                fullWidth
-              />
-              <TextField
-                select
-                size="small"
-                label="정렬"
-                value={sortOrder}
-                onChange={(e) => setSortOrder(e.target.value as "LATEST" | "OLDEST")}
-                sx={{ width: 130 }}
-              >
-                <MenuItem value="LATEST">최신순</MenuItem>
-                <MenuItem value="OLDEST">오래된순</MenuItem>
-              </TextField>
-            </Stack>
             <Stack direction="row" spacing={1} sx={{ mt: 1.5 }}>
-              <Button variant="contained" size="small" onClick={loadList}>
-                조회
+              <Button
+                variant="outlined"
+                size="small"
+                onClick={() => {
+                  setSearchInput("");
+                  setSearchModalPatients([]);
+                  setSearchModalHasMore(false);
+                  setSearchModalPage(1);
+                  setIsSearchModalOpen(true);
+                }}
+              >
+                환자 조회
+              </Button>
+              <Button variant="outlined" size="small" onClick={() => setIsRegisterOpen(true)}>
+                + 신규 환자 등록
               </Button>
             </Stack>
 
             <Divider sx={{ my: 2 }} />
-            <Typography fontWeight={800} sx={{ mb: 1 }}>진료 목록</Typography>
+            <Tabs value={status} onChange={(_, v) => setStatus(v)} sx={{ mb: 1 }}>
+              <Tab value="WAITING" label={`대기(${statusCounts.find(([code]) => code === "WAITING")?.[1] ?? 0})`} />
+              <Tab value="IN_PROGRESS" label={`진료중(${statusCounts.find(([code]) => code === "IN_PROGRESS")?.[1] ?? 0})`} />
+              <Tab value="DONE" label={`완료(${statusCounts.find(([code]) => code === "DONE")?.[1] ?? 0})`} />
+            </Tabs>
+            <Box sx={{ display: "flex", gap: 2, minHeight: 460 }}>
+              <Box sx={{ width: 320, borderRight: "1px solid var(--line)", pr: 1.5, overflowY: "auto" }}>
+                <Stack spacing={1}>
+                  {displayedRows.slice(0, 20).map((r) => (
+                    <Box
+                      key={r.id}
+                      onClick={() => {
+                        setSelectedId(r.id);
+                        setDetailTab("DETAIL");
+                      }}
+                      sx={{
+                        p: 1.2,
+                        borderRadius: 1.5,
+                        border: "1px solid",
+                        borderColor: selectedId === r.id ? "primary.main" : "divider",
+                        bgcolor: selectedId === r.id ? "action.selected" : "background.paper",
+                        cursor: "pointer",
+                      }}
+                    >
+                      <Stack direction="row" spacing={0.8} alignItems="center" justifyContent="space-between">
+                        <Typography sx={{ fontWeight: 700, fontSize: 14 }}>{r.patientName ?? "-"}</Typography>
+                        <Chip size="small" label={statusLabel(r.status)} color={r.isActive === "Y" ? "primary" : "default"} />
+                      </Stack>
+                      <Typography sx={{ mt: 0.35, fontSize: 12, color: "var(--muted)" }}>
+                        #{r.visitId} · {r.patientNo ?? r.patientId}
+                      </Typography>
+                      <Typography sx={{ mt: 0.25, fontSize: 11.5, color: "var(--muted)" }}>
+                        {r.doctorId ?? "담당의 미배정"} · {formatDateTime(r.updatedAt || r.createdAt)}
+                      </Typography>
+                    </Box>
+                  ))}
+                  {!displayedRows.length && !loading ? (
+                    <Typography sx={{ py: 3, textAlign: "center", color: "text.secondary" }}>
+                      조회 결과가 없습니다.
+                    </Typography>
+                  ) : null}
+                </Stack>
+              </Box>
 
-            <Box
-              sx={{
-                display: "grid",
-                gap: 1,
-                gridTemplateColumns: { xs: "1fr", sm: "repeat(3, 1fr)" },
-                mb: 1.25,
-              }}
-            >
-              <Box sx={{ p: 1.1, borderRadius: 1.5, border: "1px solid var(--line)", bgcolor: "rgba(255,255,255,0.8)" }}>
-                <Typography sx={{ fontSize: 11, color: "var(--muted)" }}>전체 진료</Typography>
-                <Typography sx={{ fontWeight: 800 }}>{rows.length}건</Typography>
-              </Box>
-              <Box sx={{ p: 1.1, borderRadius: 1.5, border: "1px solid var(--line)", bgcolor: "rgba(235, 252, 244, 0.9)" }}>
-                <Typography sx={{ fontSize: 11, color: "var(--muted)" }}>활성 진료</Typography>
-                <Typography sx={{ fontWeight: 800 }}>{activeCount}건</Typography>
-              </Box>
-              <Box sx={{ p: 1.1, borderRadius: 1.5, border: "1px solid rgba(217, 119, 6, 0.2)", bgcolor: "rgba(255, 247, 237, 0.92)" }}>
-                <Typography sx={{ fontSize: 11, color: "var(--muted)" }}>비활성 진료</Typography>
-                <Typography sx={{ fontWeight: 800 }}>{inactiveCount}건</Typography>
+              <Box sx={{ flex: 1 }}>
+                <Card sx={{ ...panelSx, height: "100%" }}>
+                  <CardContent sx={{ height: "100%", overflow: "auto" }}>
+                    {!selectedId ? (
+                      <>
+                        <Typography sx={{ fontWeight: 800, mb: 0.5 }}>진료 차트 워크스페이스</Typography>
+                        <Typography sx={{ color: "text.secondary", fontSize: 14 }}>
+                          왼쪽 환자 리스트에서 환자를 선택하면 상세 내용을 여기에서 바로 확인/수정할 수 있습니다.
+                        </Typography>
+                      </>
+                    ) : !detail ? (
+                      <Typography sx={{ color: "text.secondary", fontSize: 14 }}>진료 상세를 불러오는 중입니다...</Typography>
+                    ) : (
+                      <Stack spacing={1.5}>
+                        <Box sx={{ p: 1.25, borderRadius: 1.5, border: "1px solid var(--line)", bgcolor: "rgba(11,91,143,0.05)" }}>
+                          <Stack direction="row" justifyContent="space-between" alignItems="center" spacing={1}>
+                            <Box>
+                              <Typography sx={{ fontWeight: 800 }}>{detail.patientName} ({detail.patientNo ?? detail.patientId})</Typography>
+                              <Typography sx={{ fontSize: 12, color: "var(--muted)" }}>접수 #{detail.visitId} · {formatDateTime(detail.updatedAt)}</Typography>
+                            </Box>
+                            <Chip size="small" label={statusLabel(detail.status)} color="primary" />
+                          </Stack>
+                        </Box>
+
+                        <Tabs value={detailTab} onChange={(_, v) => setDetailTab(v)}>
+                          <Tab value="DETAIL" label="진료 상세" />
+                          <Tab value="HISTORY" label={`변경 이력(${history.length})`} />
+                        </Tabs>
+
+                        {detailTab === "DETAIL" ? (
+                          <Stack spacing={1.25}>
+                            <Box
+                              sx={{
+                                display: "grid",
+                                gap: 1.25,
+                                gridTemplateColumns: {
+                                  xs: "1fr",
+                                  xl: "320px minmax(680px, 1fr) 280px",
+                                },
+                              }}
+                            >
+                              <Box sx={{ p: 1.2, borderRadius: 1.5, border: "1px solid var(--line)", bgcolor: "rgba(255,255,255,0.88)", maxHeight: 420, overflow: "auto" }}>
+                                <Typography sx={{ fontWeight: 800, fontSize: 13, mb: 0.8 }}>내원이력</Typography>
+                                <Stack spacing={0.75}>
+                                  {patientVisitHistory.map((v) => (
+                                    <Box key={v.id} sx={{ p: 0.9, borderRadius: 1.25, border: "1px solid var(--line)" }}>
+                                      <Typography sx={{ fontWeight: 700, fontSize: 12.5 }}>{formatDateTime(v.createdAt)}</Typography>
+                                      <Typography sx={{ fontSize: 11.5, color: "var(--muted)" }}>
+                                        {statusLabel(v.status)} · {v.deptCode || "OUTPATIENT"}
+                                      </Typography>
+                                      <Typography sx={{ fontSize: 11.5, color: "var(--muted)", mt: 0.25 }}>
+                                        접수 #{v.visitId} · 담당의 {v.doctorId || "미배정"}
+                                      </Typography>
+                                    </Box>
+                                  ))}
+                                  {!patientVisitHistory.length ? (
+                                    <Typography sx={{ color: "text.secondary", fontSize: 12.5 }}>내원이력이 없습니다.</Typography>
+                                  ) : null}
+                                </Stack>
+                              </Box>
+
+                              <Box sx={{ p: 1.2, borderRadius: 1.5, border: "1px solid var(--line)", bgcolor: "rgba(255,255,255,0.92)" }}>
+                                <Typography sx={{ fontWeight: 800, fontSize: 13, mb: 0.8 }}>진료차트</Typography>
+                                <TextField size="small" label="주 호소 증상" value={detail.chiefComplaint ?? ""} onChange={(e) => setDetail({ ...detail, chiefComplaint: e.target.value })} fullWidth multiline minRows={2} sx={{ mb: 1 }} />
+                                <TextField size="small" label="진료 기록" value={detail.assessment ?? ""} onChange={(e) => setDetail({ ...detail, assessment: e.target.value })} fullWidth multiline minRows={4} sx={{ mb: 1 }} />
+                                <TextField size="small" label="진료 메모" value={detail.memo ?? ""} onChange={(e) => setDetail({ ...detail, memo: e.target.value })} fullWidth multiline minRows={2} />
+                              </Box>
+
+                              <Box sx={{ p: 1.2, borderRadius: 1.5, border: "1px solid var(--line)", bgcolor: "rgba(255,255,255,0.92)" }}>
+                                <Typography sx={{ fontWeight: 800, fontSize: 13, mb: 0.8 }}>오더세트</Typography>
+                                <Stack spacing={0.75}>
+                                  {encounterTemplates.map((tpl) => (
+                                    <Button key={tpl.id} variant="outlined" size="small" onClick={() => applyTemplate(tpl.id)} sx={{ justifyContent: "flex-start" }}>
+                                      {tpl.label}
+                                    </Button>
+                                  ))}
+                                </Stack>
+                              </Box>
+                            </Box>
+
+                            <Box sx={{ p: 1.2, borderRadius: 1.5, border: "1px solid var(--line)", bgcolor: "rgba(255,255,255,0.92)" }}>
+                              <Typography sx={{ fontWeight: 800, fontSize: 13, mb: 0.8 }}>진단 및 처방</Typography>
+                              <Stack direction="row" spacing={0.75} sx={{ flexWrap: "wrap", mb: 1 }}>
+                                {(detail.diagnoses || []).map((d, idx) => (
+                                  <Chip key={`${d.diagnosisCode}-${idx}`} size="small" label={`${d.diagnosisCode}${d.diagnosisName ? ` · ${d.diagnosisName}` : ""}`} color={d.primary ? "primary" : "default"} />
+                                ))}
+                                {!detail.diagnoses?.length ? <Typography sx={{ fontSize: 12.5, color: "text.secondary" }}>진단 코드가 없습니다.</Typography> : null}
+                              </Stack>
+                              <TextField size="small" label="처방/계획" value={detail.planNote ?? ""} onChange={(e) => setDetail({ ...detail, planNote: e.target.value })} fullWidth multiline minRows={3} />
+                            </Box>
+
+                            <Stack direction="row" spacing={1} justifyContent="flex-end">
+                              <Button variant="outlined" startIcon={<RefreshRoundedIcon fontSize="small" />} onClick={() => selectedId && loadDetail(selectedId)}>
+                                상세 새로고침
+                              </Button>
+                              <Button variant="contained" onClick={() => void saveDetail("ALL")} disabled={saving}>
+                                저장
+                              </Button>
+                            </Stack>
+                          </Stack>
+                        ) : (
+                          <Stack spacing={1}>
+                            {history.map((h) => (
+                              <Box key={h.id} sx={{ p: 1.1, borderRadius: 1.5, border: "1px solid var(--line)" }}>
+                                <Typography sx={{ fontSize: 12.5, fontWeight: 700 }}>
+                                  {toHistoryEventLabel(h.eventType)} · {h.fieldName ? fieldLabelMap[h.fieldName] || h.fieldName : "전체"}
+                                </Typography>
+                                <Typography sx={{ fontSize: 12, color: "var(--muted)", mt: 0.4 }}>
+                                  {formatDateTime(h.changedAt)} · {h.changedBy || "-"}
+                                </Typography>
+                              </Box>
+                            ))}
+                            {!history.length ? (
+                              <Typography sx={{ color: "text.secondary", fontSize: 13 }}>변경 이력이 없습니다.</Typography>
+                            ) : null}
+                          </Stack>
+                        )}
+                      </Stack>
+                    )}
+                  </CardContent>
+                </Card>
               </Box>
             </Box>
-
-            <Tabs value={listTab} onChange={(_, v) => setListTab(v)} sx={{ mb: 1 }}>
-              <Tab value="ACTIVE" label={`활성 진료(${activeCount})`} />
-              <Tab value="INACTIVE" label={`비활성 진료(${inactiveCount})`} />
-            </Tabs>
-            <Stack direction="row" spacing={0.75} sx={{ mb: 1.25, flexWrap: "wrap" }}>
-              <Chip
-                size="small"
-                label={`전체(${listTab === "INACTIVE" ? inactiveCount : activeCount})`}
-                color={status ? "default" : "primary"}
-                onClick={() => setStatus("")}
-                sx={{ mb: 0.75 }}
-              />
-              {statusCounts.map(([code, cnt]) => (
-                <Chip
-                  key={code}
-                  size="small"
-                  label={`${statusLabel(code)}(${cnt})`}
-                  color={status.toUpperCase() === code ? "primary" : "default"}
-                  onClick={() => setStatus(code)}
-                  sx={{ mb: 0.75 }}
-                />
-              ))}
-            </Stack>
-            <Table size="small">
-              <TableHead>
-                <TableRow>
-                  <TableCell>접수번호</TableCell>
-                  <TableCell>환자</TableCell>
-                  <TableCell>상태</TableCell>
-                  <TableCell>담당의</TableCell>
-                  <TableCell>진료과</TableCell>
-                  <TableCell>최종수정</TableCell>
-                  <TableCell align="right">상세</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {displayedRows.map((r) => (
-                  <TableRow
-                    key={r.id}
-                    hover
-                    onClick={() => {
-                      setSelectedId(r.id);
-                      setDetailTab("DETAIL");
-                      setDetailOpen(true);
-                    }}
-                    selected={selectedId === r.id}
-                    sx={{ cursor: "pointer" }}
-                  >
-                    <TableCell>
-                      <Typography sx={{ fontSize: 12, fontWeight: 700 }}>#{r.visitId}</Typography>
-                    </TableCell>
-                    <TableCell>
-                      <Typography fontWeight={700}>{r.patientName ?? "-"}</Typography>
-                      <Typography sx={{ fontSize: 12, color: "var(--muted)" }}>{r.patientNo ?? r.patientId}</Typography>
-                    </TableCell>
-                    <TableCell>
-                      <Chip size="small" label={r.status} color={r.isActive === "Y" ? "primary" : "default"} />
-                    </TableCell>
-                    <TableCell>{r.doctorId ?? "-"}</TableCell>
-                    <TableCell>{r.deptCode ?? "-"}</TableCell>
-                    <TableCell>
-                      <Typography sx={{ fontSize: 12, color: "var(--muted)" }}>
-                        {formatDateTime(r.updatedAt)}
-                      </Typography>
-                    </TableCell>
-                    <TableCell align="right">
-                      <Button
-                        size="small"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setSelectedId(r.id);
-                          setDetailTab("DETAIL");
-                          setDetailOpen(true);
-                        }}
-                      >
-                        열기
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-                {!displayedRows.length && !loading ? (
-                  <TableRow>
-                    <TableCell colSpan={7}>조회 결과가 없습니다.</TableCell>
-                  </TableRow>
-                ) : null}
-              </TableBody>
-            </Table>
           </CardContent>
         </Card>
       </Box>
+
+      <PatientRegisterModal
+        open={isRegisterOpen}
+        onClose={() => setIsRegisterOpen(false)}
+        onSubmit={handleRegisterSubmit}
+        onSubmitAndReception={handleRegisterSubmitAndReception}
+      />
+
+      <PatientSearchModal
+        open={isSearchModalOpen}
+        onClose={() => setIsSearchModalOpen(false)}
+        onSelect={() => {
+          // handled by inner modal flow
+        }}
+        patients={searchModalPatients}
+        loading={loadingPatients}
+        onLoadMore={loadSearchModalMore}
+        hasMore={searchModalHasMore}
+        onSearch={loadSearchModalFirstPage}
+        onSuccess={loadList}
+      />
+
+      <ReceptionModal
+        open={registerReceptionOpen}
+        onClose={() => {
+          setRegisterReceptionOpen(false);
+          setRegisterReceptionPatient(null);
+        }}
+        patient={registerReceptionPatient}
+        onSuccess={loadList}
+      />
 
       <Drawer
         anchor="right"

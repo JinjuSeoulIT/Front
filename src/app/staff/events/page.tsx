@@ -34,13 +34,28 @@ import {
 const PAGE_SIZE = 10;
 const EVENT_TYPES = ["경사", "조사"] as const;
 
+const inferTypeFromTitle = (title?: string | null) => {
+  const value = (title || "").trim();
+  if (!value) return "";
+  if (value.startsWith("[부고]")) return "조사";
+  if (value.startsWith("[경사]")) return "경사";
+  return "";
+};
+
 const parseEventType = (item: StaffBoardPost) => {
-  if (!item.content) return "";
-  if (item.content.startsWith("TYPE:")) {
+  if (item.content?.startsWith("TYPE:")) {
     const firstLine = item.content.split("\n")[0] || "";
-    return firstLine.slice(5).trim();
+    const parsed = firstLine.slice(5).trim();
+    if (parsed === "경사" || parsed === "조사") return parsed;
   }
-  return item.content;
+
+  const fromTitle = inferTypeFromTitle(item.title);
+  if (fromTitle) return fromTitle;
+
+  const raw = (item.content || "").trim();
+  if (raw.includes("조사") || raw.includes("부고")) return "조사";
+  if (raw.includes("경사")) return "경사";
+  return "";
 };
 
 const parseEventDetail = (item: StaffBoardPost) => {
@@ -73,6 +88,7 @@ export default function StaffEventsPage() {
   const [errorMessage, setErrorMessage] = React.useState<string | null>(null);
   const [myDeptName, setMyDeptName] = React.useState("");
   const [hideNotices, setHideNotices] = React.useState(false);
+  const [eventTab, setEventTab] = React.useState<"ALL" | "경사" | "조사">("ALL");
   const [form, setForm] = React.useState({
     title: "",
     type: "경사",
@@ -83,8 +99,21 @@ export default function StaffEventsPage() {
   });
 
   const visibleItems = React.useMemo(() => {
-    if (hideNotices) return items;
-    const notices = items.filter((item) => item.postType === "공지");
+    const normalItems = items.filter((item) => item.postType !== "공지");
+    const filteredNormals =
+      eventTab === "ALL"
+        ? normalItems
+        : normalItems.filter((item) => parseEventType(item) === eventTab);
+
+    if (hideNotices) {
+      const start = (page - 1) * PAGE_SIZE;
+      return filteredNormals.slice(start, start + PAGE_SIZE);
+    }
+
+    const notices =
+      eventTab === "ALL"
+        ? items.filter((item) => item.postType === "공지")
+        : items.filter((item) => item.postType === "공지" && parseEventType(item) === eventTab);
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
@@ -106,37 +135,38 @@ export default function StaffEventsPage() {
       return db - da;
     });
 
-    const visibleNoticeIds = new Set(rankedNotices.slice(0, 5).map((item) => item.id));
-    return items.filter((item) => item.postType !== "공지" || visibleNoticeIds.has(item.id));
-  }, [hideNotices, items]);
+    const pinned = rankedNotices.slice(0, 5);
+    const normalSlots = Math.max(1, PAGE_SIZE - pinned.length);
+    const normalStart = (page - 1) * normalSlots;
+    return [...pinned, ...filteredNormals.slice(normalStart, normalStart + normalSlots)];
+  }, [eventTab, hideNotices, items, page]);
+
+  const filteredNoticeCount = React.useMemo(() => {
+    const notices = items.filter((item) => item.postType === "공지");
+    if (eventTab === "ALL") return notices.length;
+    return notices.filter((item) => parseEventType(item) === eventTab).length;
+  }, [eventTab, items]);
+
+  const filteredNormalCount = React.useMemo(() => {
+    const normals = items.filter((item) => item.postType !== "공지");
+    if (eventTab === "ALL") return normals.length;
+    return normals.filter((item) => parseEventType(item) === eventTab).length;
+  }, [eventTab, items]);
+
+  const totalCount = hideNotices ? filteredNormalCount : filteredNoticeCount + filteredNormalCount;
 
   const loadPage = React.useCallback(async (nextPage: number, nextKeyword: string) => {
     setLoading(true);
     setErrorMessage(null);
     try {
-      if (hideNotices) {
-        const result = await fetchStaffBoardPageApi({
-          category: "EVENT",
-          keyword: nextKeyword,
-          page: 0,
-          size: 500,
-        });
-        const normalItems = (result.items || []).filter((item) => item.postType !== "공지");
-        const start = (nextPage - 1) * PAGE_SIZE;
-        setItems(normalItems.slice(start, start + PAGE_SIZE));
-        setPage(nextPage);
-        setPageCount(Math.max(1, Math.ceil(normalItems.length / PAGE_SIZE)));
-      } else {
-        const result = await fetchStaffBoardPageApi({
-          category: "EVENT",
-          keyword: nextKeyword,
-          page: nextPage - 1,
-          size: PAGE_SIZE,
-        });
-        setItems(result.items || []);
-        setPage(result.page + 1);
-        setPageCount(Math.max(1, result.totalPages || 1));
-      }
+      const result = await fetchStaffBoardPageApi({
+        category: "EVENT",
+        keyword: nextKeyword,
+        page: 0,
+        size: 500,
+      });
+      setItems(result.items || []);
+      setPage(nextPage);
     } catch (error) {
       setItems([]);
       setPageCount(1);
@@ -144,7 +174,24 @@ export default function StaffEventsPage() {
     } finally {
       setLoading(false);
     }
-  }, [hideNotices]);
+  }, []);
+
+  React.useEffect(() => {
+    const filteredNotices =
+      eventTab === "ALL"
+        ? items.filter((item) => item.postType === "공지")
+        : items.filter((item) => item.postType === "공지" && parseEventType(item) === eventTab);
+    const noticeCount = hideNotices ? 0 : Math.min(5, filteredNotices.length);
+    const normalItems = items.filter((item) => item.postType !== "공지");
+    const filteredCount =
+      eventTab === "ALL"
+        ? normalItems.length
+        : normalItems.filter((item) => parseEventType(item) === eventTab).length;
+    const normalSlots = hideNotices ? PAGE_SIZE : Math.max(1, PAGE_SIZE - noticeCount);
+    const totalPages = Math.max(1, Math.ceil(filteredCount / normalSlots));
+    setPageCount(totalPages);
+    if (page > totalPages) setPage(totalPages);
+  }, [eventTab, hideNotices, items, page]);
 
   React.useEffect(() => {
     void loadPage(1, keyword);
@@ -250,15 +297,36 @@ export default function StaffEventsPage() {
             <Typography sx={{ fontSize: 24, fontWeight: 900 }}>경조사</Typography>
             <Typography sx={{ color: "var(--muted)", mt: 0.5 }}>직원 경조사 및 부서별 소식을 확인합니다.</Typography>
           </Box>
-          <Button variant="contained" onClick={openCreate}>등록</Button>
+          <Typography sx={{ color: "var(--text)", fontSize: 15, fontWeight: 800, whiteSpace: "nowrap" }}>
+            검색된 데이터 {totalCount}건
+          </Typography>
         </Stack>
 
-        <Stack direction="row" spacing={1} alignItems="center">
+        <Tabs
+          value={eventTab}
+          onChange={(_, value: "ALL" | "경사" | "조사") => {
+            setEventTab(value);
+            setPage(1);
+          }}
+          sx={{
+            width: "fit-content",
+            border: "1px solid var(--line)",
+            borderRadius: 2,
+            minHeight: 38,
+            "& .MuiTab-root": { minHeight: 38, px: 1.75 },
+          }}
+        >
+          <Tab value="ALL" label="전체" />
+          <Tab value="경사" label="경사" />
+          <Tab value="조사" label="조사" />
+        </Tabs>
+
+        <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
           <TextField
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
             placeholder="제목/내용/부서 검색"
-            fullWidth
+            sx={{ width: { xs: "100%", md: 420 } }}
           />
           <FormControlLabel
             control={<Checkbox checked={hideNotices} onChange={(e) => setHideNotices(e.target.checked)} />}
@@ -274,6 +342,7 @@ export default function StaffEventsPage() {
           >
             검색
           </Button>
+          <Button variant="contained" onClick={openCreate}>등록</Button>
         </Stack>
 
         {visibleItems.map((item) => (
@@ -321,7 +390,7 @@ export default function StaffEventsPage() {
             count={pageCount}
             page={page}
             onChange={(_, value) => {
-              void loadPage(value, keyword);
+              setPage(value);
             }}
             color="primary"
           />

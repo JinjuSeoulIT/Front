@@ -14,6 +14,7 @@ import {
   IconButton,
   MenuItem,
   Stack,
+  TablePagination,
   Table,
   TableBody,
   TableCell,
@@ -66,6 +67,13 @@ export default function PatientFlagsPage() {
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
   const [flags, setFlags] = React.useState<PatientFlag[]>([]);
+  const [page, setPage] = React.useState(0);
+  const rowsPerPage = 10;
+
+  const pagedFlags = React.useMemo(
+    () => flags.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage),
+    [flags, page]
+  );
   const [options, setOptions] = React.useState<FlagOption[]>([]);
 
   const [dialogOpen, setDialogOpen] = React.useState(false);
@@ -84,6 +92,7 @@ export default function PatientFlagsPage() {
       setError(null);
       const res = await fetchPatientFlagsApi(patientId);
       setFlags(res);
+      setPage(0);
     } catch (err) {
       setError(err instanceof Error ? err.message : "플래그 목록 조회 실패");
     } finally {
@@ -241,7 +250,7 @@ export default function PatientFlagsPage() {
                 </TableRow>
               )}
 
-              {flags.map((item) => (
+              {pagedFlags.map((item) => (
                 <TableRow key={item.flagId} hover>
                   <TableCell sx={{ fontWeight: 800 }}>
                     {flagLabel(item.flagType, options)}
@@ -279,6 +288,15 @@ export default function PatientFlagsPage() {
               ))}
             </TableBody>
           </Table>
+          <TablePagination
+            component="div"
+            count={flags.length}
+            page={page}
+            onPageChange={(_, nextPage) => setPage(nextPage)}
+            rowsPerPage={rowsPerPage}
+            rowsPerPageOptions={[10]}
+            labelRowsPerPage="페이지당 행 수"
+          />
         </CardContent>
       </Card>
 

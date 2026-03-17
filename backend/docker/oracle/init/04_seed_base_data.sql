@@ -259,7 +259,7 @@ WHEN NOT MATCHED THEN
 
 COMMIT;
 
-MERGE INTO LHS.MENU t
+MERGE INTO CMH.MENU t
 USING (
     SELECT 1 AS id, NULL AS parent_id, 'RECEPTION' AS code, '원무' AS name, '/reception' AS path, 'DashboardOutlined' AS icon, 1 AS sort_order, 1 AS is_active FROM dual
     UNION ALL SELECT 2, NULL, 'PATIENT', '환자', '/patients', 'PersonSearchOutlined', 2, 1 FROM dual
@@ -289,7 +289,7 @@ WHEN NOT MATCHED THEN
 
 COMMIT;
 
-DELETE FROM LHS.MENU WHERE CODE = 'DOCTOR_INACTIVE';
+DELETE FROM CMH.MENU WHERE CODE = 'DOCTOR_INACTIVE';
 COMMIT;
 
 MERGE INTO CMH.MEDICAL_ENCOUNTER t

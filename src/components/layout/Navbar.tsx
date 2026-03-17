@@ -35,7 +35,7 @@ const roleHomePath = (role?: string) => {
   if (normalized.includes("ADMIN")) return "/";
   if (normalized.includes("DOCTOR")) return "/doctor";
   if (normalized.includes("NURSE")) return "/nurse";
-  if (normalized.includes("STAFF")) return "/staff";
+  if (normalized.includes("STAFF")) return "/board/notices";
   return "/reception";
 };
 
