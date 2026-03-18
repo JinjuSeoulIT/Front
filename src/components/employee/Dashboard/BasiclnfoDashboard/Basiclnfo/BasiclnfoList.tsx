@@ -245,7 +245,7 @@ const staffs = search.trim() ? StaffSearch : Stafflist;
             
                 :staff.nurseType  ? (<NurseFont  nurseType= {staff.nurseType} /> ) 
                 
-                :(<TableCell align="center">미등록</TableCell> )}
+                :<TableCell align="center">미등록</TableCell> }
 
 
                   </TableCell>
