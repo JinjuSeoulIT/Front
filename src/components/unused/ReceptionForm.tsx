@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import * as React from "react";
 import {
@@ -21,7 +21,7 @@ import EditNoteRoundedIcon from "@mui/icons-material/EditNoteRounded";
 import type { ReceptionForm as ReceptionFormPayload } from "@/features/Receptions/ReceptionTypes";
 import { fetchReceptionsApi } from "@/lib/receptionsCrudApi";
 import { buildNextReceptionNumber } from "@/lib/receptionNumber";
-import { searchPatientsApi } from "@/lib/patientApi";
+import { searchPatientsApi } from "@/lib/patient/patientApi";
 import type { Patient } from "@/features/patients/patientTypes";
 
 type ReceptionFormState = {

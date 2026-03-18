@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import * as React from "react";
 import Link from "next/link";
@@ -27,7 +27,7 @@ import { receptionActions } from "@/features/Receptions/ReceptionSlice";
 import type { Reception, ReceptionSearchPayload } from "@/features/Receptions/ReceptionTypes";
 import { formatDepartmentName } from "@/lib/departmentLabel";
 import type { Patient } from "@/features/patients/patientTypes";
-import { fetchPatientsApi, searchPatientsApi } from "@/lib/patientApi";
+import { fetchPatientsApi, searchPatientsApi } from "@/lib/patient/patientApi";
 import { fetchReservationsApi, updateReservationApi } from "@/lib/reservationAdminApi";
 import { buildNextReceptionNumber } from "@/lib/receptionNumber";
 import {

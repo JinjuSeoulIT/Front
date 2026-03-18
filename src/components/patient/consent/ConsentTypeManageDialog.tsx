@@ -23,7 +23,7 @@ import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import DeleteOutlineOutlinedIcon from "@mui/icons-material/DeleteOutlineOutlined";
 import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
 
-import type { ConsentType } from "@/lib/consentApi";
+import type { ConsentType } from "@/lib/patient/consentApi";
 import { consentTypeKey } from "./consentUtils";
 
 type TypeForm = { code: string; name: string; sortOrder: string };

@@ -30,7 +30,7 @@ import PlayCircleOutlineOutlinedIcon from "@mui/icons-material/PlayCircleOutline
 import { useDispatch, useSelector } from "react-redux";
 import type { RootState, AppDispatch } from "@/store/store";
 import { insuranceActions } from "@/features/insurance/insuranceSlice";
-import { fetchInsuranceHistoryApi, fetchValidInsuranceApi } from "@/lib/insuranceApi";
+import { fetchInsuranceHistoryApi, fetchValidInsuranceApi } from "@/lib/patient/insuranceApi";
 import type { Insurance, InsuranceHistory } from "@/features/insurance/insuranceTypes";
 
 type InsuranceFormState = {

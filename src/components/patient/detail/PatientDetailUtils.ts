@@ -1,7 +1,7 @@
 import axios from "axios";
 import type { Patient } from "@/features/patients/patientTypes";
-import type { PatientRestriction } from "@/lib/restrictionApi";
-import type { PatientFlag } from "@/lib/flagApi";
+import type { PatientRestriction } from "@/lib/patient/restrictionApi";
+import type { PatientFlag } from "@/lib/patient/flagApi";
 
 export const API_BASE =
   process.env.NEXT_PUBLIC_PATIENTS_API_BASE_URL ?? "http://192.168.1.60:8181";
