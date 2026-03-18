@@ -19,6 +19,12 @@ const initialRecord: RecordFormType = {
   status: "",
   createdAt: "",
   updatedAt: "",
+
+  patientName: "",
+  nurseName: "",
+  departmentName: "",
+  heightCm: "",
+  weightKg: "",
 };
 
 interface RecordState {

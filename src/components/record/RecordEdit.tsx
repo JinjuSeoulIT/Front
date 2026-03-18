@@ -5,9 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useDispatch, useSelector } from "react-redux";
 import dayjs from "dayjs";
-
 import RecordForm from "./RecordForm";
-
 import { AppDispatch } from "@/store/store";
 import { RootState } from "@/store/rootReducer";
 import { RecActions } from "@/features/record/recordSlice";
@@ -40,7 +38,7 @@ const RecordEdit = () => {
     if (selected.recordId !== recordId) return;
 
     setForm({
-      recordId: selected.recordId,
+      recordId: selected.recordId ?? "",
       nursingId: selected.nursingId ?? "",
       visitId: selected.visitId ?? "",
       recordedAt: selected.recordedAt ?? "",
@@ -57,16 +55,33 @@ const RecordEdit = () => {
       status: selected.status ?? "",
       createdAt: selected.createdAt ?? "",
       updatedAt: selected.updatedAt ?? "",
+      patientName: selected.patientName ?? "",
+      nurseName: selected.nurseName ?? "",
+      departmentName: selected.departmentName ?? "",
+      heightCm: selected.heightCm ?? "",
+      weightKg: selected.weightKg ?? "",
     });
   }, [selected, recordId]);
 
-useEffect(() => {
-  if (!updateSuccess) return;
+  useEffect(() => {
+    if (!updateSuccess) return;
 
-  alert("간호 기록이 수정되었습니다.");
-  dispatch(RecActions.resetUpdateSuccess());
-  router.push("/medical_support/record/list");
-}, [updateSuccess, dispatch, router]);
+    alert("간호 기록이 수정되었습니다.");
+    dispatch(RecActions.resetUpdateSuccess());
+    router.push("/medical_support/record/list");
+  }, [updateSuccess, dispatch, router]);
+
+  useEffect(() => {
+    if (!error) return;
+    if (!form) return;
+
+    if (error === "Network Error") {
+      alert("서버에 연결할 수 없습니다. 잠시 후 다시 시도해주세요.");
+      return;
+    }
+
+    alert("간호 기록 수정에 실패했습니다. 다시 시도해주세요.");
+  }, [error, form]);
 
   const handleSubmit = () => {
     if (!form || !recordId) return;
@@ -88,14 +103,6 @@ useEffect(() => {
     return (
       <main style={{ padding: 24 }}>
         <CircularProgress />
-      </main>
-    );
-  }
-
-  if (error) {
-    return (
-      <main style={{ padding: 24 }}>
-        <p>에러가 발생했습니다: {error}</p>
       </main>
     );
   }

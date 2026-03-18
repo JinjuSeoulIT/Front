@@ -241,9 +241,9 @@ export default function RecordList() {
                           py: 1.4,
                           backgroundColor: "#f8f9fa",
                           whiteSpace: "nowrap",
-                        }}
+                        }}  align="center"
                       >
-                        {/* 간호 기록 ID
+                        간호사명
                       </TableCell>
                       <TableCell
                         sx={{
@@ -251,27 +251,39 @@ export default function RecordList() {
                           py: 1.4,
                           backgroundColor: "#f8f9fa",
                           whiteSpace: "nowrap",
-                        }}
-                      > */}
-                        간호사 이름
-                      </TableCell>
-                      <TableCell
-                        sx={{
-                          fontWeight: 700,
-                          py: 1.4,
-                          backgroundColor: "#f8f9fa",
-                          whiteSpace: "nowrap",
-                        }}
+                        }}  align="center"
                       >
                         진료 ID
                       </TableCell>
                       <TableCell
+                       sx={{
+                      fontWeight: 700,
+                       py: 1.4,
+                       backgroundColor: "#f8f9fa",
+                       whiteSpace: "nowrap",
+                        }}   align="center"
+                         >
+                         환자명
+                       </TableCell>
+
+                      <TableCell
+                       sx={{
+                       fontWeight: 700,
+                       py: 1.4,
+                       backgroundColor: "#f8f9fa",
+                       whiteSpace: "nowrap",
+                       }}   align="center"
+                        >
+                          진료과
+                      </TableCell>
+  
+                      <TableCell
                         sx={{
                           fontWeight: 700,
                           py: 1.4,
                           backgroundColor: "#f8f9fa",
                           whiteSpace: "nowrap",
-                        }}
+                        }}  align="center"
                       >
                         기록일시
                       </TableCell>
@@ -281,7 +293,7 @@ export default function RecordList() {
     py: 1.4,
     backgroundColor: "#f8f9fa",
     whiteSpace: "nowrap",
-  }}
+  }}  align="center"
 >
   상태
 </TableCell>
@@ -293,7 +305,7 @@ export default function RecordList() {
                   <TableBody>
                     {list.length === 0 && (
                       <TableRow>
-                        <TableCell colSpan={6} align="center" sx={{ py: 5 }}>
+                        <TableCell colSpan={7} align="center" sx={{ py: 5 }}>
                           데이터가 없습니다.
                         </TableCell>
                       </TableRow>
@@ -313,15 +325,18 @@ export default function RecordList() {
                         <TableCell>
                           {currentPage * rowsPerPage + index + 1}
                         </TableCell>
-                        {/* <TableCell>{record.recordId ?? "-"}</TableCell> */}
-                        <TableCell>{record.name ?? "-"}</TableCell>
-                        <TableCell>{record.visitId ?? "-"}</TableCell>
-                        <TableCell>{formatDateTime(record.recordedAt)}</TableCell>
-                        <TableCell>
+                        {/* <TableCell align="center">{record.recordId ?? "-"}</TableCell> */}
+                        <TableCell  align="center">{record.nurseName ?? "-"}</TableCell>
+                        <TableCell  align="center">{record.visitId ?? "-"}</TableCell>
+                        <TableCell align="center">{record.patientName ?? "-"}</TableCell>
+                        <TableCell align="center">{record.departmentName ?? "-"}</TableCell>
+                        <TableCell  align="center">{formatDateTime(record.recordedAt)}</TableCell>
+                        <TableCell  align="center">
   <Chip
     label={getStatusLabel(record.status)}
     color={getStatusColor(record.status)}
     size="small"
+   
   />
 </TableCell>
                       </TableRow>

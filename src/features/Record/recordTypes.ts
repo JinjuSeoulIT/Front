@@ -1,6 +1,5 @@
 export interface RecordFormType {
-  name?: string
-  recordId?: string;
+  recordId: string;
   nursingId: string;
   visitId: string;
   recordedAt: string;
@@ -14,7 +13,13 @@ export interface RecordFormType {
   painScore: string;
   consciousnessLevel: string;
   initialAssessment: string;
-  status: "ACTIVE" | "INACTIVE" | "";
+  status: string;
   createdAt: string;
   updatedAt: string;
+
+  patientName?: string;
+  nurseName?: string;
+  departmentName?: string;
+  heightCm?: string | number;
+  weightKg?: string | number;
 }

@@ -16,7 +16,7 @@ import { RecActions } from "@/features/record/recordSlice";
 export default function RecordSearch() {
   const dispatch = useDispatch<AppDispatch>();
 
-  const [searchType, setSearchType] = useState("name");
+  const [searchType, setSearchType] = useState("nurseName");
   const [searchKeyword, setSearchKeyword] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
@@ -43,7 +43,7 @@ export default function RecordSearch() {
     }
 
     if (!keyword) {
-      setSearchError("간호사 이름을 입력해주세요.");
+      setSearchError("간호사명을 입력해주세요.");
       return;
     }
 
@@ -56,7 +56,7 @@ export default function RecordSearch() {
   };
 
   const handleResetSearch = () => {
-    setSearchType("name");
+    setSearchType("nurseName");
     setSearchKeyword("");
     setStartDate("");
     setEndDate("");
@@ -87,7 +87,7 @@ export default function RecordSearch() {
             setSearchError("");
           }}
         >
-          <MenuItem value="name">간호사 이름</MenuItem>
+          <MenuItem value="nurseName">간호사명</MenuItem>
           <MenuItem value="recordedAt">기록일시</MenuItem>
         </Select>
       </FormControl>
@@ -114,7 +114,7 @@ export default function RecordSearch() {
       ) : (
         <TextField
           size="small"
-          label="간호사 이름 입력"
+          label="간호사명 입력"
           value={searchKeyword}
           onChange={(event) => setSearchKeyword(event.target.value)}
         />

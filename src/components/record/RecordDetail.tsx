@@ -13,17 +13,24 @@ import {
 } from "@mui/material";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch } from "@/store/store";
 import type { RootState } from "@/store/rootReducer";
-
 import dayjs from "dayjs";
 import { RecActions } from "@/features/record/recordSlice";
 
-const formatDateTime = (value: string) => {
+const formatDateTime = (value?: string | null) => {
   if (!value) return "-";
   return dayjs(value).format("YYYY-MM-DD HH:mm:ss");
+};
+
+const formatValue = (
+  value?: string | number | null,
+  unit?: string
+): string | number => {
+  if (value === null || value === undefined || value === "") return "-";
+  return unit ? `${value} ${unit}` : value;
 };
 
 function DetailItem({
@@ -47,9 +54,25 @@ function DetailItem({
   );
 }
 
+function StatusChip({ status }: { status?: string | null }) {
+  if (status === "ACTIVE") {
+    return <Chip label="ACTIVE" color="success" size="small" />;
+  }
+
+  if (status === "INACTIVE") {
+    return <Chip label="INACTIVE" color="default" size="small" />;
+  }
+
+  return <Chip label={status || "-"} color="default" size="small" />;
+}
+
 export default function RecordDetail() {
   const params: any = useParams();
   const dispatch = useDispatch<AppDispatch>();
+
+  const [pendingStatusAction, setPendingStatusAction] = useState<
+    "ACTIVE" | "INACTIVE" | null
+  >(null);
 
   const recordId: string | undefined =
     typeof params?.recordId === "string"
@@ -68,10 +91,35 @@ export default function RecordDetail() {
   }, [dispatch, recordId]);
 
   useEffect(() => {
-    if (statusToggleSuccess) {
-      dispatch(RecActions.resetStatusToggleSuccess());
+    if (!statusToggleSuccess) return;
+
+    if (pendingStatusAction === "INACTIVE") {
+      alert("간호 기록이 비활성화되었습니다.");
+    } else if (pendingStatusAction === "ACTIVE") {
+      alert("간호 기록이 활성화되었습니다.");
     }
-  }, [dispatch, statusToggleSuccess]);
+
+    setPendingStatusAction(null);
+    dispatch(RecActions.resetStatusToggleSuccess());
+
+    if (recordId) {
+      dispatch(RecActions.fetchRecordRequest(recordId));
+    }
+  }, [dispatch, statusToggleSuccess, pendingStatusAction, recordId]);
+
+  useEffect(() => {
+    if (!error) return;
+    if (!record?.recordId) return;
+    if (!pendingStatusAction) return;
+
+    if (error === "Network Error") {
+      alert("서버에 연결할 수 없습니다.\n잠시 후 다시 시도해주세요.");
+    } else {
+      alert("상태 변경에 실패했습니다.\n다시 시도해주세요.");
+    }
+
+    setPendingStatusAction(null);
+  }, [error, record, pendingStatusAction]);
 
   const handleToggleStatus = () => {
     if (!recordId || !record?.recordId) return;
@@ -83,6 +131,8 @@ export default function RecordDetail() {
       : "정말 활성화하시겠습니까?";
 
     if (!window.confirm(confirmMessage)) return;
+
+    setPendingStatusAction(nextStatus);
 
     dispatch(
       RecActions.toggleRecordStatusRequest({
@@ -140,7 +190,6 @@ export default function RecordDetail() {
           borderColor: "grey.200",
         }}
       >
-        {/* 헤더 */}
         <Box
           sx={{
             px: 3,
@@ -163,15 +212,15 @@ export default function RecordDetail() {
                 color="text.secondary"
                 sx={{ mt: 0.5 }}
               >
-                간호 기록 정보를 확인하고 상태를 변경할 수 있습니다.
+                간호 기록 정보를 확인하고 수정 또는 상태 변경을 할 수 있습니다.
               </Typography>
             </Box>
 
             <Stack direction="row" spacing={1} flexWrap="wrap">
               <Link href={`/medical_support/record/edit/${recordId}`}>
-              <Button variant="outlined" size="small">
-               수정
-              </Button>
+                <Button variant="outlined" size="small">
+                  수정
+                </Button>
               </Link>
 
               <Button
@@ -191,29 +240,137 @@ export default function RecordDetail() {
 
         <Box sx={{ p: 3 }}>
           <Stack spacing={4}>
-            {/* 기본 정보 */}
             <Box>
               <Typography variant="subtitle1" fontWeight={700} sx={{ mb: 0.5 }}>
                 기본 정보
               </Typography>
               <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                기록 식별 정보와 작성 상태를 확인할 수 있습니다.
+                환자 정보와 기록 기본 사항을 확인할 수 있습니다.
               </Typography>
 
               <Grid container spacing={2}>
-                <Grid size={{ xs: 12, md: 6 }}>
+                {/* <Grid size={{ xs: 12, md: 6 }}>
                   <DetailItem label="간호 기록 아이디" value={record.recordId} />
+                </Grid> */}
+                <Grid size={{ xs: 12, md: 6 }}>
+                  <DetailItem label="환자명" value={record.patientName || "-"} />
                 </Grid>
                 <Grid size={{ xs: 12, md: 6 }}>
-                  <DetailItem label="간호사 아이디" value={record.nursingId} />
+                  <DetailItem label="간호사명" value={record.nurseName || "-"} />
                 </Grid>
                 <Grid size={{ xs: 12, md: 6 }}>
-                  <DetailItem label="진료 아이디" value={record.visitId} />
+                  <DetailItem label="간호사 ID" value={record.nursingId || "-"} />
+                </Grid>
+                <Grid size={{ xs: 12, md: 6 }}>
+                  <DetailItem label="진료 ID" value={record.visitId || "-"} />
+                </Grid>
+                <Grid size={{ xs: 12, md: 6 }}>
+                  <DetailItem label="진료과" value={record.departmentName || "-"} />
                 </Grid>
                 <Grid size={{ xs: 12, md: 6 }}>
                   <DetailItem
                     label="기록일시"
                     value={formatDateTime(record.recordedAt)}
+                  />
+                </Grid>
+                <Grid size={{ xs: 12, md: 6 }}>
+                  <Box>
+                    <Typography
+                      variant="body2"
+                      color="text.secondary"
+                      sx={{ mb: 0.5, fontWeight: 500 }}
+                    >
+                      상태
+                    </Typography>
+                    <StatusChip status={record.status} />
+                  </Box>
+                </Grid>
+              </Grid>
+            </Box>
+
+            <Divider />
+
+            <Box>
+              <Typography variant="subtitle1" fontWeight={700} sx={{ mb: 0.5 }}>
+                신체 정보 및 활력징후
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                키, 몸무게, 혈압, 맥박, 호흡수, 체온, 산소포화도 등을 확인할 수 있습니다.
+              </Typography>
+
+              <Grid container spacing={2}>
+                <Grid size={{ xs: 12, md: 6 }}>
+                  <DetailItem label="키" value={formatValue(record.heightCm, "cm")} />
+                </Grid>
+                <Grid size={{ xs: 12, md: 6 }}>
+                  <DetailItem label="몸무게" value={formatValue(record.weightKg, "kg")} />
+                </Grid>
+                <Grid size={{ xs: 12, md: 6 }}>
+                  <DetailItem
+                    label="수축기 혈압"
+                    value={formatValue(record.systolicBp, "mmHg")}
+                  />
+                </Grid>
+                <Grid size={{ xs: 12, md: 6 }}>
+                  <DetailItem
+                    label="이완기 혈압"
+                    value={formatValue(record.diastolicBp, "mmHg")}
+                  />
+                </Grid>
+                <Grid size={{ xs: 12, md: 6 }}>
+                  <DetailItem label="맥박" value={formatValue(record.pulse, "bpm")} />
+                </Grid>
+                <Grid size={{ xs: 12, md: 6 }}>
+                  <DetailItem
+                    label="호흡수"
+                    value={formatValue(record.respiration, "rpm")}
+                  />
+                </Grid>
+                <Grid size={{ xs: 12, md: 6 }}>
+                  <DetailItem
+                    label="체온"
+                    value={formatValue(record.temperature, "℃")}
+                  />
+                </Grid>
+                <Grid size={{ xs: 12, md: 6 }}>
+                  <DetailItem
+                    label="산소포화도"
+                    value={formatValue(record.spo2, "%")}
+                  />
+                </Grid>
+                <Grid size={{ xs: 12, md: 6 }}>
+                  <DetailItem label="통증 점수" value={record.painScore ?? "-"} />
+                </Grid>
+                <Grid size={{ xs: 12, md: 6 }}>
+                  <DetailItem
+                    label="의식 수준"
+                    value={record.consciousnessLevel || "-"}
+                  />
+                </Grid>
+              </Grid>
+            </Box>
+
+            <Divider />
+
+            <Box>
+              <Typography variant="subtitle1" fontWeight={700} sx={{ mb: 0.5 }}>
+                간호 평가 및 상태 정보
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                초기 문진, 관찰 내용, 수정일시를 확인할 수 있습니다.
+              </Typography>
+
+              <Grid container spacing={2}>
+                <Grid size={{ xs: 12 }}>
+                  <DetailItem
+                    label="초기 문진 요약"
+                    value={record.initialAssessment || "-"}
+                  />
+                </Grid>
+                <Grid size={{ xs: 12 }}>
+                  <DetailItem
+                    label="간호 관찰 내용"
+                    value={record.observation || "-"}
                   />
                 </Grid>
                 {/* <Grid size={{ xs: 12, md: 6 }}>
@@ -228,100 +385,8 @@ export default function RecordDetail() {
                     value={formatDateTime(record.updatedAt)}
                   />
                 </Grid>
-                <Grid size={{ xs: 12, md: 6 }}>
-                  <Box>
-                    <Typography
-                      variant="body2"
-                      color="text.secondary"
-                      sx={{ mb: 0.5, fontWeight: 500 }}
-                    >
-                      상태
-                    </Typography>
-                    {record.status === "ACTIVE" ? (
-                      <Chip label="ACTIVE" color="success" size="small" />
-                    ) : (
-                      <Chip
-                        label={record.status || "-"}
-                        color="default"
-                        size="small"
-                      />
-                    )}
-                  </Box>
-                </Grid>
               </Grid>
             </Box>
-
-            <Divider />
-
-            {/* 활력징후 */}
-            <Box>
-              <Typography variant="subtitle1" fontWeight={700} sx={{ mb: 0.5 }}>
-                활력징후
-              </Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                혈압, 맥박, 호흡수, 체온, 산소포화도 등을 확인할 수 있습니다.
-              </Typography>
-
-              <Grid container spacing={2}>
-                <Grid size={{ xs: 12, md: 6 }}>
-                  <DetailItem label="수축기 혈압" value={record.systolicBp} />
-                </Grid>
-                <Grid size={{ xs: 12, md: 6 }}>
-                  <DetailItem label="이완기 혈압" value={record.diastolicBp} />
-                </Grid>
-                <Grid size={{ xs: 12, md: 6 }}>
-                  <DetailItem label="맥박" value={record.pulse} />
-                </Grid>
-                <Grid size={{ xs: 12, md: 6 }}>
-                  <DetailItem label="호흡수" value={record.respiration} />
-                </Grid>
-                <Grid size={{ xs: 12, md: 6 }}>
-                  <DetailItem label="체온" value={record.temperature} />
-                </Grid>
-                <Grid size={{ xs: 12, md: 6 }}>
-                  <DetailItem label="산소포화도" value={record.spo2} />
-                </Grid>
-                <Grid size={{ xs: 12, md: 6 }}>
-                  <DetailItem label="통증 점수" value={record.painScore} />
-                </Grid>
-                <Grid size={{ xs: 12, md: 6 }}>
-                  <DetailItem label="의식 수준" value={record.consciousnessLevel} />
-                </Grid>
-              </Grid>
-            </Box>
-
-            <Divider />
-
-            {/* 간호 평가 */}
-            <Box>
-              <Typography variant="subtitle1" fontWeight={700} sx={{ mb: 0.5 }}>
-                간호 평가
-              </Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                관찰 내용과 초기 문진 요약을 확인할 수 있습니다.
-              </Typography>
-
-              <Grid container spacing={2}>
-                <Grid size={{ xs: 12 }}>
-                  <DetailItem
-                    label="초기 문진 요약"
-                    value={record.initialAssessment}
-                  />
-                </Grid>
-                <Grid size={{ xs: 12 }}>
-                  <DetailItem
-                    label="간호 관찰 내용"
-                    value={record.observation}
-                  />
-                </Grid>
-              </Grid>
-            </Box>
-
-            {error && (
-              <Typography color="error" mt={1}>
-                {error}
-              </Typography>
-            )}
           </Stack>
         </Box>
       </Paper>
