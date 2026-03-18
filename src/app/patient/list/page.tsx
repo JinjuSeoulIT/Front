@@ -106,6 +106,32 @@ export default function PatientsPage() {
     dispatch(patientActions.deletePatientRequest(patientId));
   };
 
+<<<<<<< HEAD
+=======
+  const createConsentsForPatient = async (
+    patientId: number,
+    form: PatientFormPayload
+  ) => {
+    const consentTypes: { code: string; checked: boolean }[] = [
+      { code: "PRIVACY", checked: !!form.consentRequired },
+      { code: "MARKETING", checked: !!form.consentOptional },
+    ];
+    for (const { code, checked } of consentTypes) {
+      if (checked) {
+        try {
+          await createConsentApi(patientId, {
+            patientId,
+            consentType: code,
+          });
+        } catch (e) {
+          const msg = e instanceof Error ? e.message : "동의서 등록 실패";
+          throw new Error(`동의서(${code}) 등록 실패: ${msg}`);
+        }
+      }
+    }
+  };
+
+>>>>>>> 4d83264f9d0def194290271cda67e7b83ba1d6c8
   const handleRegistrationSubmit = async (form: PatientFormPayload) => {
     try {
       setRegistrationSubmitting(true);
