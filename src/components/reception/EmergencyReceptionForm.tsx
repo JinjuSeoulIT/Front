@@ -20,9 +20,7 @@ import type { EmergencyReceptionForm as EmergencyReceptionFormPayload } from "@/
 import type {
   PatientOption,
 } from "@/features/Reservations/ReservationTypes";
-import { fetchEmergencyReceptionsApi } from "@/lib/reception/emergencyReceptionApi";
 import { fetchPatientsApi } from "@/lib/admin/masterDataApi";
-import { buildNextReceptionNumber } from "@/lib/reception/receptionNumber";
 import EmergencyReceptionStatusTimeline from "@/components/reception/EmergencyReceptionStatusTimeline";
 
 type EmergencyReceptionFormState = {
@@ -239,8 +237,6 @@ export default function EmergencyReceptionForm({
   const [patients, setPatients] = React.useState<PatientOption[]>([]);
   const [patientKeyword, setPatientKeyword] = React.useState("");
   const [listError, setListError] = React.useState<string | null>(null);
-  const [numberLoading, setNumberLoading] = React.useState(false);
-  const [numberError, setNumberError] = React.useState<string | null>(null);
   const [submitError, setSubmitError] = React.useState<string | null>(null);
   const isPatientFixed = !isEditMode && initial.patientId.trim().length > 0;
   const initialStatusCode = React.useMemo(
@@ -273,8 +269,8 @@ export default function EmergencyReceptionForm({
   }, [initial]);
 
   React.useEffect(() => {
-    if (!isEditMode && form.status !== "REGISTERED") {
-      setForm((prev) => ({ ...prev, status: "REGISTERED" }));
+    if (!isEditMode && form.status !== "WAITING") {
+      setForm((prev) => ({ ...prev, status: "WAITING" }));
     }
   }, [form.status, isEditMode]);
 
@@ -313,51 +309,10 @@ export default function EmergencyReceptionForm({
   }, []);
 
   React.useEffect(() => {
-    if (isEditMode) {
-      setNumberLoading(false);
-      return;
-    }
-    if (initial.receptionNo.trim()) return;
-    let mounted = true;
-
-    const generate = async () => {
-      try {
-        setNumberLoading(true);
-        setNumberError(null);
-        const list = await fetchEmergencyReceptionsApi();
-        const next = buildNextReceptionNumber({
-          existingNumbers: list.map((item) => item.receptionNo),
-          startSequence: 101,
-        });
-        if (!mounted) return;
-        setForm((prev) => ({ ...prev, receptionNo: next }));
-      } catch (err) {
-        if (!mounted) return;
-        const fallback = buildNextReceptionNumber({
-          existingNumbers: [],
-          startSequence: 101,
-        });
-        setForm((prev) => ({ ...prev, receptionNo: fallback }));
-        setNumberError(err instanceof Error ? err.message : "자동 채번에 실패했습니다.");
-      } finally {
-        if (mounted) {
-          setNumberLoading(false);
-        }
-      }
-    };
-
-    generate();
-    return () => {
-      mounted = false;
-    };
-  }, [initial.receptionNo, isEditMode]);
-
-  React.useEffect(() => {
     setSubmitError(null);
   }, [form]);
 
   const handleSubmit = () => {
-    if (!form.receptionNo.trim()) return;
     const effectivePatientId = form.patientId.trim() || (isEditMode ? initial.patientId.trim() : "");
     const patientId = toOptionalNumber(effectivePatientId);
     const departmentId = toOptionalNumber(form.departmentId);
@@ -427,13 +382,13 @@ export default function EmergencyReceptionForm({
     }
 
     onSubmit({
-      receptionNo: form.receptionNo.trim(),
+      receptionNo: isEditMode ? form.receptionNo.trim() : "",
       patientId,
       departmentId,
       doctorId: null,
       scheduledAt: toOptionalDateTime(form.scheduledAt),
       arrivedAt: toOptionalDateTime(form.arrivedAt),
-      status: (isEditMode ? form.status || "REGISTERED" : "REGISTERED") as EmergencyReceptionFormPayload["status"],
+      status: (isEditMode ? form.status || "WAITING" : "WAITING") as EmergencyReceptionFormPayload["status"],
       note: toOptionalString(form.note) ?? null,
       triageLevel,
       chiefComplaint: form.chiefComplaint.trim(),
@@ -566,11 +521,7 @@ export default function EmergencyReceptionForm({
             required
             fullWidth
             InputProps={{ readOnly: true }}
-            helperText={
-              numberError
-                ? "자동 채번 조회에 실패해 기본 번호를 사용합니다."
-                : "접수번호는 자동 생성됩니다."
-            }
+            helperText="접수번호는 서버에서 자동 생성됩니다."
             sx={fieldSx}
           />
           <Stack direction={{ xs: "column", sm: "row" }} spacing={1}>
@@ -690,7 +641,7 @@ export default function EmergencyReceptionForm({
           )}
           {!isEditMode && (
             <Typography variant="body2" sx={{ color: "#9a3412", fontWeight: 700 }}>
-              등록 시 상태는 자동으로 &apos;접수 완료&apos;로 시작됩니다.
+              등록 시 상태는 자동으로 &apos;대기&apos;로 시작됩니다.
             </Typography>
           )}
 
@@ -846,8 +797,6 @@ export default function EmergencyReceptionForm({
             onClick={handleSubmit}
             disabled={
               loading ||
-              (!isEditMode && numberLoading) ||
-              !form.receptionNo.trim() ||
               !(form.patientId.trim() || (isEditMode ? initial.patientId.trim() : "")) ||
               !form.departmentId.trim() ||
               !form.arrivedAt.trim() ||

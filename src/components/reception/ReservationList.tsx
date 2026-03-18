@@ -9,7 +9,10 @@ import {
   Card,
   CardContent,
   Chip,
+  Dialog,
+  DialogContent,
   Divider,
+  InputAdornment,
   IconButton,
   MenuItem,
   Stack,
@@ -25,15 +28,9 @@ import { reservationActions } from "@/features/Reservations/ReservationSlice";
 import type {
   Reservation,
   ReservationForm,
-  ReservationSearchType,
-  ReservationStatus,
 } from "@/features/Reservations/ReservationTypes";
-
-const SEARCH_OPTIONS: { label: string; value: ReservationSearchType }[] = [
-  { label: "예약번호", value: "reservationNo" },
-  { label: "환자ID", value: "patientId" },
-  { label: "상태", value: "status" },
-];
+import type { Patient } from "@/features/patients/patientTypes";
+import { searchPatientsApi } from "@/lib/patient/patientApi";
 
 const statusLabel = (value?: string | null) => {
   switch (value) {
@@ -67,37 +64,36 @@ const normalizeStatus = (value?: string | null) => {
   }
 };
 
-const normalizeStatusKeyword = (keyword: string): string => {
-  const raw = keyword.trim();
-  if (!raw) return raw;
-  const upper = raw.toUpperCase();
-
-  const map: Record<string, ReservationStatus> = {
-    RESERVED: "RESERVED",
-    COMPLETED: "COMPLETED",
-    CANCELED: "CANCELED",
-    CANCELLED: "CANCELED",
-    INACTIVE: "INACTIVE",
-    "예약": "RESERVED",
-    "완료": "COMPLETED",
-    "취소": "CANCELED",
-    "비활성": "INACTIVE",
-  };
-
-  return map[upper] ?? map[raw] ?? raw;
-};
-
 type ReservationListProps = {
-  initialSearchType?: ReservationSearchType;
-  initialKeyword?: string;
-  autoSearch?: boolean;
   hideCanceled?: boolean;
 };
 
+const toLocalDateTimeValue = (date: Date) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  const hour = String(date.getHours()).padStart(2, "0");
+  const minute = String(date.getMinutes()).padStart(2, "0");
+  return `${year}-${month}-${day}T${hour}:${minute}`;
+};
+
+const RESERVATION_DEPARTMENTS = [
+  { id: 1, name: "내과" },
+  { id: 2, name: "정형외과" },
+  { id: 3, name: "소아과" },
+  { id: 4, name: "이비인후과" },
+  { id: 5, name: "피부과" },
+];
+
+const RESERVATION_DOCTORS = [
+  { id: 1, name: "송태민", departmentId: 1 },
+  { id: 2, name: "이현석", departmentId: 2 },
+  { id: 3, name: "성숙희", departmentId: 3 },
+  { id: 4, name: "최효정", departmentId: 4 },
+  { id: 5, name: "홍예진", departmentId: 5 },
+];
+
 export default function ReservationList({
-  initialSearchType = "reservationNo",
-  initialKeyword = "",
-  autoSearch = false,
   hideCanceled = true,
 }: ReservationListProps) {
   const dispatch = useDispatch<AppDispatch>();
@@ -105,36 +101,38 @@ export default function ReservationList({
     (s: RootState) => s.reservations
   );
 
-  const [searchType, setSearchType] = React.useState<ReservationSearchType>(initialSearchType);
-  const [keyword, setKeyword] = React.useState(initialSearchType === "status" ? "" : initialKeyword);
-  const [statusKeyword, setStatusKeyword] = React.useState<ReservationStatus>(
-    (initialSearchType === "status" && initialKeyword
-      ? (initialKeyword as ReservationStatus)
-      : "RESERVED") as ReservationStatus
+  const [keyword, setKeyword] = React.useState("");
+  const [patientSuggestions, setPatientSuggestions] = React.useState<Patient[]>([]);
+  const [openSuggestion, setOpenSuggestion] = React.useState(false);
+  const [patientSearchResultCount, setPatientSearchResultCount] = React.useState<number | null>(
+    null
   );
+  const [createModalOpen, setCreateModalOpen] = React.useState(false);
+  const [createTargetPatient, setCreateTargetPatient] = React.useState<{
+    patientId: number | null;
+    patientName: string;
+  }>({
+    patientId: null,
+    patientName: "",
+  });
+  const [createModalForm, setCreateModalForm] = React.useState<{
+    departmentId: number;
+    doctorId: number | null;
+    reservedAt: string;
+    note: string;
+  }>({
+    departmentId: RESERVATION_DEPARTMENTS[0]?.id ?? 1,
+    doctorId:
+      RESERVATION_DOCTORS.find(
+        (doctor) => doctor.departmentId === (RESERVATION_DEPARTMENTS[0]?.id ?? 1)
+      )?.id ?? null,
+    reservedAt: toLocalDateTimeValue(new Date()),
+    note: "",
+  });
 
   React.useEffect(() => {
-    if (autoSearch && initialKeyword) {
-      const normalized =
-        initialSearchType === "status"
-          ? normalizeStatusKeyword(initialKeyword)
-          : initialKeyword;
-      setSearchType(initialSearchType);
-      if (initialSearchType === "status") {
-        setStatusKeyword(normalized as ReservationStatus);
-      } else {
-        setKeyword(initialKeyword);
-      }
-      dispatch(
-        reservationActions.searchReservationsRequest({
-          type: initialSearchType,
-          keyword: normalized,
-        })
-      );
-      return;
-    }
     dispatch(reservationActions.fetchReservationsRequest());
-  }, [autoSearch, dispatch, initialKeyword, initialSearchType]);
+  }, [dispatch]);
 
   React.useEffect(() => {
     if (!list.length) return;
@@ -145,46 +143,161 @@ export default function ReservationList({
     dispatch(reservationActions.fetchReservationSuccess(list[0]));
   }, [list, selected, dispatch]);
 
+  const openCreateWithPatient = React.useCallback(
+    (patient: Patient) => {
+      if (!patient.patientId) return;
+      const patientName = patient.name?.trim() ?? "";
+      setCreateTargetPatient({
+        patientId: patient.patientId,
+        patientName,
+      });
+      setCreateModalOpen(true);
+    },
+    []
+  );
+
   const onSearch = () => {
-    const kw = searchType === "status" ? statusKeyword : keyword.trim();
-    if (!kw) return alert("검색어는 필수입니다.");
-    const normalized = searchType === "status" ? normalizeStatusKeyword(kw) : kw;
-    dispatch(
-      reservationActions.searchReservationsRequest({
-        type: searchType,
-        keyword: normalized,
-      })
-    );
+    const kw = keyword.trim();
+    if (!kw) return alert("검색어를 입력해주세요.");
+
+    const run = async () => {
+      try {
+        const patients = await searchPatientsApi("name", kw);
+        setPatientSearchResultCount(patients.length);
+
+        if (patients.length === 0) {
+          setPatientSuggestions([]);
+          setOpenSuggestion(false);
+          return;
+        }
+
+        if (patients.length === 1 && patients[0]?.patientId) {
+          const single = patients[0];
+          const nextKeyword = single.name?.trim() ?? kw;
+          setKeyword(nextKeyword);
+          setPatientSuggestions([]);
+          setOpenSuggestion(false);
+          openCreateWithPatient(single);
+          return;
+        }
+
+        const suggestions = patients.slice(0, 8);
+        setPatientSuggestions(suggestions);
+        setOpenSuggestion(suggestions.length > 0);
+      } catch {
+        setPatientSearchResultCount(null);
+        setPatientSuggestions([]);
+        setOpenSuggestion(false);
+      }
+    };
+
+    void run();
   };
 
   const onReset = () => {
-    if (autoSearch && initialKeyword) {
-      const normalized =
-        initialSearchType === "status"
-          ? normalizeStatusKeyword(initialKeyword)
-          : initialKeyword;
-      setSearchType(initialSearchType);
-      if (initialSearchType === "status") {
-        setStatusKeyword(normalized as ReservationStatus);
-      } else {
-        setKeyword(initialKeyword);
-      }
-      dispatch(
-        reservationActions.searchReservationsRequest({
-          type: initialSearchType,
-          keyword: normalized,
-        })
-      );
-      return;
-    }
     setKeyword("");
-    setSearchType("reservationNo");
-    setStatusKeyword("RESERVED");
-    dispatch(reservationActions.fetchReservationsRequest());
+    setPatientSuggestions([]);
+    setOpenSuggestion(false);
+    setPatientSearchResultCount(null);
   };
 
   const onSelect = (p: Reservation) => {
     dispatch(reservationActions.fetchReservationSuccess(p));
+  };
+
+  React.useEffect(() => {
+    const kw = keyword.trim();
+    if (!kw) {
+      setPatientSuggestions([]);
+      setOpenSuggestion(false);
+      return;
+    }
+
+    let active = true;
+    const timer = window.setTimeout(async () => {
+      try {
+        const byName = await searchPatientsApi("name", kw);
+        if (!active) return;
+        setPatientSuggestions(byName.slice(0, 8));
+        setOpenSuggestion(byName.length > 0);
+      } catch {
+        if (!active) return;
+        setPatientSuggestions([]);
+        setOpenSuggestion(false);
+      }
+    }, 250);
+
+    return () => {
+      active = false;
+      window.clearTimeout(timer);
+    };
+  }, [keyword]);
+
+  const onPickPatientSuggestion = (patient: Patient) => {
+    if (!patient.patientId) return;
+    const nextKeyword = patient.name?.trim() ?? "";
+    setKeyword(nextKeyword);
+    setPatientSuggestions([]);
+    setOpenSuggestion(false);
+    setPatientSearchResultCount(1);
+    openCreateWithPatient(patient);
+  };
+
+  React.useEffect(() => {
+    if (!createModalOpen) return;
+    const defaultDepartmentId = RESERVATION_DEPARTMENTS[0]?.id ?? 1;
+    const defaultDoctorId =
+      RESERVATION_DOCTORS.find((doctor) => doctor.departmentId === defaultDepartmentId)?.id ??
+      null;
+    setCreateModalForm({
+      departmentId: defaultDepartmentId,
+      doctorId: defaultDoctorId,
+      reservedAt: toLocalDateTimeValue(new Date()),
+      note: "",
+    });
+  }, [createModalOpen]);
+
+  const onCreateModalSubmit = () => {
+    if (!createTargetPatient.patientId) {
+      alert("환자를 먼저 선택해주세요.");
+      return;
+    }
+
+    const department = RESERVATION_DEPARTMENTS.find(
+      (item) => item.id === createModalForm.departmentId
+    );
+    if (!department) {
+      alert("진료과를 선택해주세요.");
+      return;
+    }
+
+    const doctor =
+      RESERVATION_DOCTORS.find((item) => item.id === createModalForm.doctorId) ??
+      RESERVATION_DOCTORS.find((item) => item.departmentId === department.id) ??
+      null;
+
+    dispatch(
+      reservationActions.createReservationRequest({
+        reservationNo: "",
+        patientId: createTargetPatient.patientId,
+        patientName: createTargetPatient.patientName || null,
+        departmentId: department.id,
+        departmentName: department.name,
+        doctorId: doctor?.id ?? null,
+        doctorName: doctor?.name ?? null,
+        reservedAt: createModalForm.reservedAt,
+        status: "RESERVED",
+        note: createModalForm.note.trim() ? createModalForm.note.trim() : null,
+      })
+    );
+
+    setCreateModalOpen(false);
+    setPatientSuggestions([]);
+    setOpenSuggestion(false);
+  };
+
+  const onCreateModalClose = () => {
+    setCreateModalOpen(false);
   };
 
   const onCancelReservation = () => {
@@ -241,9 +354,13 @@ export default function ReservationList({
     );
   };
 
-  const visibleList = hideCanceled
-    ? list.filter((item) => !["CANCELED", "COMPLETED"].includes(normalizeStatus(item.status) ?? ""))
-    : list;
+  const visibleList = React.useMemo(
+    () =>
+      hideCanceled
+        ? list.filter((item) => !["CANCELED", "COMPLETED"].includes(normalizeStatus(item.status) ?? ""))
+        : list,
+    [hideCanceled, list]
+  );
 
   const primary =
     (selected && visibleList.find((p) => p.reservationId === selected.reservationId)) ||
@@ -253,61 +370,141 @@ export default function ReservationList({
     <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
       <Card
         sx={{
-          borderRadius: 3,
-          border: "1px solid #dbe5f5",
-          boxShadow: "0 12px 24px rgba(23, 52, 97, 0.12)",
+          borderRadius: 3.5,
+          border: "1px solid rgba(123, 146, 183, 0.25)",
+          background:
+            "linear-gradient(135deg, rgba(255,255,255,0.98), rgba(243,248,255,0.95) 58%, rgba(235,244,255,0.95))",
+          boxShadow: "0 14px 26px rgba(23, 52, 97, 0.12)",
+          overflow: "visible",
         }}
       >
-        <CardContent sx={{ p: 2.5 }}>
+        <CardContent sx={{ p: { xs: 2, md: 2.5 }, overflow: "visible" }}>
           <Stack direction={{ xs: "column", md: "row" }} spacing={2} alignItems={{ md: "center" }}>
-            <Typography fontWeight={800} sx={{ color: "#2b5aa9", minWidth: 110 }}>
-              예약 검색
-            </Typography>
-              <TextField
-                select
-                size="small"
-                value={searchType}
-                onChange={(e) =>
-                  setSearchType(e.target.value as ReservationSearchType)
-                }
-                sx={{ width: { xs: "100%", md: 180 } }}
-              >
-              {SEARCH_OPTIONS.map((o) => (
-                <MenuItem key={o.value} value={o.value}>
-                  {o.label}
-                </MenuItem>
-              ))}
-            </TextField>
-            {searchType === "status" ? (
-              <TextField
-                select
-                size="small"
-                value={statusKeyword}
-                onChange={(e) => setStatusKeyword(e.target.value as ReservationStatus)}
-                sx={{ width: { xs: "100%", md: 360 } }}
-              >
-                <MenuItem value="RESERVED">예약</MenuItem>
-                <MenuItem value="COMPLETED">완료</MenuItem>
-                <MenuItem value="CANCELED">취소</MenuItem>
-                <MenuItem value="INACTIVE">비활성</MenuItem>
-              </TextField>
-            ) : (
+            <Stack spacing={0.35} sx={{ minWidth: 120 }}>
+              <Typography fontWeight={900} sx={{ color: "#1f4f95", letterSpacing: -0.1 }}>
+                {"환자 검색"}
+              </Typography>
+              <Typography sx={{ color: "#6f819f", fontSize: 12, fontWeight: 600 }}>
+                {"이름 조회 후 바로 예약 등록"}
+              </Typography>
+            </Stack>
+            <Box sx={{ width: { xs: "100%", md: 380 }, position: "relative" }}>
               <TextField
                 size="small"
-                placeholder="검색어 입력"
+                placeholder={"환자 이름 입력"}
                 value={keyword}
-                onChange={(e) => setKeyword(e.target.value)}
+                onChange={(e) => {
+                  setKeyword(e.target.value);
+                  setPatientSearchResultCount(null);
+                }}
                 onKeyDown={(e) => e.key === "Enter" && onSearch()}
-                sx={{ width: { xs: "100%", md: 360 } }}
+                onFocus={() => {
+                  if (patientSuggestions.length > 0) {
+                    setOpenSuggestion(true);
+                  }
+                }}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <SearchIcon sx={{ fontSize: 19, color: "#7f93b5" }} />
+                    </InputAdornment>
+                  ),
+                }}
+                helperText={
+                  patientSearchResultCount === null
+                    ? " "
+                    : patientSearchResultCount === 0
+                    ? "일치 환자 없음"
+                    : `검색 결과 ${patientSearchResultCount}명`
+                }
+                FormHelperTextProps={{
+                  sx: {
+                    mt: 0.65,
+                    ml: 0.25,
+                    fontWeight: 700,
+                    fontSize: 12,
+                    color: patientSearchResultCount === 0 ? "#d32f2f" : "#6b7a96",
+                  },
+                }}
+                sx={{
+                  width: "100%",
+                  "& .MuiInputBase-root": {
+                    bgcolor: "rgba(255,255,255,0.9)",
+                    borderRadius: 2.25,
+                    boxShadow: "inset 0 1px 0 rgba(255,255,255,0.75)",
+                  },
+                  "& .MuiOutlinedInput-notchedOutline": {
+                    borderColor: "rgba(79, 111, 163, 0.28)",
+                  },
+                  "& .MuiInputBase-root:hover .MuiOutlinedInput-notchedOutline": {
+                    borderColor: "rgba(43, 90, 169, 0.48)",
+                  },
+                  "& .Mui-focused .MuiOutlinedInput-notchedOutline": {
+                    borderColor: "#2b5aa9",
+                    borderWidth: 2,
+                  },
+                }}
               />
-            )}
+              {openSuggestion && patientSuggestions.length > 0 && (
+                <Card
+                  sx={{
+                    position: "absolute",
+                    top: "calc(100% + 8px)",
+                    left: 0,
+                    right: 0,
+                    zIndex: 1400,
+                    borderRadius: 2,
+                    border: "1px solid rgba(90, 121, 174, 0.24)",
+                    boxShadow: "0 14px 28px rgba(23, 52, 97, 0.2)",
+                    maxHeight: 280,
+                    overflowY: "auto",
+                  }}
+                >
+                  <Stack spacing={0}>
+                    {patientSuggestions.map((patient) => (
+                      <Button
+                        key={patient.patientId}
+                        onClick={() => onPickPatientSuggestion(patient)}
+                        sx={{
+                          justifyContent: "flex-start",
+                          textTransform: "none",
+                          px: 1.7,
+                          py: 1.1,
+                          borderRadius: 0,
+                          color: "#1f2a44",
+                          borderBottom: "1px solid #edf2fb",
+                          "&:hover": {
+                            bgcolor: "rgba(43, 90, 169, 0.08)",
+                          },
+                        }}
+                      >
+                        <Box sx={{ textAlign: "left", width: "100%" }}>
+                          <Typography fontWeight={700} noWrap>
+                            {patient.name} · {patient.gender ?? "-"} · {patient.birthDate ?? "-"}
+                          </Typography>
+                          <Typography sx={{ color: "#7b8aa9", fontSize: 12 }} noWrap>
+                            환자ID {patient.patientId} · {patient.phone ?? "-"} · {patient.patientNo ?? "-"}
+                          </Typography>
+                        </Box>
+                      </Button>
+                    ))}
+                  </Stack>
+                </Card>
+              )}
+            </Box>
             <Stack direction="row" spacing={1} sx={{ flexWrap: "wrap" }}>
               <Button
                 variant="contained"
                 startIcon={<SearchIcon />}
                 onClick={onSearch}
                 disabled={loading}
-                sx={{ bgcolor: "#2b5aa9" }}
+                sx={{
+                  px: 2.1,
+                  borderRadius: 2,
+                  bgcolor: "#2b5aa9",
+                  boxShadow: "0 8px 18px rgba(43,90,169,0.28)",
+                  "&:hover": { bgcolor: "#244e95" },
+                }}
               >
                 검색
               </Button>
@@ -316,7 +513,17 @@ export default function ReservationList({
                 startIcon={<RefreshIcon />}
                 onClick={onReset}
                 disabled={loading}
-                sx={{ color: "#2b5aa9" }}
+                sx={{
+                  px: 1.8,
+                  borderRadius: 2,
+                  color: "#2b5aa9",
+                  borderColor: "rgba(43,90,169,0.4)",
+                  bgcolor: "rgba(255,255,255,0.85)",
+                  "&:hover": {
+                    borderColor: "#2b5aa9",
+                    bgcolor: "rgba(43,90,169,0.07)",
+                  },
+                }}
               >
                 초기화
               </Button>
@@ -414,7 +621,7 @@ export default function ReservationList({
                   variant="outlined"
                   sx={{ color: "#2b5aa9" }}
                   component={Link}
-                  href={primary ? `/reception/appointment/detail/${primary.reservationId}` : "#"}
+                  href={primary ? `/reception/reservation/detail/${primary.reservationId}` : "#"}
                   disabled={!primary}
                 >
                   상세 보기
@@ -423,7 +630,7 @@ export default function ReservationList({
                   variant="contained"
                   sx={{ bgcolor: "#2b5aa9" }}
                   component={Link}
-                  href={primary ? `/reception/appointment/edit/${primary.reservationId}` : "#"}
+                  href={primary ? `/reception/reservation/edit/${primary.reservationId}` : "#"}
                   disabled={!primary}
                 >
                   예약 수정
@@ -521,6 +728,118 @@ export default function ReservationList({
           </Card>
         </Box>
       </Box>
+
+      <Dialog open={createModalOpen} onClose={onCreateModalClose} fullWidth maxWidth="sm">
+        <DialogContent sx={{ p: 3 }}>
+          <Stack spacing={1.75}>
+            <Typography variant="h5" fontWeight={900}>
+              {"예약 등록"}
+            </Typography>
+
+            <TextField
+              size="small"
+              label={"환자"}
+              value={
+                createTargetPatient.patientId
+                  ? `${createTargetPatient.patientName || "환자"} (${createTargetPatient.patientId})`
+                  : ""
+              }
+              InputProps={{ readOnly: true }}
+              fullWidth
+            />
+
+            <TextField
+              select
+              size="small"
+              label={"진료과"}
+              value={createModalForm.departmentId}
+              onChange={(e) => {
+                const departmentId = Number(e.target.value);
+                const nextDoctorId =
+                  RESERVATION_DOCTORS.find((doctor) => doctor.departmentId === departmentId)?.id ??
+                  null;
+                setCreateModalForm((prev) => ({
+                  ...prev,
+                  departmentId,
+                  doctorId: nextDoctorId,
+                }));
+              }}
+              fullWidth
+            >
+              {RESERVATION_DEPARTMENTS.map((item) => (
+                <MenuItem key={item.id} value={item.id}>
+                  {item.name}
+                </MenuItem>
+              ))}
+            </TextField>
+
+            <TextField
+              select
+              size="small"
+              label={"담당의"}
+              value={createModalForm.doctorId ?? ""}
+              onChange={(e) => {
+                const doctorId = Number(e.target.value);
+                const doctor = RESERVATION_DOCTORS.find((item) => item.id === doctorId);
+                setCreateModalForm((prev) => ({
+                  ...prev,
+                  doctorId,
+                  departmentId: doctor?.departmentId ?? prev.departmentId,
+                }));
+              }}
+              fullWidth
+            >
+              {RESERVATION_DOCTORS.map((item) => (
+                <MenuItem key={item.id} value={item.id}>
+                  {item.name}
+                </MenuItem>
+              ))}
+            </TextField>
+
+            <TextField
+              size="small"
+              type="datetime-local"
+              label={"예약 시간"}
+              value={createModalForm.reservedAt}
+              onChange={(e) =>
+                setCreateModalForm((prev) => ({
+                  ...prev,
+                  reservedAt: e.target.value,
+                }))
+              }
+              fullWidth
+              InputLabelProps={{ shrink: true }}
+            />
+
+            <TextField
+              size="small"
+              label={"예약 메모(선택)"}
+              value={createModalForm.note}
+              onChange={(e) =>
+                setCreateModalForm((prev) => ({
+                  ...prev,
+                  note: e.target.value,
+                }))
+              }
+              fullWidth
+            />
+
+            <Stack direction="row" spacing={1} justifyContent="flex-end" sx={{ pt: 1 }}>
+              <Button variant="text" onClick={onCreateModalClose} disabled={loading}>
+                {"취소"}
+              </Button>
+              <Button
+                variant="contained"
+                onClick={onCreateModalSubmit}
+                disabled={loading || !createTargetPatient.patientId || !createModalForm.reservedAt}
+                sx={{ bgcolor: "#2b5aa9" }}
+              >
+                {"저장"}
+              </Button>
+            </Stack>
+          </Stack>
+        </DialogContent>
+      </Dialog>
 
       {error && (
         <Typography color="error" fontWeight={800}>

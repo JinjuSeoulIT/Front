@@ -25,7 +25,7 @@ export default function EditInpatientReceptionPage() {
 
   const onSubmit = (form: InpatientReceptionFormPayload) => {
     dispatch(inpatientReceptionActions.updateInpatientReceptionRequest({ receptionId, form }));
-    router.push(`/reception/admission/detail/${receptionId}`);
+    router.push(`/reception/inpatient/detail/${receptionId}`);
   };
 
   return (
@@ -50,7 +50,7 @@ export default function EditInpatientReceptionPage() {
         error={error}
         mode="edit"
         onSubmit={onSubmit}
-        onCancel={() => router.push(`/reception/admission/detail/${receptionId}`)}
+        onCancel={() => router.push(`/reception/inpatient/detail/${receptionId}`)}
       />
     </MainLayout>
   );

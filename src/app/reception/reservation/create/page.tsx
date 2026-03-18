@@ -20,7 +20,7 @@ export default function NewReservationPage() {
 
   const onSubmit = (form: ReservationFormPayload) => {
     dispatch(reservationActions.createReservationRequest(form));
-    router.push("/reception/appointment/list");
+    router.push("/reception/reservation/list");
   };
 
   return (
@@ -44,7 +44,7 @@ export default function NewReservationPage() {
         error={error}
         mode="create"
         onSubmit={onSubmit}
-        onCancel={() => router.push("/reception/appointment/list")}
+        onCancel={() => router.push("/reception/reservation/list")}
       />
     </MainLayout>
   );

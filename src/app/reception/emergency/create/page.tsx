@@ -46,7 +46,7 @@ export default function NewEmergencyReceptionPage() {
           doctorId: "",
           scheduledAt: "",
           arrivedAt: "",
-          status: "REGISTERED",
+          status: "WAITING",
           note: "",
           triageNote: "",
           triageLevel: "",

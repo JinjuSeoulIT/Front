@@ -21,8 +21,6 @@ import type {
   ReservationForm as ReservationFormPayload,
 } from "@/features/Reservations/ReservationTypes";
 import { fetchPatientsApi } from "@/lib/admin/masterDataApi";
-import { fetchReservationsApi } from "@/lib/reception/reservationAdminApi";
-import { buildNextReceptionNumber } from "@/lib/reception/receptionNumber";
 
 type ReservationFormState = {
   reservationNo: string;
@@ -56,9 +54,10 @@ const statusOptions = [
 
 const departmentOptions: DepartmentOption[] = [
   { departmentId: 1, departmentName: "내과" },
-  { departmentId: 2, departmentName: "외과" },
-  { departmentId: 3, departmentName: "정형외과" },
-  { departmentId: 4, departmentName: "신경외과" },
+  { departmentId: 2, departmentName: "정형외과" },
+  { departmentId: 3, departmentName: "소아과" },
+  { departmentId: 4, departmentName: "이비인후과" },
+  { departmentId: 5, departmentName: "피부과" },
 ];
 
 const doctorOptions: DoctorOption[] = [
@@ -66,6 +65,7 @@ const doctorOptions: DoctorOption[] = [
   { doctorId: 2, doctorName: "이현석", departmentId: 2 },
   { doctorId: 3, doctorName: "성숙희", departmentId: 3 },
   { doctorId: 4, doctorName: "최효정", departmentId: 4 },
+  { doctorId: 5, doctorName: "홍예진", departmentId: 5 },
 ];
 
 function toOptionalNumber(value: string) {
@@ -128,8 +128,6 @@ export default function ReservationForm({
   const [form, setForm] = React.useState<ReservationFormState>(initial);
   const [patients, setPatients] = React.useState<PatientOption[]>([]);
   const [listError, setListError] = React.useState<string | null>(null);
-  const [numberLoading, setNumberLoading] = React.useState(false);
-  const [numberError, setNumberError] = React.useState<string | null>(null);
 
   React.useEffect(() => {
     setForm(initial);
@@ -155,42 +153,6 @@ export default function ReservationForm({
       mounted = false;
     };
   }, []);
-
-  React.useEffect(() => {
-    if (initial.reservationNo.trim()) return;
-    let mounted = true;
-
-    const generate = async () => {
-      try {
-        setNumberLoading(true);
-        setNumberError(null);
-        const list = await fetchReservationsApi();
-        const next = buildNextReceptionNumber({
-          existingNumbers: list.map((item) => item.reservationNo),
-          startSequence: 301,
-        });
-        if (!mounted) return;
-        setForm((prev) => ({ ...prev, reservationNo: next }));
-      } catch (err) {
-        if (!mounted) return;
-        const fallback = buildNextReceptionNumber({
-          existingNumbers: [],
-          startSequence: 301,
-        });
-        setForm((prev) => ({ ...prev, reservationNo: fallback }));
-        setNumberError(err instanceof Error ? err.message : "자동 채번에 실패했습니다.");
-      } finally {
-        if (mounted) {
-          setNumberLoading(false);
-        }
-      }
-    };
-
-    generate();
-    return () => {
-      mounted = false;
-    };
-  }, [initial.reservationNo]);
 
   const matchPatientId = (name: string) => {
     const trimmed = name.trim();
@@ -241,7 +203,6 @@ export default function ReservationForm({
   };
 
   const handleSubmit = () => {
-    if (!form.reservationNo.trim()) return;
     if (!isEditMode && isPastDateTime(form.reservedAt)) {
       alert("날짜가 이미 지났습니다.");
       return;
@@ -254,7 +215,7 @@ export default function ReservationForm({
     const doctorId = toOptionalNumber(form.doctorId);
 
     onSubmit({
-      reservationNo: form.reservationNo.trim(),
+      reservationNo: isEditMode ? form.reservationNo.trim() : "",
       patientId,
       patientName: toOptionalString(form.patientName) ?? null,
       departmentId,
@@ -342,11 +303,7 @@ export default function ReservationForm({
             required
             fullWidth
             InputProps={{ readOnly: true }}
-            helperText={
-              numberError
-                ? "자동 채번 조회에 실패해 기본 번호를 넣었습니다."
-                : "예약번호는 자동 생성됩니다."
-            }
+            helperText="예약번호는 서버에서 자동 생성됩니다."
             sx={fieldSx}
           />
           <Stack direction={{ xs: "column", sm: "row" }} spacing={1}>
@@ -465,8 +422,6 @@ export default function ReservationForm({
             onClick={handleSubmit}
             disabled={
               loading ||
-              numberLoading ||
-              !form.reservationNo.trim() ||
               !form.patientName.trim() ||
               !form.departmentId.trim() ||
               !form.reservedAt.trim()

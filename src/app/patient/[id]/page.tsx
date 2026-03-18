@@ -24,9 +24,8 @@ import type { PatientFlag } from "@/lib/flagApi";
 import { fetchPatientFlagsApi } from "@/lib/flagApi";
 import { changePatientStatusApi } from "@/lib/reception/patientApi";
 import { fetchCodesApi } from "@/lib/codeApi";
-import { createReservationApi, fetchReservationsApi } from "@/lib/reception/reservationAdminApi";
-import { createReceptionApi, fetchReceptionsApi } from "@/lib/reception/receptionApi";
-import { buildNextReceptionNumber } from "@/lib/reception/receptionNumber";
+import { createReservationApi } from "@/lib/reception/reservationAdminApi";
+import { createReceptionApi } from "@/lib/reception/receptionApi";
 
 import {
   toApiDateTime,
@@ -271,17 +270,12 @@ export default function PatientDetailPage() {
         return;
       }
 
-      const list = await fetchReservationsApi();
-      const reservationNo = buildNextReceptionNumber({
-        existingNumbers: list.map((item) => item.reservationNo),
-        startSequence: 301,
-      });
       const selectedDept = departments.find((dept) => dept.name === reservationForm.deptCode);
       const selectedByDoctor = departments.find((dept) => String(dept.doctorId) === reservationForm.doctorId);
       const resolvedDept = selectedDept ?? selectedByDoctor ?? defaultDepartment;
 
       await createReservationApi({
-        reservationNo,
+        reservationNo: "",
         patientId: p.patientId,
         patientName: p.name,
         departmentId: resolvedDept.id,
@@ -308,26 +302,17 @@ export default function PatientDetailPage() {
 
     try {
       setReceptionSaving(true);
-      const list = await fetchReceptionsApi();
-      const nextReceptionNo = buildNextReceptionNumber({
-        existingNumbers: list.map((item) => item.receptionNo),
-        startSequence: 1,
-      });
       const selectedDept = departments.find((dept) => dept.name === receptionForm.deptCode);
       const selectedByDoctor = departments.find((dept) => String(dept.doctorId) === receptionForm.doctorId);
       const resolvedDept = selectedDept ?? selectedByDoctor ?? defaultDepartment;
 
       await createReceptionApi({
-        receptionNo: nextReceptionNo,
+        receptionNo: "",
         patientId: p.patientId,
-        patientName: p.name,
         visitType: "OUTPATIENT",
         departmentId: resolvedDept.id,
-        departmentName: resolvedDept.name,
         doctorId: Number(receptionForm.doctorId || resolvedDept.doctorId),
-        doctorName: resolvedDept.doctor,
         arrivedAt: toTodayDateTime(receptionForm.arrivedAt) ?? toLocalDateTime(),
-        status: "WAITING",
         note: receptionForm.note?.trim() || "환자 상세 화면에서 접수 등록",
       });
 

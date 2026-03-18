@@ -26,7 +26,7 @@ export default function EditReservationPage() {
 
   const onSubmit = (form: ReservationFormPayload) => {
     dispatch(reservationActions.updateReservationRequest({ reservationId, form }));
-    router.push(`/reception/appointment/detail/${reservationId}`);
+    router.push(`/reception/reservation/detail/${reservationId}`);
   };
 
   return (
@@ -50,7 +50,7 @@ export default function EditReservationPage() {
         error={error}
         mode="edit"
         onSubmit={onSubmit}
-        onCancel={() => router.push(`/reception/appointment/detail/${reservationId}`)}
+        onCancel={() => router.push(`/reception/reservation/detail/${reservationId}`)}
       />
     </MainLayout>
   );

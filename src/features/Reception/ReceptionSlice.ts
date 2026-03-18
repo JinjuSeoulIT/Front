@@ -62,6 +62,9 @@ const receptionSlice = createSlice({
     fetchReceptionSuccess: (state, action: PayloadAction<Reception>) => {
       state.loading = false;
       state.selected = action.payload;
+      state.list = state.list.map((p) =>
+        p.receptionId === action.payload.receptionId ? { ...p, ...action.payload } : p
+      );
     },
     fetchReceptionFailure: (state, action: PayloadAction<string>) => {
       state.loading = false;

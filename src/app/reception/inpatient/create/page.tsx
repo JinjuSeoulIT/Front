@@ -19,7 +19,7 @@ export default function NewInpatientReceptionPage() {
 
   const onSubmit = (form: InpatientReceptionFormPayload) => {
     dispatch(inpatientReceptionActions.createInpatientReceptionRequest(form));
-    router.push("/reception/admission/list");
+    router.push("/reception/inpatient/list");
   };
 
   return (
@@ -44,7 +44,7 @@ export default function NewInpatientReceptionPage() {
         error={error}
         mode="create"
         onSubmit={onSubmit}
-        onCancel={() => router.push("/reception/admission/list")}
+        onCancel={() => router.push("/reception/inpatient/list")}
       />
     </MainLayout>
   );

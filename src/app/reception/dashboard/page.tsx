@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import Link from "next/link";
 import MainLayout from "@/components/layout/MainLayout";
@@ -13,11 +13,22 @@ import {
   Typography,
 } from "@mui/material";
 import Grid from "@mui/material/Grid";
+import AddIcon from "@mui/icons-material/Add";
 import ArrowForwardRoundedIcon from "@mui/icons-material/ArrowForwardRounded";
 import LocalHospitalOutlinedIcon from "@mui/icons-material/LocalHospitalOutlined";
 import EmergencyOutlinedIcon from "@mui/icons-material/EmergencyOutlined";
 import BedOutlinedIcon from "@mui/icons-material/BedOutlined";
 import EventAvailableOutlinedIcon from "@mui/icons-material/EventAvailableOutlined";
+import PatientFormModal from "@/components/patient/PatientFormModal";
+import React from "react";
+import type { PatientForm as PatientFormPayload } from "@/features/patients/patientTypes";
+import { createPatientApi } from "@/lib/reception/patientApi";
+import { createConsentApi } from "@/lib/consentApi";
+import { patientActions } from "@/features/patients/patientSlice";
+import { resolveErrorMessage } from "@/components/patient/detail/PatientDetailUtils";
+import { AppDispatch } from "@/store/store";
+import { useDispatch } from "react-redux";
+import { useRouter } from "next/navigation";
 
 const menus = [
   {
@@ -39,7 +50,7 @@ const menus = [
   {
     title: "입원 접수",
     desc: "입원 접수/병실 배정",
-    href: "/reception/admission/list",
+    href: "/reception/inpatient/list",
     icon: <BedOutlinedIcon />,
     accent: "#006d77",
     tone: "linear-gradient(140deg, rgba(0, 109, 119, 0.2), rgba(0, 109, 119, 0.04))",
@@ -47,7 +58,7 @@ const menus = [
   {
     title: "예약 접수",
     desc: "예약 목록/처리",
-    href: "/reception/appointment/list",
+    href: "/reception/reservation/list",
     icon: <EventAvailableOutlinedIcon />,
     accent: "#7c3aed",
     tone: "linear-gradient(140deg, rgba(124, 58, 237, 0.2), rgba(124, 58, 237, 0.04))",
@@ -55,6 +66,62 @@ const menus = [
 ];
 
 export default function ReceptionHubPage() {
+  const [registrationOpen, setRegistrationOpen] = React.useState(false);
+    const [registrationSubmitting, setRegistrationSubmitting] = React.useState(false);
+    const [registrationError, setRegistrationError] = React.useState<string | null>(null);
+    const [registrationInitialName, setRegistrationInitialName] = React.useState("");
+    const dispatch = useDispatch<AppDispatch>();
+    const router = useRouter();
+
+    const handleRegistrationSubmit = async (form: PatientFormPayload) => {
+        try {
+          setRegistrationSubmitting(true);
+          setRegistrationError(null);
+          const created = await createPatientApi(form);
+          await createConsentsForPatient(created.patientId, form);
+          dispatch(patientActions.fetchPatientsRequest());
+          setRegistrationOpen(false);
+        } catch (err: unknown) {
+          setRegistrationError(resolveErrorMessage(err, "환자 등록 실패"));
+        } finally {
+          setRegistrationSubmitting(false);
+        }
+      };
+
+      const createConsentsForPatient = async (
+          patientId: number,
+          form: PatientFormPayload
+        ) => {
+          const consentTypes: { code: string; checked: boolean }[] = [
+            { code: "PRIVACY", checked: !!form.consentRequired },
+            { code: "MARKETING", checked: !!form.consentOptional },
+          ];
+          for (const { code, checked } of consentTypes) {
+            if (checked) {
+              await createConsentApi(patientId, {
+                patientId,
+                consentType: code,
+              });
+            }
+          }
+        };
+    
+      const handleRegistrationSubmitAndReception = async (form: PatientFormPayload) => {
+        try {
+          setRegistrationSubmitting(true);
+          setRegistrationError(null);
+          const created = await createPatientApi(form);
+          await createConsentsForPatient(created.patientId, form);
+          dispatch(patientActions.fetchPatientsRequest());
+          setRegistrationOpen(false);
+          const patientName = (created.name ?? form.name ?? "").trim();
+          router.push(`/reception/outpatient/create?patientName=${encodeURIComponent(patientName)}&patientId=${created.patientId}`);
+        } catch (err: unknown) {
+          setRegistrationError(resolveErrorMessage(err, "등록 후 접수 처리 실패"));
+        } finally {
+          setRegistrationSubmitting(false);
+        }
+      };
   return (
     <MainLayout>
       <Stack spacing={2.5}>
@@ -79,12 +146,33 @@ export default function ReceptionHubPage() {
                   fontWeight: 800,
                 }}
               />
+              <Stack direction="row" alignItems="center" justifyContent="space-between">
               <Typography variant="h4" fontWeight={900}>
                 접수 메인
               </Typography>
+              <Button variant="contained" startIcon={<AddIcon />} onClick={() => setRegistrationOpen(true)}
+              
+              sx={{
+                      mt: 0.25,
+                      alignSelf: "flex-start",
+                      borderRadius: 2,
+                      px: 2,
+                      py: 0.8,
+                      fontWeight: 800,
+                      color: "white",
+                    }}>
+              
+                            신규 환자 등록
+                            
+                          </Button>
+                    </Stack>
               <Typography color="text.secondary" fontWeight={700} sx={{ fontSize: 16 }}>
                 접수 업무를 빠르게 선택해 바로 처리하세요.
               </Typography>
+              
+              
+              
+                          
             </Stack>
           </CardContent>
         </Card>
@@ -152,6 +240,19 @@ export default function ReceptionHubPage() {
               </Paper>
             </Grid>
           ))}
+          <PatientFormModal
+                    open={registrationOpen}
+                    onClose={() => {
+                      setRegistrationOpen(false);
+                      setRegistrationError(null);
+                    }}
+                    mode="create"
+                    loading={registrationSubmitting}
+                    error={registrationError}
+                    initialName={registrationInitialName}
+                    onSubmit={handleRegistrationSubmit}
+                    onSubmitAndReception={handleRegistrationSubmitAndReception}
+                  />
         </Grid>
       </Stack>
     </MainLayout>

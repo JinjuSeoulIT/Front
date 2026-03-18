@@ -97,7 +97,7 @@ export default function PatientDetailQuickActions({
             color="secondary"
             startIcon={<HotelOutlinedIcon />}
             component={Link}
-            href="/reception/admission/create"
+            href="/reception/inpatient/create"
             disabled={!p}
             sx={{ fontWeight: 800, whiteSpace: "nowrap", flex: "1 1 140px", minWidth: 140 }}
           >

@@ -56,7 +56,7 @@ export default function ReservationDetailPage() {
         form: toUpdateForm(p, nextStatus),
       })
     );
-    router.push("/reception/appointment/list");
+    router.push("/reception/reservation/list");
   };
 
   const statusLabel = (value?: ReservationStatus | string | null) => {
@@ -109,12 +109,12 @@ export default function ReservationDetailPage() {
             )}
 
             <Stack direction="row" spacing={1} flexWrap="wrap">
-              <Button variant="outlined" onClick={() => router.push("/reception/appointment/list")}>
+              <Button variant="outlined" onClick={() => router.push("/reception/reservation/list")}>
                 뒤로
               </Button>
               <Button
                 variant="contained"
-                onClick={() => router.push(`/reception/appointment/edit/${reservationId}`)}
+                onClick={() => router.push(`/reception/reservation/edit/${reservationId}`)}
                 disabled={!p}
               >
                 수정

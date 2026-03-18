@@ -20,9 +20,7 @@ import type {
   DoctorOption,
   PatientOption,
 } from "@/features/Reservations/ReservationTypes";
-import { fetchInpatientReceptionsApi } from "@/lib/reception/inpatientReceptionApi";
 import { fetchPatientsApi } from "@/lib/admin/masterDataApi";
-import { buildNextReceptionNumber } from "@/lib/reception/receptionNumber";
 
 type InpatientReceptionFormState = {
   receptionNo: string;
@@ -62,9 +60,10 @@ const statusOptions = [
 
 const departmentOptions: DepartmentOption[] = [
   { departmentId: 1, departmentName: "내과" },
-  { departmentId: 2, departmentName: "외과" },
-  { departmentId: 3, departmentName: "정형외과" },
-  { departmentId: 4, departmentName: "신경외과" },
+  { departmentId: 2, departmentName: "정형외과" },
+  { departmentId: 3, departmentName: "소아과" },
+  { departmentId: 4, departmentName: "이비인후과" },
+  { departmentId: 5, departmentName: "피부과" },
 ];
 
 const doctorOptions: DoctorOption[] = [
@@ -72,6 +71,7 @@ const doctorOptions: DoctorOption[] = [
   { doctorId: 2, doctorName: "이현석", departmentId: 2 },
   { doctorId: 3, doctorName: "성숙희", departmentId: 3 },
   { doctorId: 4, doctorName: "최효정", departmentId: 4 },
+  { doctorId: 5, doctorName: "홍예진", departmentId: 5 },
 ];
 
 function toOptionalNumber(value: string) {
@@ -119,8 +119,6 @@ export default function InpatientReceptionForm({
   const [form, setForm] = React.useState<InpatientReceptionFormState>(initial);
   const [patients, setPatients] = React.useState<PatientOption[]>([]);
   const [listError, setListError] = React.useState<string | null>(null);
-  const [numberLoading, setNumberLoading] = React.useState(false);
-  const [numberError, setNumberError] = React.useState<string | null>(null);
 
   React.useEffect(() => {
     setForm(initial);
@@ -146,42 +144,6 @@ export default function InpatientReceptionForm({
       mounted = false;
     };
   }, []);
-
-  React.useEffect(() => {
-    if (initial.receptionNo.trim()) return;
-    let mounted = true;
-
-    const generate = async () => {
-      try {
-        setNumberLoading(true);
-        setNumberError(null);
-        const list = await fetchInpatientReceptionsApi();
-        const next = buildNextReceptionNumber({
-          existingNumbers: list.map((item) => item.receptionNo),
-          startSequence: 201,
-        });
-        if (!mounted) return;
-        setForm((prev) => ({ ...prev, receptionNo: next }));
-      } catch (err) {
-        if (!mounted) return;
-        const fallback = buildNextReceptionNumber({
-          existingNumbers: [],
-          startSequence: 201,
-        });
-        setForm((prev) => ({ ...prev, receptionNo: fallback }));
-        setNumberError(err instanceof Error ? err.message : "자동 채번에 실패했습니다.");
-      } finally {
-        if (mounted) {
-          setNumberLoading(false);
-        }
-      }
-    };
-
-    generate();
-    return () => {
-      mounted = false;
-    };
-  }, [initial.receptionNo]);
 
   const getDoctorsByDepartment = (departmentId: string) => {
     const deptId = Number(departmentId);
@@ -209,14 +171,13 @@ export default function InpatientReceptionForm({
   };
 
   const handleSubmit = () => {
-    if (!form.receptionNo.trim()) return;
     const patientId = toOptionalNumber(form.patientId);
     const departmentId = toOptionalNumber(form.departmentId);
 
     if (!patientId || !departmentId || !form.admissionPlanAt.trim()) return;
 
     onSubmit({
-      receptionNo: form.receptionNo.trim(),
+      receptionNo: isEditMode ? form.receptionNo.trim() : "",
       patientId,
       departmentId,
       doctorId: toOptionalNumber(form.doctorId) ?? null,
@@ -305,11 +266,7 @@ export default function InpatientReceptionForm({
             required
             fullWidth
             InputProps={{ readOnly: true }}
-            helperText={
-              numberError
-                ? "자동 채번 조회에 실패해 기본 번호를 넣었습니다."
-                : "접수번호는 자동 생성됩니다."
-            }
+            helperText="접수번호는 서버에서 자동 생성됩니다."
             sx={fieldSx}
           />
           <Stack direction={{ xs: "column", sm: "row" }} spacing={1}>
@@ -463,8 +420,6 @@ export default function InpatientReceptionForm({
             onClick={handleSubmit}
             disabled={
               loading ||
-              numberLoading ||
-              !form.receptionNo.trim() ||
               !form.patientId.trim() ||
               !form.departmentId.trim() ||
               !form.admissionPlanAt.trim()

@@ -57,7 +57,7 @@ export default function InpatientReceptionDetailPage() {
         form: toUpdateForm(p, nextStatus),
       })
     );
-    router.push("/reception/admission/list");
+    router.push("/reception/inpatient/list");
   };
 
   const statusLabel = (value?: ReceptionStatus | string | null) => {
@@ -117,12 +117,12 @@ export default function InpatientReceptionDetailPage() {
             )}
 
             <Stack direction="row" spacing={1} flexWrap="wrap">
-              <Button variant="outlined" onClick={() => router.push("/reception/admission/list")}>
+              <Button variant="outlined" onClick={() => router.push("/reception/inpatient/list")}>
                 뒤로
               </Button>
               <Button
                 variant="contained"
-                onClick={() => router.push(`/reception/admission/edit/${receptionId}`)}
+                onClick={() => router.push(`/reception/inpatient/edit/${receptionId}`)}
                 disabled={!p}
               >
                 수정

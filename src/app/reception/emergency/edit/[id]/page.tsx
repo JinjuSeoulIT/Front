@@ -52,7 +52,7 @@ export default function EditEmergencyReceptionPage() {
           doctorId: current?.doctorId ? String(current.doctorId) : "",
           scheduledAt: current?.scheduledAt ?? "",
           arrivedAt: current?.arrivedAt ?? "",
-          status: current?.status ?? "REGISTERED",
+          status: current?.status ?? "WAITING",
           note: current?.note ?? "",
           triageNote: current?.triageNote ?? "",
           triageLevel: current?.triageLevel ? String(current.triageLevel) : "",
