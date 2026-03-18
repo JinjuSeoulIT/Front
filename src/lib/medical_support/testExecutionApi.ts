@@ -16,3 +16,48 @@ export const fetchTestExecutionsApi = async (): Promise<TestExecution[]> => {
 
   return res.data.result;
 };
+
+export const fetchTestExecutionApi = async (
+  testExecutionId: string | number
+): Promise<TestExecution> => {
+  const res = await api.get<ApiResponse<TestExecution>>(
+    `/api/testExecution/${testExecutionId}`
+  );
+
+  if (!res.data.success) {
+    throw new Error(res.data.message || "검사수행 상세 조회에 실패했습니다.");
+  }
+
+  return res.data.result;
+};
+
+export const createTestExecutionApi = async (
+  payload: TestExecution
+): Promise<TestExecution> => {
+  const res = await api.post<ApiResponse<TestExecution>>(
+    "/api/testExecution",
+    payload
+  );
+
+  if (!res.data.success) {
+    throw new Error(res.data.message || "검사수행 등록에 실패했습니다.");
+  }
+
+  return res.data.result;
+};
+
+export const updateTestExecutionApi = async (
+  testExecutionId: string | number,
+  payload: TestExecution
+): Promise<TestExecution> => {
+  const res = await api.put<ApiResponse<TestExecution>>(
+    `/api/testExecution/${testExecutionId}`,
+    payload
+  );
+
+  if (!res.data.success) {
+    throw new Error(res.data.message || "검사수행 수정에 실패했습니다.");
+  }
+
+  return res.data.result;
+};

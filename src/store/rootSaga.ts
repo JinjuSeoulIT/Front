@@ -6,6 +6,7 @@ import { watchInsuranceSaga } from "@/features/insurance/insuranceSaga";
 import { watchInpatientReceptionSaga } from "@/features/InpatientReceptions/InpatientReceptionSaga";
 import { watchPatientSaga } from "@/features/patients/patientSaga";
 import { watchRecordSaga } from "@/features/medical_support/record/recordSaga";
+import { watchTestExecutionSaga } from "@/features/medical_support/testexecution/testexecutionSaga";
 import { watchReceptionSaga as watchReceptionsSaga } from "@/features/Receptions/ReceptionSaga";
 import { watchReservationSaga } from "@/features/Reservations/ReservationSaga";
 
@@ -15,6 +16,7 @@ export default function* rootSaga() {
     fork(watchInpatientReceptionSaga),
     fork(watchPatientSaga),
     fork(watchRecordSaga),
+    fork(watchTestExecutionSaga),
     fork(watchInsuranceSaga),
     fork(watchConsentSaga),
     fork(watchReceptionsSaga),

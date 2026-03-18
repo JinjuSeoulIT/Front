@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import type { ChangeEvent } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Alert,
   Box,
@@ -16,15 +17,24 @@ import {
   TableCell,
   TableContainer,
   TableHead,
+  TablePagination,
   TableRow,
   Typography,
 } from "@mui/material";
+import AddIcon from "@mui/icons-material/Add";
 import RefreshIcon from "@mui/icons-material/Refresh";
-import type { TestExecution } from "@/features/medical_support/testexecution/testexecutionType";
-import { fetchTestExecutionsApi } from "@/lib/medical_support/testexecutionApi";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useDispatch, useSelector } from "react-redux";
+import { TestExecutionActions } from "@/features/medical_support/testexecution/testexecutionSlice";
+import type { RootState } from "@/store/rootReducer";
+import type { AppDispatch } from "@/store/store";
 
-const DONE_STATUSES = ["COMPLETED", "DONE", "FINISHED", "SUCCESS"];
-const ACTIVE_STATUSES = ["IN_PROGRESS", "INPROGRESS", "RUNNING", "PROCESSING"];
+// const DONE_STATUSES = ["COMPLETED", "DONE", "FINISHED", "SUCCESS"];
+// const ACTIVE_STATUSES = ["IN_PROGRESS", "INPROGRESS", "RUNNING", "PROCESSING"];
+
+const DONE_STATUSES = ["COMPLETED"];
+const ACTIVE_STATUSES = ["IN_PROGRESS"];
 
 const formatDateTime = (value?: string | null) => {
   if (!value) return "-";
@@ -49,18 +59,53 @@ const formatDateTime = (value?: string | null) => {
 const normalizeStatus = (value?: string | null) =>
   value?.trim().toUpperCase() ?? "";
 
+// const getStatusColor = (
+//   status?: string | null
+// ): "default" | "info" | "warning" | "success" => {
+//   const normalized = normalizeStatus(status);
+
+//   if (DONE_STATUSES.includes(normalized)) return "success";
+//   if (ACTIVE_STATUSES.includes(normalized)) return "info";
+//   if (["PENDING", "WAITING", "RETRY", "RETRYING"].includes(normalized)) {
+//     return "warning";
+//   }
+
+//   return "default";
+// };
+
 const getStatusColor = (
   status?: string | null
-): "default" | "info" | "warning" | "success" => {
+): "default" | "info" | "success" => {
   const normalized = normalizeStatus(status);
 
   if (DONE_STATUSES.includes(normalized)) return "success";
   if (ACTIVE_STATUSES.includes(normalized)) return "info";
-  if (["PENDING", "WAITING", "RETRY", "RETRYING"].includes(normalized)) {
-    return "warning";
-  }
 
   return "default";
+};
+
+const getStatusSx = (status?: string | null) => {
+  const normalized = normalizeStatus(status);
+
+if (normalized === "WAITING") {
+  return {
+    backgroundColor: "#616161",
+    color: "#ffffff",
+    fontWeight: 600,
+  };
+}
+
+if (normalized === "CANCELLED") {
+  return {
+    backgroundColor: "#eeeeee",
+    color: "#757575",
+    fontWeight: 500,
+  };
+}
+
+  return {
+    fontWeight: 600,
+  };
 };
 
 const safeValue = (value?: string | number | null) => {
@@ -70,32 +115,31 @@ const safeValue = (value?: string | number | null) => {
   return text ? text : "-";
 };
 
+const TABLE_HEADERS = [
+  "번호",
+  "검사수행 ID",
+  "오더항목 ID",
+  "검사유형",
+  "진행상태",
+  // "재시도횟수",
+  "시작일시",
+  "완료일시",
+  // "수행자 ID",
+  // "수정일시",
+];
+
 export default function TestExecutionList() {
-  const [items, setItems] = useState<TestExecution[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const loadTestExecutions = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-
-    try {
-      const data = await fetchTestExecutionsApi();
-      setItems(data);
-    } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : "검사수행 목록을 불러오지 못했습니다."
-      );
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const dispatch = useDispatch<AppDispatch>();
+  const router = useRouter();
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const { list: items, loading, error } = useSelector(
+    (state: RootState) => state.testexecutions
+  );
 
   useEffect(() => {
-    void loadTestExecutions();
-  }, [loadTestExecutions]);
+    dispatch(TestExecutionActions.fetchTestExecutionsRequest());
+  }, [dispatch]);
 
   const completedCount = useMemo(
     () =>
@@ -112,6 +156,29 @@ export default function TestExecutionList() {
       ).length,
     [items]
   );
+
+  const maxPage = Math.max(0, Math.ceil(items.length / rowsPerPage) - 1);
+  const currentPage = Math.min(page, maxPage);
+
+  const paginatedItems = useMemo(
+    () =>
+      items.slice(
+        currentPage * rowsPerPage,
+        currentPage * rowsPerPage + rowsPerPage
+      ),
+    [currentPage, items, rowsPerPage]
+  );
+
+  const handleChangePage = (_event: unknown, newPage: number) => {
+    setPage(newPage);
+  };
+
+  const handleChangeRowsPerPage = (
+    event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
+    setRowsPerPage(Number(event.target.value));
+    setPage(0);
+  };
 
   return (
     <Box sx={{ px: 3, py: 3, maxWidth: 1400, mx: "auto" }}>
@@ -137,10 +204,10 @@ export default function TestExecutionList() {
           >
             <Box sx={{ minWidth: 240, flex: "1 1 280px" }}>
               <Typography variant="h6" fontWeight={700}>
-                검사수행 목록
+                검사 수행 목록
               </Typography>
               <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-                검사수행 API 데이터를 바로 조회하는 첫 화면입니다.
+              검사 수행하는 목록을 조회하고 상세 페이지로 이동할 수 있습니다.
               </Typography>
             </Box>
 
@@ -149,7 +216,7 @@ export default function TestExecutionList() {
             >
               <Chip label={`총 ${items.length}건`} size="small" />
               <Chip
-                label={`진행중 ${inProgressCount}건`}
+                label={`진행 중 ${inProgressCount}건`}
                 size="small"
                 color="info"
                 variant="outlined"
@@ -164,10 +231,35 @@ export default function TestExecutionList() {
                 variant="outlined"
                 size="small"
                 startIcon={<RefreshIcon />}
-                onClick={() => void loadTestExecutions()}
+                onClick={() => dispatch(TestExecutionActions.fetchTestExecutionsRequest())}
                 disabled={loading}
               >
                 새로고침
+              </Button>
+              <Button
+                component={Link}
+                href="/medical_support/testexecution/create"
+                variant="contained"
+                size="small"
+                startIcon={<AddIcon />}
+                sx={{
+                  whiteSpace: "nowrap",
+                  borderRadius: 2,
+                  px: 1.75,
+                  height: 36,
+                  flexShrink: 0,
+                  color: "#fff7f0",
+                  background:
+                    "linear-gradient(135deg, #f08c3a 0%, #db5f2c 100%)",
+                  boxShadow: "0 8px 18px rgba(219, 95, 44, 0.22)",
+                  "&:hover": {
+                    background:
+                      "linear-gradient(135deg, #e07c2f 0%, #c74f23 100%)",
+                    boxShadow: "0 10px 22px rgba(199, 79, 35, 0.28)",
+                  },
+                }}
+              >
+                검사 수행 등록
               </Button>
             </Box>
           </Box>
@@ -202,17 +294,7 @@ export default function TestExecutionList() {
                 <Table size="small" stickyHeader sx={{ minWidth: 1200 }}>
                   <TableHead>
                     <TableRow>
-                      {[
-                        "검사수행 ID",
-                        "오더항목 ID",
-                        "검사유형",
-                        "진행상태",
-                        "재시도횟수",
-                        "시작일시",
-                        "완료일시",
-                        "수행자 ID",
-                        "수정일시",
-                      ].map((label) => (
+                      {TABLE_HEADERS.map((label) => (
                         <TableCell
                           key={label}
                           align="center"
@@ -232,21 +314,30 @@ export default function TestExecutionList() {
                   <TableBody>
                     {items.length === 0 && (
                       <TableRow>
-                        <TableCell colSpan={9} align="center" sx={{ py: 5 }}>
-                          조회된 검사수행 데이터가 없습니다.
+                        <TableCell colSpan={10} align="center" sx={{ py: 5 }}>
+                          검사 수행 데이터가 없습니다.
                         </TableCell>
                       </TableRow>
                     )}
 
-                    {items.map((item) => (
+                    {paginatedItems.map((item, index) => (
                       <TableRow
                         key={String(item.testExecutionId)}
                         hover
                         sx={{
+                          cursor: "pointer",
                           "& td": { py: 1.25, whiteSpace: "nowrap" },
                           "&:hover": { backgroundColor: "#f9fbff" },
                         }}
+                        onClick={() =>
+                          router.push(
+                            `/medical_support/testexecution/detail/${item.testExecutionId}`
+                          )
+                        }
                       >
+                        <TableCell align="center">
+                          {currentPage * rowsPerPage + index + 1}
+                        </TableCell>
                         <TableCell align="center">
                           {safeValue(item.testExecutionId)}
                         </TableCell>
@@ -257,30 +348,50 @@ export default function TestExecutionList() {
                           {safeValue(item.executionType)}
                         </TableCell>
                         <TableCell align="center">
+                          {/* <Chip
+                            label={safeValue(item.progressStatus)}
+                            color={getStatusColor(item.progressStatus)}
+                            size="small"
+                          /> */}
                           <Chip
                             label={safeValue(item.progressStatus)}
                             color={getStatusColor(item.progressStatus)}
                             size="small"
-                          />
+                            sx={getStatusSx(item.progressStatus)}
+                            />
                         </TableCell>
-                        <TableCell align="center">{safeValue(item.retryNo)}</TableCell>
+                        {/* <TableCell align="center">{safeValue(item.retryNo)}</TableCell> */}
                         <TableCell align="center">
                           {formatDateTime(item.startedAt)}
                         </TableCell>
                         <TableCell align="center">
                           {formatDateTime(item.completedAt)}
                         </TableCell>
-                        <TableCell align="center">
+                        {/* <TableCell align="center">
                           {safeValue(item.performerId)}
                         </TableCell>
                         <TableCell align="center">
                           {formatDateTime(item.updatedAt)}
-                        </TableCell>
+                        </TableCell> */}
                       </TableRow>
                     ))}
                   </TableBody>
                 </Table>
               </TableContainer>
+
+              <TablePagination
+                component="div"
+                count={items.length}
+                page={currentPage}
+                onPageChange={handleChangePage}
+                rowsPerPage={rowsPerPage}
+                onRowsPerPageChange={handleChangeRowsPerPage}
+                rowsPerPageOptions={[10, 20, 50]}
+                labelRowsPerPage="페이지당 행 수"
+                labelDisplayedRows={({ from, to, count }) =>
+                  `${from}-${to} / 총 ${count}`
+                }
+              />
             </Paper>
           )}
         </CardContent>
