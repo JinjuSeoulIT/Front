@@ -5,7 +5,7 @@ import { Button, Card, CardContent, Divider, Stack, Typography } from "@mui/mate
 
 const menus = [
   { title: "의사 목록", path: "/staff/employee/doctor/SignUp/list" },
-  { title: "의사 업무", path: "/staff/employee/doctor/record" },
+  { title: "의사 업무", path: "/doctor" },
 ];
 
 const DoctorDashboard = () => {
@@ -19,7 +19,7 @@ const DoctorDashboard = () => {
         </Typography>
         <Divider sx={{ mb: 2 }} />
         <Stack spacing={1.5}>
-          {menus.map((menu) => (
+            {menus.map((menu) => (
             <Button
               key={menu.title}
               variant="contained"

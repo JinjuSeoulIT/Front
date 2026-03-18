@@ -3,11 +3,11 @@ export type NurseResponse = {
   staffId: string;
   deptId?: string;
   name?: string;
+  status : string;
 
   licenseNo: string;
   nurseType: string;
   shiftType: string;
-
   nurseFileUrl: string | null;
   education: string;
   careerDetail: string;
@@ -15,16 +15,25 @@ export type NurseResponse = {
 
 
 
-
 export type NurseStaffIdParam = {
   staffId: string;
 };
+
+
+
+
+
+
+//생성
+export type NurseIdNumber = {
+  staffId: string;
+};
+
 export type NurseCreateRequest = {
   staffId: string;
   licenseNo: string;
   nurseType?: string | null;
   shiftType: string;
-
   nurseFileUrl: string | null;
   education: string;
   careerDetail: string;
@@ -39,16 +48,12 @@ export const initialNurseCreateForm: NurseCreateRequest = {
   education: "",
   careerDetail: "",
 };
+//생성
 
 
 
 
-
-export type NurseUpdateNumber = {
-  staffId: string;
-  nurseReq: NurseUpdateRequest;
-};
-
+///수정
 export type NurseUpdateRequest = {
   staffId: string;
   licenseNo: string;
@@ -66,11 +71,11 @@ export const initialNurseUpdateForm: NurseUpdateRequest = {
   education: "",
   careerDetail: "",
 };
-
-
-
-
-
+export type NurseUpdateNumber = {
+  staffId: string;
+  nurseReq: NurseUpdateRequest;
+};
+///수정
 
 
 
@@ -92,4 +97,16 @@ export type ApiResponse<T> = {
   success: boolean;
   message: string;
   data: T;
+};
+
+//컴포넌트 타입
+export type Props = { params: Promise<{ id: string }> };
+
+
+//검색 타입
+export type NurseSearchType = "all" | "name" | "staffId" | "dept" | "shiftType";
+
+export type SearchNursePayload = {
+  search: string;
+  searchType: NurseSearchType;
 };

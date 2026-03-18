@@ -6,12 +6,11 @@ import { useRouter } from "next/navigation";
 import { Alert, Box, Button, Divider, Paper, Stack, Typography } from "@mui/material";
 import type { RootState } from "@/store/rootReducer";
 import { DetailStaffRequest } from "@/features/employee/Staff/BasiclnfoSlict";
+import { staffIdNumber } from "@/features/employee/Staff/BasiclnfoType";
 
-type Props = {
-  staffId: string;
-};
 
-const BasicInfoDetail = ({ staffId }: Props) => {
+
+const BasicInfoDetail = ({ staffId }:staffIdNumber) => {
   const dispatch = useDispatch();
   const router = useRouter();
   const { StaffDetail, loading, error } = useSelector((state: RootState) => state.staff);
@@ -39,10 +38,9 @@ const BasicInfoDetail = ({ staffId }: Props) => {
             onClick={() => router.push(`/staff/employee/Basiclnfo/${staffId}/edit`)}>수정</Button>
 
             <Button variant="contained" 
-            onClick={() => router.push(`/staff/employee/doctor/SignUp/${staffId}/create`)}>의사 등록</Button>
+            onClick={() => router.push(`/staff/employee/Basiclnfo/${staffId}/board`)}>직업 등록</Button>
 
-            <Button variant="contained" 
-            color="success" onClick={() => router.push(`/staff/employee/nurse/SignUp/${staffId}/create`)}>간호사 등록</Button>
+          
           </Stack>
         </Stack>
 
@@ -83,12 +81,16 @@ const BasicInfoDetail = ({ staffId }: Props) => {
               <strong>성별코드:</strong> {StaffDetail.genderCode}
               </Typography>
 
+              <Typography>
+              <strong>상태:</strong> {StaffDetail.status}
+              </Typography>
+
 
             <Divider sx={{ my: 1 }} />
             <Typography><strong>우편번호:</strong> {StaffDetail.zipCode}</Typography>
-            <Typography><strong>주소1:</strong> {StaffDetail.address1}</Typography>
-            <Typography><strong>주소2:</strong> {StaffDetail.address2}</Typography>
-            <Typography><strong>상태:</strong> {StaffDetail.status}</Typography>
+            <Typography><strong>주소1:</strong>    {StaffDetail.address1}</Typography>
+            <Typography><strong>주소2:</strong>    {StaffDetail.address2}</Typography>
+            <Typography><strong>상태:</strong>     {StaffDetail.status}</Typography>
           </Stack>
 
         )}

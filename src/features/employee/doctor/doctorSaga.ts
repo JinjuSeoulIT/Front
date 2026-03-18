@@ -11,6 +11,7 @@ import type {
   DoctorIdNumber,
   DoctorUpdateNumber,
   FileUploadResDTO,
+  SearchDoctorPayload,
 } from "./doctortypes";
 
 import {
@@ -32,6 +33,9 @@ import {
   uploadDoctorFileRequest,
   uploadDoctorFileSuccess,
   uploadDoctorFileFailure,
+  searchDoctorListSuccess,
+  searchDoctorListFailure,
+  searchDoctorListRequest,
 } from "./doctorSlice";
 
 import {
@@ -41,21 +45,33 @@ import {
   updateDoctorApi,
   deleteDoctorApi,
   uploadFileApi,
+  searchDoctorListApi,
 } from "../../../lib/employeedoctorAPI";
 
-type ApiErrorPayload = { message?: string };
 
-function getErrorMessage(error: unknown, fallback: string): string {
-  if (axios.isAxiosError<ApiErrorPayload>(error)) {
-    const apiMessage = error.response?.data?.message;
-    if (apiMessage) return apiMessage;
 
-    const status = error.response?.status;
-    if (status) return `${fallback} (HTTP ${status})`;
+
+
+
+
+//검색
+function* searchDoctorListSaga(action: PayloadAction<SearchDoctorPayload>): SagaIterator {
+  try {
+    const { search, searchType } = action.payload;
+    const response:ApiResponse<DoctorResponse[]> = yield call(searchDoctorListApi, search, searchType);
+    console.log(response);
+    if (response.success) {
+    yield put(searchDoctorListSuccess(response.data));
+    } else {
+    yield put(searchDoctorListFailure(response.message));
+    }
+  
+  } catch (error: unknown) {
+    yield put(searchDoctorListFailure( "의사 검색 실패 500"));
   }
-  return fallback;
 }
 
+//조회
 function* doctorListSaga(): SagaIterator {
   try {
     const response: ApiResponse<DoctorResponse[]> = yield call(DoctorProfileListApi);
@@ -65,10 +81,11 @@ function* doctorListSaga(): SagaIterator {
       yield put(DoctorListFailure(response.message));
     }
   } catch (error: unknown) {
-    yield put(DoctorListFailure(getErrorMessage(error, "의사 목록 조회 실패")));
+    yield put(DoctorListFailure( "의사 목록 조회 실패 500"));
   }
 }
 
+//상세조회
 function* detailDoctorSaga(action: PayloadAction<DoctorIdNumber>): SagaIterator {
   try {
     const response: ApiResponse<DoctorResponse> = yield call(DoctorProfileDetailApi, action.payload);
@@ -78,10 +95,11 @@ function* detailDoctorSaga(action: PayloadAction<DoctorIdNumber>): SagaIterator 
       yield put(DetailDoctorFailure(response.message));
     }
   } catch (error: unknown) {
-    yield put(DetailDoctorFailure(getErrorMessage(error, "의사 상세 조회 실패")));
+    yield put(DetailDoctorFailure( "의사 상세 조회 실패 500" ));
   }
 }
 
+//생성
 function* createDoctorSaga(action: PayloadAction<DoctorCreateRequest>): SagaIterator {
   try {
     const response: ApiResponse<DoctorResponse> = yield call(createDoctorApi, action.payload);
@@ -91,10 +109,11 @@ function* createDoctorSaga(action: PayloadAction<DoctorCreateRequest>): SagaIter
       yield put(createDoctorFailure(response.message));
     }
   } catch (error: unknown) {
-    yield put(createDoctorFailure(getErrorMessage(error, "의사 등록 실패")));
+    yield put(createDoctorFailure("의사 등록 실패 500"));
   }
 }
 
+//수정
 function* updateDoctorSaga(action: PayloadAction<DoctorUpdateNumber>): SagaIterator {
   try {
     const { staffId, doctorReq } = action.payload;
@@ -105,10 +124,11 @@ function* updateDoctorSaga(action: PayloadAction<DoctorUpdateNumber>): SagaItera
       yield put(updateDoctorFailure(response.message));
     }
   } catch (error: unknown) {
-    yield put(updateDoctorFailure(getErrorMessage(error, "의사 수정 실패")));
+    yield put(updateDoctorFailure("의사 수정 실패 500"));
   }
 }
 
+//삭제
 function* deleteDoctorSaga(action: PayloadAction<DoctorIdNumber>): SagaIterator {
   try {
     const response: ApiResponse<void> = yield call(deleteDoctorApi, action.payload.staffId);
@@ -118,10 +138,12 @@ function* deleteDoctorSaga(action: PayloadAction<DoctorIdNumber>): SagaIterator 
       yield put(deleteDoctorFailure(response.message));
     }
   } catch (error: unknown) {
-    yield put(deleteDoctorFailure(getErrorMessage(error, "의사 삭제 실패")));
+    yield put(deleteDoctorFailure("의사 삭제 실패 500"));
   }
 }
 
+
+//업로드
 function* uploadDoctorFileSaga(action: PayloadAction<DoctorFile>): SagaIterator {
   try {
     const { staffId, file } = action.payload;
@@ -132,11 +154,13 @@ function* uploadDoctorFileSaga(action: PayloadAction<DoctorFile>): SagaIterator 
       yield put(uploadDoctorFileFailure(response.message));
     }
   } catch (error: unknown) {
-    yield put(uploadDoctorFileFailure(getErrorMessage(error, "파일 업로드 실패")));
+    yield put(uploadDoctorFileFailure( "파일 업로드 실패 500"));
   }
 }
 
+
 export function* watchEmployeedoctorSaga(): SagaIterator {
+  yield takeLatest(searchDoctorListRequest.type, searchDoctorListSaga);
   yield takeLatest(DoctorListRequest.type, doctorListSaga);
   yield takeLatest(DetailDoctorRequest.type, detailDoctorSaga);
   yield takeLatest(createDoctorRequest.type, createDoctorSaga);

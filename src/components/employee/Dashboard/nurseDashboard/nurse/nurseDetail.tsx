@@ -7,22 +7,29 @@ import { Alert, Box, Button, CircularProgress, Divider, Paper, Stack, Table, Tab
 
 import type { RootState } from "@/store/rootReducer";
 import { DetailNurseRequest, resetSuccessEnd } from "@/features/employee/nurse/nurseSlice";
-import { NurseStaffIdParam } from "@/features/employee/nurse/nurseTypes";
+import { NurseIdNumber } from "@/features/employee/nurse/nurseTypes";
 import NurseUpload from "./nurseUpload";
+import StatusBadge from "../../BasiclnfoDashboard/Basiclnfo/BasiclnfoStatus/StatusBadge";
 
-const NurseDetail = ({ staffId }: NurseStaffIdParam) => {
+const NurseDetail = ({ staffId }: NurseIdNumber) => {
   const dispatch = useDispatch();
   const router = useRouter();
   const { nurseDetail, loading, error } = useSelector((state: RootState) => state.nurse);
 
+
+
+  const goEeployeeList = () => router.push("/staff/employee/Basiclnfo/list");
+  const goNurseList = () => router.replace("/staff/employee/nurse/SignUp/list");
+  const goEdit = () => router.push(`/staff/employee/nurse/SignUp/${staffId}/edit`);
+
+
+  
   useEffect(() => {
     if (!staffId) return;
     dispatch(DetailNurseRequest({ staffId }));
     dispatch(resetSuccessEnd());
   }, [dispatch, staffId]);
 
-  const goList = () => router.replace("/staff/employee/nurse/SignUp/list");
-  const goEdit = () => router.push(`/staff/employee/nurse/SignUp/${staffId}/edit`);
 
   return (
     <Box sx={{ maxWidth: 980, mx: "auto", px: 2, py: 2 }}>
@@ -31,15 +38,16 @@ const NurseDetail = ({ staffId }: NurseStaffIdParam) => {
           <Typography variant="h6" fontWeight={800}>간호사 상세</Typography>
         </Stack>
 
-        {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
-        {loading && <Box sx={{ display: "flex", justifyContent: "center", py: 4 }}><CircularProgress /></Box>}
+            <Stack direction="row" spacing={1.5} justifyContent="pace-between" sx={{ mt: 2 }} >
+            <Button variant="contained" onClick={goEeployeeList}  sx={{ bgcolor: "#da342f" }}> 직원 목록</Button>
+            </Stack>
 
 
 
 
-
-        {!loading && nurseDetail && (
-          <Stack spacing={3}>
+            
+            {!loading && nurseDetail && (
+            <Stack spacing={3}>
             <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", mb: 1 }}>
               {nurseDetail.nurseFileUrl ? (
                 <Box component="img" src={nurseDetail.nurseFileUrl} alt="간호사 프로필" 
@@ -100,18 +108,34 @@ const NurseDetail = ({ staffId }: NurseStaffIdParam) => {
                   <TableCell>{nurseDetail.careerDetail ?? "-"}
                   </TableCell>
                   </TableRow>
+
+                  <TableRow>
+                  <TableCell sx={{ fontWeight: 700 }}>상태
+                  </TableCell>
+                  <TableCell>
+
+                  <StatusBadge status= {nurseDetail.status ?? "-"}></StatusBadge>
+                  
+                  </TableCell>
+                  </TableRow>
               </TableBody>
             </Table>
 
 
 
-            <Stack direction="row" spacing={1.5}>
-              <Button variant="outlined" onClick={goList}>목록</Button>
+            <Stack direction="row" spacing={1.5} justifyContent="flex-end" sx={{ mt: 2 }} >
+              <Button variant="outlined" onClick={goNurseList}>목록</Button>
               <Button variant="contained" onClick={goEdit} sx={{ bgcolor: "#2b5aa9" }}>수정</Button>
             </Stack>
 
+        {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+        {loading && <Box sx={{ display: "flex", justifyContent: "center", py: 4 }}>
+          <CircularProgress />
+          </Box>}
+
             <NurseUpload staffId={staffId} />
           </Stack>
+          
         )}
       </Paper>
     </Box>

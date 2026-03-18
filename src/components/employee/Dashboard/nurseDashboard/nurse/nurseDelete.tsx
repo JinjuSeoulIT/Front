@@ -40,7 +40,7 @@ const NurseDelete = ({ open, staffId, onClose }: Props) => {
   }, [deleteSuccess, dispatch, onClose]);
 
   return (
-    <Dialog open={open} onClose={loading ? undefined : onClose} maxWidth="xs" fullWidth>
+      <Dialog open={open} onClose={loading ? undefined : onClose} maxWidth="xs" fullWidth>
       <DialogTitle>간호사 삭제</DialogTitle>
 
       <DialogContent>

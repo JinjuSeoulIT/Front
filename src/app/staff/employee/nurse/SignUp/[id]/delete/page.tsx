@@ -1,7 +1,7 @@
 import MainLayout from "@/components/layout/MainLayout";
 import NurseDelete from "@/components/employee/Dashboard/nurseDashboard/nurse/nurseDelete";
+import { Props } from "@/features/employee/Staff/BasiclnfoType";
 
-type Props = { params: Promise<{ id: string }> };
 
 export default async function DeletePage({ params }: Props) {
   const { id } = await params;

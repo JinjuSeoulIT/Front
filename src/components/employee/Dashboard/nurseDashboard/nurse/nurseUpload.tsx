@@ -5,11 +5,11 @@ import { useDispatch, useSelector } from "react-redux";
 import type { RootState } from "@/store/rootReducer";
 import type { AppDispatch } from "@/store/store";
 import { Alert, Box, Button, CircularProgress, Divider, Paper, Stack, Typography } from "@mui/material";
-import { NurseStaffIdParam } from "@/features/employee/nurse/nurseTypes";
+import { NurseIdNumber } from "@/features/employee/nurse/nurseTypes";
 import { useRouter } from "next/navigation";
 import { resetSuccessEnd, uploadNurseFileRequest } from "@/features/employee/nurse/nurseSlice";
 
-export default function NurseUpload({ staffId }: NurseStaffIdParam) {
+export default function NurseUpload({ staffId }: NurseIdNumber) {
   const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
 
@@ -49,6 +49,8 @@ export default function NurseUpload({ staffId }: NurseStaffIdParam) {
 
 
 
+
+
   //성공하면
     useEffect(() => {
     if (!uploadSuccess) return;
@@ -57,11 +59,6 @@ export default function NurseUpload({ staffId }: NurseStaffIdParam) {
     dispatch(resetSuccessEnd());
   }, [uploadSuccess, router, dispatch]);
 
-  
-
-
-
-
 
 
   return (
@@ -69,8 +66,9 @@ export default function NurseUpload({ staffId }: NurseStaffIdParam) {
       <Paper elevation={0} sx={{ p: { xs: 3, md: 4 }, borderRadius: 3, border: "1px solid #dbe5f5", bgcolor: "white", boxShadow: "0 14px 28px rgba(23, 52, 97, 0.15)" }}>
         <Stack spacing={2.5}>
           <Stack spacing={0.5}>
+            
             <Typography variant="h6" fontWeight={800}>간호사 프로필 이미지 업로드</Typography>
-            <Typography color="text.secondary" fontWeight={600}>staffId 기준으로 이미지 업로드를 연결합니다.</Typography>
+          
           </Stack>
 
           <Divider />

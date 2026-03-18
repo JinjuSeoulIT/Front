@@ -17,7 +17,8 @@ import {
 import type { RootState } from "@/store/rootReducer";
 import {
   createStaffRequest,
-  resetCreateSuccess,
+  resetSuccessEnd,
+
 } from "@/features/employee/Staff/BasiclnfoSlict";
 import {
   initialstaffCreateForm,
@@ -46,13 +47,11 @@ const BasicInfoCreate = () => {
     return;
   }
 
-  // ✅ 성별코드 1자리 검증
+    // ✅ 성별코드 1자리 검증
   if (form.genderCode && !/^[1-4]$/.test(form.genderCode.trim())) {
     alert("2000년생 이상  3[남].4[여]");
     return;
   }
-
-
 
     dispatch(createStaffRequest({
       staffId: form.staffId.trim(),
@@ -105,7 +104,7 @@ const BasicInfoCreate = () => {
     if (!createSuccess) return;
 
     router.replace("/staff/employee/Basiclnfo/list");
-    dispatch(resetCreateSuccess());
+    dispatch(resetSuccessEnd());
   }, [createSuccess, dispatch, router]);
 
 
@@ -240,7 +239,7 @@ helperText={
             <Stack direction={{ xs: "column", md: "row" }} spacing={2}>
                     <TextField select label="상태" name="status" value={form.status} onChange={handleChange} fullWidth>
                             <MenuItem value="ACTIVE">ACTIVE</MenuItem>
-                <MenuItem value="INACTIVE">INACTIVE</MenuItem>
+                            <MenuItem value="INACTIVE">INACTIVE</MenuItem>
                     </TextField>
             </Stack>
 

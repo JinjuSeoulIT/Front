@@ -3,6 +3,8 @@ export type DoctorResponse = {
   staffId: string;
   deptId?: string;
   name?: string;
+  status : string;
+ 
   licenseNo: string;
   doctorType: string | null;
   specialtyId: string;
@@ -12,11 +14,18 @@ export type DoctorResponse = {
   careerDetail: string;
 };
 
-export type DoctorIdNumber = {
+
+export type DoctorStaffIdParam = {
   staffId: string;
 };
 
-export type DoctorStaffIdParam = {
+
+
+
+
+
+//생성
+export type DoctorIdNumber = {
   staffId: string;
 };
 
@@ -42,7 +51,11 @@ export const initialDoctorCreateForm: DoctorCreateRequest = {
   education: "",
   careerDetail: "",
 };
+//생성
 
+
+
+///수정
 export type DoctorUpdateRequest = {
   staffId: string;
   licenseNo: string;
@@ -67,6 +80,13 @@ export type DoctorUpdateNumber = {
   staffId: string;
   doctorReq: DoctorUpdateRequest;
 };
+///수정
+
+
+
+
+
+
 
 export type DoctorFile = {
   staffId: string;
@@ -86,3 +106,21 @@ export type ApiResponse<T> = {
   message: string;
   data: T;
 };
+
+
+
+//컴포넌트 타입
+export type Props = { params: Promise<{ id: string }> };
+
+
+
+//검색 타입
+export type DoctorSearchType = "all" | "name" | "specialty" | "staffId" | "dept";
+
+export type SearchDoctorPayload = {
+  search: string;
+  searchType: DoctorSearchType;
+  // onSearch: (search: string, searchType: DoctorSearchType) => void;  //부모에게 넘겨주는형식
+};
+
+

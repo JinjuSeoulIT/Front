@@ -13,13 +13,12 @@ import {
 import LocalHospitalIcon from "@mui/icons-material/LocalHospital";
 import MedicationIcon from "@mui/icons-material/Medication";
 import VaccinesIcon from "@mui/icons-material/Vaccines";
+import { staffIdNumber } from "@/features/employee/Staff/BasiclnfoType";
 
-type Props = {
-  staffId?: number | string;
-  staffName?: string;
-};
 
-const StaffOnboardingHub = ({ staffId, staffName }: Props) => {
+
+
+const StaffOnboardingHub = ({ staffId }: staffIdNumber) => {
   const router = useRouter();
 
 
@@ -113,13 +112,9 @@ const StaffOnboardingHub = ({ staffId, staffName }: Props) => {
               다음 단계로 이동하여 직군별 상세 정보를 등록해주세요.
             </Typography>
 
-            {(staffId || staffName) && (
+            {(staffId ) && (
               <Box sx={{ mt: 2 }}>
-                {staffName && (
-                  <Typography variant="body2" sx={{ mb: 0.5 }}>
-                    <strong>직원명:</strong> {staffName}
-                  </Typography>
-                )}
+          
                 {staffId && (
                   <Typography variant="body2">
                     <strong>STAFF ID:</strong> {staffId}

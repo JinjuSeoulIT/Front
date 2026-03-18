@@ -8,9 +8,8 @@ import { Card, CardContent, Typography, Divider, Stack, Button } from "@mui/mate
 
 const menus = [
   { title: "간호 목록", path: "/staff/employee/nurse/SignUp/list" },
-  { title: "간호 업무", path: "/staff/employee/nurse/record/list" },
+  { title: "간호 업무", path: "/nurse/record/list" },
 ];
-
 const NurseDashboard = () => {
   
   

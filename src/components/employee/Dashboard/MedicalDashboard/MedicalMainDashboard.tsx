@@ -5,7 +5,6 @@ import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch, RootState } from "@/store/store";
 
 import type { PatientItem } from "@/features/employee/Dashboard/Dashboard.types";
-import MedicalPatient from "./MedicalPatient";
 import MedicalQuickMenu from "./MedicalQuickMenu";
 import EmployeeCommonDashboard from "../employeeDashboard/EmployeeCommonDashboard";
 import MedicalSummaryCards from "./MedicalStateCards";
@@ -50,13 +49,13 @@ const MedicalMainDashboard = () => {
       //환자 상태  (타입 "WAITING" / "TREATING"/ "DONE")
       <MedicalSummaryCards State={State} />
 
-      //환자 상세 목록
-      <MedicalPatient patients={receptions} />
+      {/* //환자 목록
+      <MedicalPatient receptions={receptions} /> */}
 
       //업무 목록
       <MedicalQuickMenu />
 
-      //직원 업무
+      //직원 관리
       <EmployeeCommonDashboard/>
     </div>
 

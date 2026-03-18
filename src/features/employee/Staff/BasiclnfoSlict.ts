@@ -1,38 +1,69 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import type {
+  SearchStaffPayload,
   staffCreateRequest,
   staffIdnNumber,
+  staffIdNumber,
   staffResponse,
 } from "./BasiclnfoType";
 
 type StaffState = {
   Stafflist: staffResponse[];
+  StaffSearch: staffResponse[];
+
+
   Staffcreate: staffResponse | null;
   StaffUpdate: staffResponse | null;
   StaffDetail: staffResponse | null;
   createSuccess: boolean;
   deleteSuccess: boolean;
   updateSuccess: boolean;
+
   loading: boolean;
   error: string | null;
+  SuccessEnd : boolean;
 };
 
 const initialState: StaffState = {
-  Stafflist: [],
+  Stafflist:   [],
+  StaffSearch: [],
+
   Staffcreate: null,
   StaffUpdate: null,
   StaffDetail: null,
   createSuccess: false,
   deleteSuccess: false,
   updateSuccess: false,
+
   loading: false,
   error: null,
+  SuccessEnd : false
 };
 
 const StaffSlice = createSlice({
   name: "staff",
   initialState,
   reducers: {
+
+        //검색
+        //“컴포넌트에서  디스패치하면서 실어 보내는 요청 데이터”
+    searchStaffListRequest(state, action: PayloadAction<SearchStaffPayload>) {
+      state.loading = true;
+      state.error = null;
+    },
+        //“서버에서 응답으로 받을 데이터”
+    searchStaffListSuccess(state, action: PayloadAction<staffResponse[]>) {
+      state.loading = false;  //// ✅ 성공시 액션 
+      state.StaffSearch = action.payload;  
+    },
+    searchStaffListFailure(state, action: PayloadAction<string>) {
+      state.loading = false;
+      state.error = action.payload;
+    },
+
+
+
+
     StafflistRequest(state) {
       state.loading = true;
       state.error = null;
@@ -90,7 +121,9 @@ const StaffSlice = createSlice({
       state.error = action.payload;
     },
 
-    deleteStaffRequest(state, _action: PayloadAction<string>) {
+
+
+    deleteStaffRequest(state, _action: PayloadAction<staffIdNumber>) {
       state.loading = true;
       state.error = null;
       state.deleteSuccess = false;
@@ -98,7 +131,9 @@ const StaffSlice = createSlice({
     deleteStaffSuccess(state) {
       state.loading = false;
       state.deleteSuccess = true;
+
     },
+
     deleteStaffFailure(state, action: PayloadAction<string>) {
       state.loading = false;
       state.error = action.payload;
@@ -106,31 +141,41 @@ const StaffSlice = createSlice({
     },
 
     //초기화용
-    resetCreateSuccess(state) {
+    resetSuccessEnd(state) {
       state.createSuccess = false;
       state.updateSuccess = false;
       state.deleteSuccess = false;
+      state.SuccessEnd = false;
     },
   },
 });
 
 export const {
+  searchStaffListRequest,
+  searchStaffListSuccess,
+  searchStaffListFailure,
+
   StafflistRequest,
   StafflistSuccess,
   StafflistFailure,
+
   DetailStaffRequest,
   DetailStaffSuccess,
   DetailStaffFailure,
+
   createStaffRequest,
   createStaffSuccess,
   createStaffFail,
+
   updateStaffRequest,
   updateStaffSuccess,
   updateStaffFailure,
+
   deleteStaffRequest,
   deleteStaffSuccess,
   deleteStaffFailure,
-  resetCreateSuccess,
+
+  resetSuccessEnd,
 } = StaffSlice.actions;
 
 export default StaffSlice.reducer;

@@ -1,11 +1,6 @@
 import DoctorCreate from "@/components/employee/Dashboard/doctorDashboard/doctor/doctorCreate";
 import MainLayout from "@/components/layout/MainLayout";
-
-type Props = {
-  params: Promise<{
-    id: string;
-  }>;
-};
+import { Props } from "@/features/employee/Staff/BasiclnfoType";
 
 export default async function CreatePage({ params }: Props) {
   const { id } = await params;

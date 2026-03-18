@@ -30,6 +30,9 @@ export default function DoctorUpload({ staffId }: DoctorIdNumber) {
     return () => URL.revokeObjectURL(objectUrl);
   }, [selectedFile]);
 
+
+
+  
   useEffect(() => {
     if (!uploadSuccess) return;
     setSelectedFile(null);
@@ -59,6 +62,8 @@ export default function DoctorUpload({ staffId }: DoctorIdNumber) {
     router.replace("/staff/employee/doctor/SignUp/list");
 
     dispatch(resetSuccessEnd());
+    
+    
   }, [uploadSuccess, router, dispatch]);
 
   
@@ -81,7 +86,7 @@ export default function DoctorUpload({ staffId }: DoctorIdNumber) {
         <Stack spacing={2.5}>
           <Stack spacing={0.5}>
             <Typography variant="h6" fontWeight={800}>의사 프로필 이미지 업로드</Typography>
-            <Typography color="text.secondary" fontWeight={600}>staffId 기준으로 이미지 업로드를 연결합니다.</Typography>
+            
           </Stack>
 
           <Divider />

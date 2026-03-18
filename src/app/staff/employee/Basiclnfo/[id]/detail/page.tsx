@@ -1,10 +1,6 @@
 import MainLayout from "@/components/layout/MainLayout";
 import BasicInfoDetail from "@/components/employee/Dashboard/BasiclnfoDashboard/Basiclnfo/BasiclnfoDetail";
-
-
-type Props = { params: Promise<{ id: string }> };
-
-
+import { Props } from "@/features/employee/Staff/BasiclnfoType";
 
 export default async function StaffDetailPage({ params }: Props) {
   const { id } = await params;
