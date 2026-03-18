@@ -33,21 +33,17 @@ export const DetailStaffApi = async (staffId: string): Promise<ApiResponse<staff
 };
 
 //생성
-export const createStaffApi = async (
-  staffReq: staffCreateRequest
-): Promise<ApiResponse<staffResponse>> => {
+export const createStaffApi = async (staffReq: staffCreateRequest): Promise<ApiResponse<staffResponse>> => {
   const response = await staffApi.post<ApiResponse<staffResponse>>("/api/staff/create", staffReq);
   return response.data;
 };
 
 //수정
-export const updateStaffApi = async (
-  staffId: string,
-  staffReq: staffUpdateRequest
-): Promise<ApiResponse<staffResponse>> => {
+export const updateStaffApi = async (staffId: string,staffReq: staffUpdateRequest): Promise<ApiResponse<staffResponse>> => {
   const response = await staffApi.put<ApiResponse<staffResponse>>(`/api/staff/update/${staffId}`, staffReq);
   return response.data;
 };
+
 
 //영구 삭제
 export const deleteStaffApi = async (staffId: string): Promise<ApiResponse<void>> => {
