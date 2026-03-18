@@ -3,7 +3,7 @@
 import { FormEvent, useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useRouter } from "next/navigation";
-import { Box, Button, MenuItem, Paper, Stack, Table, TableBody, TableCell, TableHead, TableRow, TextField, Typography } from "@mui/material";
+import { Alert, Box, Button, MenuItem, Paper, Stack, Table, TableBody, TableCell, TableHead, TableRow, TextField, Typography } from "@mui/material";
 
 import type { RootState } from "@/store/rootReducer";
 import {
@@ -11,7 +11,11 @@ import {
   resetSuccessEnd,
   searchNurseListRequest,
 } from "@/features/employee/nurse/nurseSlice";
-import type { NurseSearchType, SearchNursePayload } from "@/features/employee/nurse/nurseTypes";
+import type { NurseResponse, NurseSearchType, SearchNursePayload } from "@/features/employee/nurse/nurseTypes";
+import StatusBadge from "../../BasiclnfoDashboard/Basiclnfo/BasiclnfoStatus/StatusBadge";
+import NurseFont from "../nurse/Style/NurseFont";
+
+
 
 
 const NurseList = () => {
@@ -35,7 +39,8 @@ const NurseList = () => {
 
   const handleCreate = () => router.push("/staff/employee/nurse/SignUp/create");
 
-  const handleDetail = (staffId: string) => router.push(`/staff/employee/nurse/SignUp/${staffId}/detail`);
+  // const handleDetail = (staffId: string) => router.push(`/staff/employee/nurse/SignUp/${staffId}/detail`);
+
 
   const handleEdit = (staffId: string) => router.push(`/staff/employee/nurse/SignUp/${staffId}/edit`);
 
@@ -63,6 +68,26 @@ const NurseList = () => {
 const nurses = search.trim() ? nurseSearch : nurselist;
 
   
+
+
+
+
+const NurseDetail = (nurse: NurseResponse) => {
+
+
+   //의사 디테일로
+  if (nurse.nurseType) {
+    const path = `/staff/employee/nurse/SignUp/${nurse.staffId}/detail`;
+
+    console.log( path);
+    router.push(path);
+    return;
+  }
+
+}
+
+
+
 
   return (
     <Box sx={{ maxWidth: 1480, mx: "auto", px: 2, py: 2 }}>
@@ -106,38 +131,75 @@ const nurses = search.trim() ? nurseSearch : nurselist;
         </Box>
 
 
+
+
+
+
               <Table size="small">
               <TableHead>
                 <TableRow>
-                <TableCell>직원번호</TableCell>
-                <TableCell>이름</TableCell>
-                <TableCell>부서</TableCell>
-                <TableCell>간호사 면허번호</TableCell>
-                <TableCell>근무형태</TableCell>
-                <TableCell>직업</TableCell>
-                <TableCell>액션</TableCell>
+                <TableCell align="center">직원번호</TableCell>
+                <TableCell align="center"> 이름   </TableCell>
+                <TableCell align="center"> 부서   </TableCell>
+                <TableCell align="center">면허번호</TableCell>
+            
+                <TableCell align="center"> 직업   </TableCell>
+                <TableCell align="center">근무형태</TableCell>
+                <TableCell align="center">근무상태</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
-              {nurses.map((nurse) => (
+
+
+
+              {nurses.map((nurse) => {
+              
+        
+              return (
+
+
               <TableRow key={nurse.staffId}>
-                <TableCell>{nurse.staffId}</TableCell>
-                <TableCell>{nurse.name}</TableCell>
-                <TableCell>{nurse.deptId}</TableCell>
-                <TableCell>{nurse.licenseNo}</TableCell>
-                <TableCell>{nurse.shiftType}</TableCell>
-                <TableCell>{nurse.nurseType ?? "NURSE"}</TableCell>
-                <TableCell>
-                  <Button size="small" onClick={() => handleDetail(nurse.staffId)}>상세</Button>
+                <TableCell  align="center">{nurse.staffId}</TableCell>
+                <TableCell  align="center">{nurse.name}</TableCell>
+                <TableCell  align="center">{nurse.deptId}</TableCell>
+                <TableCell  align="center">{nurse.licenseNo}</TableCell>
+
+                <TableCell  align="center">
+                  <NurseFont nurseType={nurse.nurseType} />
+                  </TableCell>
+
+
+
+                <TableCell  align="center">
+                <StatusBadge status={nurse.status} />
+                </TableCell>
+
+
+                <TableCell  align="center">
+                  <Button size="small" onClick={() => NurseDetail(nurse)}>상세</Button>
+
                   <Button size="small" onClick={() => handleEdit(nurse.staffId)}>수정</Button>
                 </TableCell>
               </TableRow>
-            ))}
+              );
+              })}
             </TableBody>
             </Table>
 
+                {!nurselist.length && !loading && (
+                <TableRow>
+                <TableCell colSpan={8} align="center">
+                  조회된 직원이 없습니다.
+                </TableCell>
+                </TableRow>
+                )}
+              
+
+
+
         <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 2 }}>
           <Button variant="contained" onClick={handleCreate}>등록</Button>
+            {error && <Alert severity="error">{error}</Alert>}
         </Box>
       </Paper>
     </Box>

@@ -9,7 +9,10 @@ import type { RootState } from "@/store/rootReducer";
 import {DoctorListRequest, resetSuccessEnd, searchDoctorListRequest } from "@/features/employee/doctor/doctorSlice";
 
 
-import { DoctorSearchType, SearchDoctorPayload } from "@/features/employee/doctor/doctortypes";
+import { DoctorResponse, DoctorSearchType, SearchDoctorPayload } from "@/features/employee/doctor/doctortypes";
+import StatusBadge from "../../BasiclnfoDashboard/Basiclnfo/BasiclnfoStatus/StatusBadge";
+
+import DoctorFont from "../doctor/Style/DoctorFont";
 // import DoctorSearchBar from "./doctorSearchBar";
 
 const DoctorList = () => {
@@ -32,33 +35,63 @@ const DoctorList = () => {
   const handleHome = () => router.push("/staff/employee");
   //생성 라우팅
   const handleCreate = () => router.push("/staff/employee/Basiclnfo/list");
+
   //상세 라우팅
-  const handleDetail = (staffId: string) => router.push(`/staff/employee/doctor/SignUp/${staffId}/detail`);
+
+
+  // const handleDetail = (staffId: string) => router.push(`/staff/employee/doctor/SignUp/${staffId}/detail`);
   //수정 라우팅
+
+
+
   const handleEdit = (staffId: string) => router.push(`/staff/employee/doctor/SignUp/${staffId}/edit`);
 
 
 
-//검색바
-  const handleSubmit = (event: FormEvent) => {
+
+
+
+{/*🔍🔍검색바🔍🔍 */}
+    const handleSubmit = (event: FormEvent) => {
     event.preventDefault();
 
-  if (!search.trim()) {
+    if (!search.trim()) {
     dispatch(DoctorListRequest());
     dispatch(resetSuccessEnd());
     return;
-  }
+    }
     const doctorReq: SearchDoctorPayload = {
       search: search.trim(),
       searchType,
     };
     console.log("doctorReq", doctorReq);
     dispatch(searchDoctorListRequest(doctorReq));
-  };
+    };
+    const doctors = search.trim() ? doctorSearch : doctorList;
+    {/*🔍🔍검색바🔍🔍 */}
 
-const doctors = search.trim() ? doctorSearch : doctorList;
 
 
+
+//상세 분기점
+const DoctorDetail = (doctor: DoctorResponse) => {
+ 
+
+   //의사 디테일로
+  if (doctor.doctorType) {
+    const path = `/staff/employee/doctor/SignUp/${doctor.staffId}/detail`;
+
+    console.log(path); //테스트 콘솔
+
+    router.push(path);
+    return;
+  }
+
+
+
+
+
+}
   return (
 
       /*MUI 스타일 */
@@ -85,7 +118,7 @@ const doctors = search.trim() ? doctorSearch : doctorList;
 
 
 
-        {/*검색바 */}
+        {/*🔍🔍검색바🔍🔍 */}
         <Box component="form" onSubmit={handleSubmit}  sx={{ mb: 2 }}>
         {/*가로 세로 정렬 */}
         <Stack direction={{ xs: "column", md: "row" }} spacing={2}>
@@ -115,7 +148,7 @@ const doctors = search.trim() ? doctorSearch : doctorList;
         </Button>
         </Stack>
         </Box>
-
+        {/*🔍🔍검색바🔍🔍 */}
 
                 {/*테이블 UI */}
                 <Table size="small">
@@ -127,29 +160,52 @@ const doctors = search.trim() ? doctorSearch : doctorList;
                 <TableCell>면허번호</TableCell>
                 <TableCell>직업</TableCell>
                 <TableCell>전문분야</TableCell>
-                <TableCell>액션</TableCell>
+                <TableCell>근무상태</TableCell>
                 </TableRow>
                 </TableHead>
                 <TableBody>
 
                 {/*맵핑 UI */}
+                {/*🔍🔍검색바🔍🔍 */}
+                {doctors.map((doctor:DoctorResponse) => {
 
-                
-                {doctors.map((doctor) => (
+        
+              return (
+                  
                 <TableRow key={doctor.staffId}>
                 
                 <TableCell>{doctor.staffId}</TableCell>
                 <TableCell>{doctor.name}</TableCell>
                 <TableCell>{doctor.deptId}</TableCell>
                 <TableCell>{doctor.licenseNo}</TableCell>
-                <TableCell>{doctor.doctorType ?? "DOCTOR"}</TableCell>
-                <TableCell>{doctor.specialtyId}</TableCell>
+
+
                 <TableCell>
-                <Button size="small" onClick={() => handleDetail(doctor.staffId)}>상세</Button>
+                <DoctorFont doctorType= {doctor.doctorType} />
+                </TableCell>
+
+
+                {/* <TableCell>{doctor.doctorType ?? "DOCTOR"}</TableCell> */}
+                <TableCell>{doctor.specialtyId}</TableCell>
+                
+                <TableCell>
+                  <StatusBadge status= {doctor.status} />
+                </TableCell>
+
+    
+
+                <TableCell>
+                <Button size="small" onClick={() => DoctorDetail(doctor)}>상세</Button>
+
+
+
+                
                 <Button size="small" onClick={() => handleEdit(doctor.staffId)}>수정</Button>
                 </TableCell>
                 </TableRow>
-            ))}
+                
+                );
+                })}
             </TableBody>
             </Table>
 

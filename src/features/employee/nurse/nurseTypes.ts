@@ -3,6 +3,8 @@ export type NurseResponse = {
   staffId: string;
   deptId?: string;
   name?: string;
+  status : string;
+
   licenseNo: string;
   nurseType: string;
   shiftType: string;

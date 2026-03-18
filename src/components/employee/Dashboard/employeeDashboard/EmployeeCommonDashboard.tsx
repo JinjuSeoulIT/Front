@@ -5,7 +5,7 @@ import { Button, Card, CardContent, Divider, Stack, Typography } from "@mui/mate
 
 const menus = [
   { title: "직원 목록", path: "/staff/employee/Basiclnfo/list" },
-  { title: "직원 등록", path: "/staff/employee/Basiclnfo/create" },
+  // { title: "직원 등록", path: "/staff/employee/Basiclnfo/create" },
   { title: "의사 대시보드", path: "/staff/employee/doctor" },
   { title: "간호사 대시보드", path: "/staff/employee/nurse" },
 ];
@@ -17,7 +17,7 @@ const EmployeeCommonDashboard = () => {
     <Card sx={{ borderRadius: 3, minHeight: 320 }}>
       <CardContent>
         <Typography variant="h6" fontWeight="bold" gutterBottom>
-          직원 메뉴
+          의료진 관리
         </Typography>
 
         <Divider sx={{ mb: 2 }} />

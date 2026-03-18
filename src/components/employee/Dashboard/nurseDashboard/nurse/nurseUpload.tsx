@@ -66,8 +66,9 @@ export default function NurseUpload({ staffId }: NurseIdNumber) {
       <Paper elevation={0} sx={{ p: { xs: 3, md: 4 }, borderRadius: 3, border: "1px solid #dbe5f5", bgcolor: "white", boxShadow: "0 14px 28px rgba(23, 52, 97, 0.15)" }}>
         <Stack spacing={2.5}>
           <Stack spacing={0.5}>
+            
             <Typography variant="h6" fontWeight={800}>간호사 프로필 이미지 업로드</Typography>
-            <Typography color="text.secondary" fontWeight={600}>staffId 기준으로 이미지 업로드를 연결합니다.</Typography>
+          
           </Stack>
 
           <Divider />

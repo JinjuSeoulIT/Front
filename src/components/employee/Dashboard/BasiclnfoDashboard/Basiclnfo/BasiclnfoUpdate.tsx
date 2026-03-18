@@ -21,17 +21,16 @@ import {
 } from "@/features/employee/Staff/BasiclnfoSlict";
 import {
   initialstaffUpdateForm,
+  staffIdNumber,
   staffResponse,
   type staffUpdateRequest,
 } from "@/features/employee/Staff/BasiclnfoType";
 import Script from "next/script";
 import { resetSuccessEnd } from "@/features/employee/doctor/doctorSlice";
 
-type Props = {
-  staffId: string;
-};
 
-  const BasicInfoUpdate = ({ staffId }: Props) => {
+
+  const BasicInfoUpdate = ({ staffId }:staffIdNumber) => {
 
   const dispatch = useDispatch();
 

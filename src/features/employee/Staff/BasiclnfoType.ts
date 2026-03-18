@@ -1,7 +1,11 @@
 export type Props = { params: Promise<{ id: string }> };
 
-
-
+//컴포넌트 이동
+export type PropsOpen = {
+  open: boolean;
+  staffId: string | null;
+  onClose: () => void;
+};
 
 
 export type staffResponse = {

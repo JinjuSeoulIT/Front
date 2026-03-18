@@ -3,6 +3,8 @@ export type DoctorResponse = {
   staffId: string;
   deptId?: string;
   name?: string;
+  status : string;
+ 
   licenseNo: string;
   doctorType: string | null;
   specialtyId: string;

@@ -9,6 +9,7 @@ import type { RootState } from "@/store/rootReducer";
 import { DetailNurseRequest, resetSuccessEnd } from "@/features/employee/nurse/nurseSlice";
 import { NurseIdNumber } from "@/features/employee/nurse/nurseTypes";
 import NurseUpload from "./nurseUpload";
+import StatusBadge from "../../BasiclnfoDashboard/Basiclnfo/BasiclnfoStatus/StatusBadge";
 
 const NurseDetail = ({ staffId }: NurseIdNumber) => {
   const dispatch = useDispatch();
@@ -17,7 +18,8 @@ const NurseDetail = ({ staffId }: NurseIdNumber) => {
 
 
 
-  const goList = () => router.replace("/staff/employee/nurse/SignUp/list");
+  const goEeployeeList = () => router.push("/staff/employee/Basiclnfo/list");
+  const goNurseList = () => router.replace("/staff/employee/nurse/SignUp/list");
   const goEdit = () => router.push(`/staff/employee/nurse/SignUp/${staffId}/edit`);
 
 
@@ -36,7 +38,9 @@ const NurseDetail = ({ staffId }: NurseIdNumber) => {
           <Typography variant="h6" fontWeight={800}>간호사 상세</Typography>
         </Stack>
 
-    
+            <Stack direction="row" spacing={1.5} justifyContent="pace-between" sx={{ mt: 2 }} >
+            <Button variant="contained" onClick={goEeployeeList}  sx={{ bgcolor: "#da342f" }}> 직원 목록</Button>
+            </Stack>
 
 
 
@@ -104,13 +108,23 @@ const NurseDetail = ({ staffId }: NurseIdNumber) => {
                   <TableCell>{nurseDetail.careerDetail ?? "-"}
                   </TableCell>
                   </TableRow>
+
+                  <TableRow>
+                  <TableCell sx={{ fontWeight: 700 }}>상태
+                  </TableCell>
+                  <TableCell>
+
+                  <StatusBadge status= {nurseDetail.status ?? "-"}></StatusBadge>
+                  
+                  </TableCell>
+                  </TableRow>
               </TableBody>
             </Table>
 
 
 
-            <Stack direction="row" spacing={1.5}>
-              <Button variant="outlined" onClick={goList}>목록</Button>
+            <Stack direction="row" spacing={1.5} justifyContent="flex-end" sx={{ mt: 2 }} >
+              <Button variant="outlined" onClick={goNurseList}>목록</Button>
               <Button variant="contained" onClick={goEdit} sx={{ bgcolor: "#2b5aa9" }}>수정</Button>
             </Stack>
 

@@ -1,7 +1,9 @@
 "use client";
 
+;
+import NurseList from "@/components/employee/Dashboard/nurseDashboard/nurse/NurseList";
 import MainLayout from "@/components/layout/MainLayout";
-import NurseList from "@/components/employee/Dashboard/nurseDashboard/nurse/nurseList";
+
 
 
 export default function ListPage() {

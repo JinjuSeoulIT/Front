@@ -26,6 +26,10 @@ import {
 } from "@/features/employee/Staff/BasiclnfoSlict";
 import { SearchStaffPayload, staffResponse, staffSearchType } from "@/features/employee/Staff/BasiclnfoType";
 import BasicInfoDelete from "./BasiclnfoDelete";
+import StatusBadge from "./BasiclnfoStatus/StatusBadge";
+
+import NurseFont from "../../nurseDashboard/nurse/Style/NurseFont";
+import DoctorFont from "../../doctorDashboard/doctor/Style/DoctorFont";
 
 
 const BasicInfoList = () => {
@@ -48,35 +52,32 @@ const BasicInfoList = () => {
 
 
 
-//타입 명령어 (분기점)
-  const getJobType = (staff: staffResponse) => {
-    if (staff.nurseType) return "NURSE";
-    if (staff.doctorType) return "DOCTOR";
-    return null;
-  };
 
+  //분기점
 const handleDetail = (staff: staffResponse) => {
-  const jobType = getJobType(staff);
 
   //의사 디테일로
-  if (jobType === "DOCTOR") {
+  if (staff.doctorType) {
     const path = `/staff/employee/doctor/SignUp/${staff.staffId}/detail`;
-    console.log("doctor detail path =", path);
+    console.log(path);//테스트 콘솔
+
     router.push(path);
     return;
   }
 
   //간호사 디테일로
-  if (jobType === "NURSE") {
+  if (staff.nurseType) {
     const path = `/staff/employee/nurse/SignUp/${staff.staffId}/detail`;
-    console.log("nurse detail path =", path);
+    console.log(path);//테스트 콘솔
+
     router.push(path);
     return;
   }
 
   //공통 디테일로
   const path = `/staff/employee/Basiclnfo/${staff.staffId}/detail`;
-  console.log("basic detail path =", path);
+  console.log(path);//테스트 콘솔
+
   router.push(path);
 };
 
@@ -86,17 +87,17 @@ const handleDetail = (staff: staffResponse) => {
   const handleEdit = (staff: staffResponse) => {
       //공통 수정
   const path = `/staff/employee/Basiclnfo/${staff.staffId}/edit`;
-  console.log("basic detail path =", path);
+  console.log(path);//테스트 콘솔
+
   router.push(path);
   };
 
 
 
-//삭제 [모달창]
+//삭제 [모달창 형식]
   const handleOpenDeleteDialog = (staffId: string) => {
     setstaffDelete(staffId);
   };
-
   const handleCloseDeleteDialog = () => {
     setstaffDelete(null);
   };
@@ -104,7 +105,7 @@ const handleDetail = (staff: staffResponse) => {
 
 
 
-//검색바
+{/*🔍🔍검색바🔍🔍 */}
   const handleSubmit = (event: FormEvent) => {
   event.preventDefault();
 
@@ -125,9 +126,6 @@ const handleDetail = (staff: staffResponse) => {
   };
 
 const staffs = search.trim() ? StaffSearch : Stafflist;
-
-
-
 
 
 
@@ -167,7 +165,9 @@ const staffs = search.trim() ? StaffSearch : Stafflist;
           </Alert>
         )}
 
-       {/*검색바 */}
+
+
+       {/*🔍🔍검색바🔍🔍 */}
         <Box component="form" onSubmit={handleSubmit}  sx={{ mb: 2 }}>
         {/*가로 세로 정렬 */}
         <Stack direction={{ xs: "column", md: "row" }} spacing={2}>
@@ -199,47 +199,66 @@ const staffs = search.trim() ? StaffSearch : Stafflist;
         </Button>
         </Stack>
         </Box>
+        {/*🔍🔍검색바🔍🔍 */}
 
 
 
-
-        <Table size="small">
-          <TableHead>
-            <TableRow>
+              <Table size="small">
+              <TableHead>
+              <TableRow>
               <TableCell>직원번호</TableCell>
-              <TableCell>부서</TableCell>
+              <TableCell align="center">부서</TableCell>
               <TableCell>이름</TableCell>
-              <TableCell>연락처</TableCell>
+              <TableCell align="center">연락처</TableCell>
               {/* <TableCell>이메일</TableCell> */}
-              {/* <TableCell>상태</TableCell> */}
-              <TableCell>직업</TableCell>
+
+
+              <TableCell align="center">상태</TableCell>
+
+
+              <TableCell align="center">직업</TableCell>
               <TableCell align="center">관리</TableCell>
-            </TableRow>
-          </TableHead>
+              </TableRow>
+              </TableHead>
+              <TableBody> 
 
 
-          <TableBody> 
+
             {staffs.map((staff: staffResponse) => {
-              const jobType = getJobType(staff);
 
-              return (
-                <TableRow key={staff.staffId} hover>
+                  return (
+                  <TableRow key={staff.staffId} hover>
                   <TableCell>{staff.staffId}</TableCell>
                   <TableCell>{staff.deptId}</TableCell>
                   <TableCell>{staff.name}</TableCell>
                   <TableCell>{staff.phone}</TableCell>
                   {/* <TableCell>{staff.email}</TableCell> */}
-                  {/* <TableCell>{staff.status}</TableCell> */}
-                  
-                  <TableCell>{jobType ?? "미등록"}</TableCell>
-                  <TableCell>
-                    <Button size="small" onClick={() => handleDetail(staff)}>
-                      상세
-                    </Button>
 
-                    <Button size="small" onClick={() => handleEdit(staff)}>
-                      수정
-                    </Button>
+
+                  <TableCell>
+                  <StatusBadge status={staff.status} />
+                  </TableCell>
+                  
+
+                  <TableCell>
+                {staff.doctorType ? (<DoctorFont doctorType={staff.doctorType} />) 
+            
+                :staff.nurseType  ? (<NurseFont  nurseType= {staff.nurseType} /> ) 
+                
+                :(<TableCell align="center">미등록</TableCell> )}
+
+
+                  </TableCell>
+                  
+                  
+                  <TableCell>
+                  <Button size="small" onClick={() => handleDetail(staff)}>
+                  상세
+                  </Button>
+
+                  <Button size="small" onClick={() => handleEdit(staff)}>
+                  수정
+                  </Button>
 
       
                     <Button
@@ -248,36 +267,33 @@ const staffs = search.trim() ? StaffSearch : Stafflist;
                     >
                       삭제
                     </Button>
-                  </TableCell>
-                </TableRow>
-              );
-            })}
+                    </TableCell>
+                    </TableRow>
+                    );
+                    })}
+                    {/*🔍🔍검색바🔍🔍 */}
 
-            {!Stafflist.length && !loading && (
-              <TableRow>
+
+
+                {!Stafflist.length && !loading && (
+                <TableRow>
                 <TableCell colSpan={8} align="center">
                   조회된 직원이 없습니다.
                 </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </Paper>
+                </TableRow>
+                )}
+                </TableBody>
+                </Table>
+                </Paper>
 
 
-      <BasicInfoDelete
+        <BasicInfoDelete
+        //삭제 [모달창 형식]
         open={!!staffDelete}
         staffId={staffDelete}
         onClose={handleCloseDeleteDialog}
-      />
-    </Box>
-  
-
-
-
-  
-
-
+        />
+        </Box>
   );
 };
 

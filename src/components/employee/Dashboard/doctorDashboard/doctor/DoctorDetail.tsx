@@ -9,6 +9,10 @@ import type { RootState } from "@/store/rootReducer";
 import { DetailDoctorRequest, resetSuccessEnd } from "@/features/employee/doctor/doctorSlice";
 import { DoctorIdNumber } from "@/features/employee/doctor/doctortypes";
 import DoctorUpload from "./DoctorUpload";
+import StatusBadge from "../../BasiclnfoDashboard/Basiclnfo/BasiclnfoStatus/StatusBadge";
+
+
+
 
 const DoctorDetail = ({ staffId }: DoctorIdNumber) => {
   const dispatch = useDispatch();
@@ -16,9 +20,10 @@ const DoctorDetail = ({ staffId }: DoctorIdNumber) => {
   const { doctorDetail, loading, error } = useSelector((state: RootState) => state.doctor);
 
  
-  const goList = () => router.replace("/staff/employee/doctor/SignUp/list");
+  const goDoctorList = () => router.replace(`/staff/employee/doctor/SignUp/list`);
+  const goEeployeeList = () => router.push(`/staff/employee/Basiclnfo/list`);
   const goEdit = () => router.push(`/staff/employee/doctor/SignUp/${staffId}/edit`);
-
+  
 
   
    useEffect(() => {
@@ -39,7 +44,9 @@ const DoctorDetail = ({ staffId }: DoctorIdNumber) => {
         {error && <Typography color="error" sx={{ mb: 2 }}>{error}</Typography>}
         {loading && <Box sx={{ display: "flex", justifyContent: "center", py: 4 }}><CircularProgress /></Box>}
 
-
+        <Stack direction="row" spacing={1.5} justifyContent="pace-between" sx={{ mt: 2 }} >
+            <Button variant="contained" onClick={goEeployeeList}  sx={{ bgcolor: "#da342f" }}> 직원 목록</Button>
+            </Stack>
 
         {/*이미지 */}
         {!loading && doctorDetail && (
@@ -132,15 +139,35 @@ const DoctorDetail = ({ staffId }: DoctorIdNumber) => {
                   {doctorDetail.careerDetail ?? "-"}
                   </TableCell>
                   </TableRow>
+
+                  <TableRow>
+                  <TableCell 
+                  sx={{ fontWeight: 700 }}>상태
+                 </TableCell>
+                  <TableCell>
+                   <StatusBadge status= {doctorDetail.status ?? "-"} >
+
+                   </StatusBadge>
+                  </TableCell>
+                  </TableRow>
+
+
+
+ 
+
               </TableBody>
             </Table>
 
-            <Stack direction="row" spacing={1.5}>
-              
-            <Button variant="outlined" onClick={goList}>목록</Button>
+            
+            
+
+            <Stack direction="row" spacing={1.5} justifyContent="flex-end" sx={{ mt: 2 }} >
+            <Button variant="outlined" onClick={goDoctorList}>의사 목록</Button>
+
             <Button variant="contained" onClick={goEdit} sx={{ bgcolor: "#2b5aa9" }}>수정</Button>
             </Stack>
 
+            {/*업로드테이블 */}
             <DoctorUpload staffId={staffId} />
           </Stack>
         )}

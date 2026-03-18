@@ -77,7 +77,7 @@ useEffect(() => {
 
 
   
-  useEffect(() => {
+    useEffect(() => {
     if (!createSuccess) return;
     router.replace("/staff/employee/nurse/SignUp/list");
     dispatch(resetSuccessEnd());

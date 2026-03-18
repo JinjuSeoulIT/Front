@@ -3,25 +3,22 @@
 import { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useRouter } from "next/navigation";
-import { Alert, Box, Button, CircularProgress, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Paper, Stack, Typography } from "@mui/material";
+import { Alert, Button, CircularProgress, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Typography } from "@mui/material";
 import type { RootState } from "@/store/rootReducer";
 import {
   deleteStaffRequest,
   resetSuccessEnd,
   StafflistRequest,
 } from "@/features/employee/Staff/BasiclnfoSlict";
+import { PropsOpen } from "@/features/employee/Staff/BasiclnfoType";
 
 
 
 
-type Props = {
-  open: boolean;
-  staffId: string | null;
-  onClose: () => void;
-};
 
 
-const BasicInfoDelete = ({ open, staffId, onClose }: Props) => {
+
+const BasicInfoDelete = ({ open, staffId, onClose }: PropsOpen) => {
   const dispatch = useDispatch();
   const router = useRouter();
   const { deleteSuccess, loading, error } = useSelector((state: RootState) => state.staff);
@@ -45,9 +42,9 @@ const BasicInfoDelete = ({ open, staffId, onClose }: Props) => {
 
     
 
-  return (
+    return (
       <Dialog open={open} onClose={loading ? undefined : onClose} maxWidth="xs" fullWidth>
-    <DialogTitle>직원 삭제</DialogTitle>
+      <DialogTitle>직원 삭제</DialogTitle>
 
         <DialogContent>
         <DialogContentText sx={{ mb: 2 }}>
