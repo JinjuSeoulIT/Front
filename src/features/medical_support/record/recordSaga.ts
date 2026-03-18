@@ -3,8 +3,8 @@ import type { SagaIterator } from "redux-saga";
 import { PayloadAction } from "@reduxjs/toolkit";
 
 import { RecActions as actions } from "./recordSlice";
-import * as api from "../../lib/recordApi";
-import type { RecordFormType } from "@/features/record/recordTypes";
+import * as api from "../../../lib/medical_support/recordApi";
+import type { RecordFormType } from "@/features/medical_support/record/recordTypes";
 
 function* fetchRecordsSaga(): SagaIterator {
   try {

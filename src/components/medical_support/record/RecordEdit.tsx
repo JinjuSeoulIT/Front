@@ -8,8 +8,8 @@ import dayjs from "dayjs";
 import RecordForm from "./RecordForm";
 import { AppDispatch } from "@/store/store";
 import { RootState } from "@/store/rootReducer";
-import { RecActions } from "@/features/record/recordSlice";
-import { RecordFormType } from "@/features/record/recordTypes";
+import { RecActions } from "@/features/medical_support/record/recordSlice";
+import { RecordFormType } from "@/features/medical_support/record/recordTypes";
 
 const RecordEdit = () => {
   const params = useParams();

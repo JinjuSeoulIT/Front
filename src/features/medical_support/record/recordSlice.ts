@@ -1,5 +1,5 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
-import { RecordFormType } from "@/features/record/recordTypes";
+import { RecordFormType } from "@/features/medical_support/record/recordTypes";
 
 const initialRecord: RecordFormType = {
   recordId: "",

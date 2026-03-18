@@ -10,7 +10,7 @@ import {
 
 
 
-const RecordDashboard = () => {
+const Dashboard = () => {
  const menu = [{
     key: "record",
     label: "간호 기록",
@@ -99,4 +99,4 @@ const RecordDashboard = () => {
     );
 };
 
-export default RecordDashboard;
+export default Dashboard;

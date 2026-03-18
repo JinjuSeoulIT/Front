@@ -1,4 +1,4 @@
-import RecordCreate from "@/components/record/RecordCreate";
+import RecordCreate from "@/components/medical_support/record/RecordCreate";
 
 
 const RecordCreatePage = () => {

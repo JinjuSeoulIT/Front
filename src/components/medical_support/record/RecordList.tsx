@@ -26,8 +26,8 @@ import RefreshIcon from "@mui/icons-material/Refresh";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useDispatch, useSelector } from "react-redux";
-import { RecActions } from "@/features/record/recordSlice";
-import type { RecordFormType } from "@/features/record/recordTypes";
+import { RecActions } from "@/features/medical_support/record/recordSlice";
+import type { RecordFormType } from "@/features/medical_support/record/recordTypes";
 import type { AppDispatch, RootState } from "@/store/store";
 import RecordSearch from "./RecordSearch";
 

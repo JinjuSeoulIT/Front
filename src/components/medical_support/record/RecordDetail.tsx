@@ -18,7 +18,7 @@ import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch } from "@/store/store";
 import type { RootState } from "@/store/rootReducer";
 import dayjs from "dayjs";
-import { RecActions } from "@/features/record/recordSlice";
+import { RecActions } from "@/features/medical_support/record/recordSlice";
 
 const formatDateTime = (value?: string | null) => {
   if (!value) return "-";

@@ -4,11 +4,11 @@ import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useRouter, useSearchParams } from "next/navigation";
 import dayjs from "dayjs";
-import type { AppDispatch } from "../../store/store";
+import type { AppDispatch } from "../../../store/store";
 import { RootState } from "@/store/rootReducer";
 import RecordForm from "./RecordForm";
-import { RecActions } from "@/features/record/recordSlice";
-import { RecordFormType } from "@/features/record/recordTypes";
+import { RecActions } from "@/features/medical_support/record/recordSlice";
+import { RecordFormType } from "@/features/medical_support/record/recordTypes";
 
 const emptyForm: RecordFormType = {
   recordId: "",

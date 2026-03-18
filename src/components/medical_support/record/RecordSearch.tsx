@@ -11,7 +11,7 @@ import {
 } from "@mui/material";
 import { useDispatch } from "react-redux";
 import type { AppDispatch } from "@/store/store";
-import { RecActions } from "@/features/record/recordSlice";
+import { RecActions } from "@/features/medical_support/record/recordSlice";
 
 export default function RecordSearch() {
   const dispatch = useDispatch<AppDispatch>();

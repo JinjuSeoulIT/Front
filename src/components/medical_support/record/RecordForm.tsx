@@ -18,7 +18,7 @@ import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import dayjs from "dayjs";
 import "dayjs/locale/ko";
-import { RecordFormType } from "@/features/record/recordTypes";
+import { RecordFormType } from "@/features/medical_support/record/recordTypes";
 
 interface Props {
   mode: "create" | "edit";

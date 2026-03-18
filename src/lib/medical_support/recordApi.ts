@@ -1,5 +1,5 @@
 import axios from "axios";
-import { RecordFormType } from "@/features/record/recordTypes";
+import { RecordFormType } from "@/features/medical_support/record/recordTypes";
 
 const api = axios.create({
   baseURL: "http://192.168.1.66:8181",

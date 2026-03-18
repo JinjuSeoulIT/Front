@@ -5,7 +5,7 @@ import { watchEmergencyReceptionSaga } from "@/features/EmergencyReceptions/Emer
 import { watchInsuranceSaga } from "@/features/insurance/insuranceSaga";
 import { watchInpatientReceptionSaga } from "@/features/InpatientReceptions/InpatientReceptionSaga";
 import { watchPatientSaga } from "@/features/patients/patientSaga";
-import { watchRecordSaga } from "@/features/record/recordSaga";
+import { watchRecordSaga } from "@/features/medical_support/record/recordSaga";
 import { watchReceptionSaga as watchReceptionsSaga } from "@/features/Receptions/ReceptionSaga";
 import { watchReservationSaga } from "@/features/Reservations/ReservationSaga";
 

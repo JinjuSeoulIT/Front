@@ -1,4 +1,4 @@
-import RecordList from "@/components/record/RecordList";
+import RecordList from "@/components/medical_support/record/RecordList";
 
 
 const RecordsPage = () => {

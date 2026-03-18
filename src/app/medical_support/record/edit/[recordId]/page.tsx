@@ -1,4 +1,4 @@
-import RecordEdit from "@/components/record/RecordEdit";
+import RecordEdit from "@/components/medical_support/record/RecordEdit";
 
 
 const RecordEditPage = () => {

@@ -1,4 +1,4 @@
-import RecordDetail from "@/components/record/RecordDetail";
+import RecordDetail from "@/components/medical_support/record/RecordDetail";
 
 
 const RecordDetailPage = () => {
