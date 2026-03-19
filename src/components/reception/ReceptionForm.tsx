@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import * as React from "react";
 import {
@@ -18,9 +18,7 @@ import {
 } from "@mui/material";
 import LocalHospitalOutlinedIcon from "@mui/icons-material/LocalHospitalOutlined";
 import EditNoteRoundedIcon from "@mui/icons-material/EditNoteRounded";
-import type { ReceptionForm as ReceptionFormPayload } from "@/features/Receptions/ReceptionTypes";
-import { fetchReceptionsApi } from "@/lib/reception/receptionsCrudApi";
-import { buildNextReceptionNumber } from "@/lib/reception/receptionNumber";
+import type { ReceptionForm as ReceptionFormPayload } from "@/features/Reception/ReceptionTypes";
 import { searchPatientsApi } from "@/lib/patient/patientApi";
 import type { Patient } from "@/features/patients/patientTypes";
 
@@ -58,9 +56,10 @@ const statusOptions = [
 
 const departments = [
   { id: 1, name: "내과", doctor: "송태민", doctorId: 1 },
-  { id: 2, name: "외과", doctor: "이현석", doctorId: 2 },
-  { id: 3, name: "정형외과", doctor: "성숙희", doctorId: 3 },
-  { id: 4, name: "신경외과", doctor: "최효정", doctorId: 4 },
+  { id: 2, name: "정형외과", doctor: "이현석", doctorId: 2 },
+  { id: 3, name: "소아과", doctor: "성숙희", doctorId: 3 },
+  { id: 4, name: "이비인후과", doctor: "최효정", doctorId: 4 },
+  { id: 5, name: "피부과", doctor: "홍예진", doctorId: 5 },
 ];
 
 const doctors = departments.map((d) => ({
@@ -99,8 +98,6 @@ export default function ReceptionForm({
   const borderTone = isEditMode ? "rgba(15,118,110,0.2)" : "rgba(43,90,169,0.2)";
 
   const [form, setForm] = React.useState<ReceptionFormState>(initial);
-  const [numberLoading, setNumberLoading] = React.useState(false);
-  const [numberError, setNumberError] = React.useState<string | null>(null);
   const [patientSearchLoading, setPatientSearchLoading] = React.useState(false);
   const [patientSearchResults, setPatientSearchResults] = React.useState<Patient[]>([]);
   const [showPatientSearchResults, setShowPatientSearchResults] = React.useState(false);
@@ -158,44 +155,7 @@ export default function ReceptionForm({
     };
   }, [form.patientName, isEditMode]);
 
-  React.useEffect(() => {
-    if (initial.receptionNo.trim()) return;
-    let mounted = true;
-
-    const generate = async () => {
-      try {
-        setNumberLoading(true);
-        setNumberError(null);
-        const list = await fetchReceptionsApi();
-        const next = buildNextReceptionNumber({
-          existingNumbers: list.map((item) => item.receptionNo),
-          startSequence: 1,
-        });
-        if (!mounted) return;
-        setForm((prev) => ({ ...prev, receptionNo: next }));
-      } catch (err) {
-        if (!mounted) return;
-        const fallback = buildNextReceptionNumber({
-          existingNumbers: [],
-          startSequence: 1,
-        });
-        setForm((prev) => ({ ...prev, receptionNo: fallback }));
-        setNumberError(err instanceof Error ? err.message : "자동 채번에 실패했습니다.");
-      } finally {
-        if (mounted) {
-          setNumberLoading(false);
-        }
-      }
-    };
-
-    generate();
-    return () => {
-      mounted = false;
-    };
-  }, [initial.receptionNo]);
-
   const handleSubmit = () => {
-    if (!form.receptionNo.trim()) return;
     if (!form.patientName.trim()) return;
     if (!form.departmentName.trim()) return;
     if (!isEditMode && !form.patientId) {
@@ -208,7 +168,7 @@ export default function ReceptionForm({
     if (!selectedDept) return;
 
     onSubmit({
-      receptionNo: form.receptionNo.trim(),
+      receptionNo: isEditMode ? form.receptionNo.trim() : "",
       patientName: form.patientName.trim(),
       patientId: form.patientId ?? null,
       visitType: "OUTPATIENT",
@@ -299,11 +259,7 @@ export default function ReceptionForm({
             required
             fullWidth
             InputProps={{ readOnly: true }}
-            helperText={
-              numberError
-                ? "자동 채번 조회에 실패해 기본 번호를 넣었습니다."
-                : "접수번호는 자동 생성됩니다."
-            }
+            helperText="접수번호는 서버에서 자동 생성됩니다."
             sx={fieldSx}
           />
           <Stack direction={{ xs: "column", sm: "row" }} spacing={1}>
@@ -498,8 +454,6 @@ export default function ReceptionForm({
             onClick={handleSubmit}
             disabled={
               loading ||
-              numberLoading ||
-              !form.receptionNo.trim() ||
               !form.patientName.trim() ||
               (!isEditMode && !form.patientId) ||
               !form.departmentName.trim()

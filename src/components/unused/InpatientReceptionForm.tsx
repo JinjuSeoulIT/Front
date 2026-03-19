@@ -14,15 +14,15 @@ import {
 } from "@mui/material";
 import BedOutlinedIcon from "@mui/icons-material/BedOutlined";
 import EditNoteRoundedIcon from "@mui/icons-material/EditNoteRounded";
-import type { InpatientReceptionForm as InpatientReceptionFormPayload } from "@/features/InpatientReceptions/InpatientReceptionTypes";
+import type { InpatientReceptionForm as InpatientReceptionFormPayload } from "@/features/InpatientReception/InpatientReceptionTypes";
 import type {
   DepartmentOption,
   DoctorOption,
   PatientOption,
 } from "@/features/Reservations/ReservationTypes";
-import { fetchInpatientReceptionsApi } from "@/lib/inpatientReceptionApi";
+import { fetchInpatientReceptionsApi } from "@/lib/reception/inpatientReceptionApi";
 import { fetchPatientsApi } from "@/lib/masterDataApi";
-import { buildNextReceptionNumber } from "@/lib/receptionNumber";
+import { buildNextReceptionNumber } from "@/lib/reception/receptionNumber";
 
 type InpatientReceptionFormState = {
   receptionNo: string;

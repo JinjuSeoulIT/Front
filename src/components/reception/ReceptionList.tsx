@@ -9,8 +9,11 @@ import {
   Card,
   CardContent,
   Chip,
+  Dialog,
+  DialogContent,
   Divider,
   IconButton,
+  InputAdornment,
   MenuItem,
   Stack,
   Tab,
@@ -23,24 +26,20 @@ import RefreshIcon from "@mui/icons-material/Refresh";
 import BlockOutlinedIcon from "@mui/icons-material/BlockOutlined";
 import { useDispatch, useSelector } from "react-redux";
 import type { RootState, AppDispatch } from "@/store/store";
-import { receptionActions } from "@/features/Receptions/ReceptionSlice";
-import type { Reception, ReceptionSearchPayload } from "@/features/Receptions/ReceptionTypes";
+import { receptionActions } from "@/features/Reception/ReceptionSlice";
+import type {
+  Reception,
+  ReceptionSearchPayload,
+} from "@/features/Reception/ReceptionTypes";
 import { formatDepartmentName } from "@/lib/common/departmentLabel";
 import type { Patient } from "@/features/patients/patientTypes";
 import { fetchPatientsApi, searchPatientsApi } from "@/lib/patient/patientApi";
-import { fetchReservationsApi, updateReservationApi } from "@/lib/reservation/reservationAdminApi";
-import { buildNextReceptionNumber } from "@/lib/reception/receptionNumber";
+import { fetchReservationsApi, updateReservationApi } from "@/lib/reception/reservationAdminApi";
 import {
   cancelReceptionApi,
   createReceptionApi,
   fetchReceptionsApi,
-  updateReceptionApi,
-} from "@/lib/reception/receptionsCrudApi";
-
-const SEARCH_OPTIONS: { label: string; value: ReceptionSearchPayload["type"] }[] = [
-  { label: "접수번호", value: "receptionNo" },
-  { label: "환자이름", value: "patientName" },
-];
+} from "@/lib/reception/receptionApi";
 
 const TAB_LABELS = ["기본정보", "진료기록", "검사", "처방", "입원"];
 
@@ -64,7 +63,7 @@ const statusLabel = (value?: string | null) => {
     case "CALLED":
       return "호출";
     case "IN_PROGRESS":
-      return "진행중";
+      return "진료중";
     case "COMPLETED":
       return "완료";
     case "PAYMENT_WAIT":
@@ -126,6 +125,28 @@ const extractDateKeyFromDateTime = (value?: string | null) => {
   return null;
 };
 
+const toLocalTimeValue = (date: Date) => {
+  const hours = String(date.getHours()).padStart(2, "0");
+  const minutes = String(date.getMinutes()).padStart(2, "0");
+  return `${hours}:${minutes}`;
+};
+
+const OUTPATIENT_DEPARTMENTS = [
+  { id: 1, name: "내과" },
+  { id: 2, name: "정형외과" },
+  { id: 3, name: "소아과" },
+  { id: 4, name: "이비인후과" },
+  { id: 5, name: "피부과" },
+];
+
+const OUTPATIENT_DOCTORS = [
+  { id: 1, name: "송태민", departmentId: 1 },
+  { id: 2, name: "이현석", departmentId: 2 },
+  { id: 3, name: "성숙희", departmentId: 3 },
+  { id: 4, name: "최효정", departmentId: 4 },
+  { id: 5, name: "홍예진", departmentId: 5 },
+];
+
 const normalizeReservationStatus = (value?: string | null) => {
   if (!value) return value;
   const trimmed = value.trim();
@@ -157,8 +178,8 @@ const extractDateKeyFromReceptionNo = (value?: string | null) => {
 
 const isTodayReception = (item: Reception, todayKey: string) => {
   const candidates = [
-    // 진료/접수 기준 날짜만 사용하고, 수정일(updatedAt)은 제외한다.
-    // updatedAt을 포함하면 과거 접수도 오늘 수정만 되면 오늘 목록에 다시 노출될 수 있다.
+    // 접수 생성 기준 날짜만 사용하고, 수정일(updatedAt)은 제외한다.
+    // updatedAt을 포함하면 과거 접수도 오늘 수정 시 오늘 목록으로 재노출될 수 있다.
     extractDateKeyFromReceptionNo(item.receptionNo),
     extractDateKeyFromDateTime(item.arrivedAt),
     extractDateKeyFromDateTime(item.scheduledAt),
@@ -174,7 +195,7 @@ type ReceptionListProps = {
 };
 
 export default function ReceptionList({
-  initialSearchType = "receptionNo",
+  initialSearchType = "patientName",
   initialKeyword = "",
   autoSearch = false,
 }: ReceptionListProps) {
@@ -183,13 +204,32 @@ export default function ReceptionList({
     (s: RootState) => s.receptions
   );
 
-  const [searchType, setSearchType] = React.useState<
-    ReceptionSearchPayload["type"]
-  >(initialSearchType);
   const [keyword, setKeyword] = React.useState(initialKeyword);
   const [tab, setTab] = React.useState(0);
   const [patientSuggestions, setPatientSuggestions] = React.useState<Patient[]>([]);
   const [openSuggestion, setOpenSuggestion] = React.useState(false);
+  const [patientSearchResultCount, setPatientSearchResultCount] = React.useState<number | null>(null);
+  const [createModalOpen, setCreateModalOpen] = React.useState(false);
+  const [createTargetPatient, setCreateTargetPatient] = React.useState<{
+    patientId: number | null;
+    patientName: string;
+  }>({
+    patientId: null,
+    patientName: "",
+  });
+  const [createModalForm, setCreateModalForm] = React.useState<{
+    departmentId: number;
+    doctorId: number | null;
+    arrivedTime: string;
+    note: string;
+  }>({
+    departmentId: OUTPATIENT_DEPARTMENTS[0]?.id ?? 1,
+    doctorId: OUTPATIENT_DOCTORS.find(
+      (doctor) => doctor.departmentId === (OUTPATIENT_DEPARTMENTS[0]?.id ?? 1)
+    )?.id ?? null,
+    arrivedTime: toLocalTimeValue(new Date()),
+    note: "",
+  });
   const [patientNameById, setPatientNameById] = React.useState<Record<number, string>>({});
   const [todayKey, setTodayKey] = React.useState(() => toLocalDateKey(new Date()));
   const syncingReservationRef = React.useRef(false);
@@ -210,14 +250,6 @@ export default function ReceptionList({
         .map((item) => item.reservationId)
         .filter((value): value is number => typeof value === "number")
     );
-    const existingReceptionNos = new Set(
-      receptionsToday
-        .map((item) => item.receptionNo?.trim())
-        .filter((value): value is string => Boolean(value))
-    );
-    const reservationById = new Map(
-      reservations.map((item) => [item.reservationId, item] as const)
-    );
     const completeReservation = async (reservation: (typeof reservations)[number]) => {
       await updateReservationApi(String(reservation.reservationId), {
         reservationNo: reservation.reservationNo,
@@ -229,24 +261,9 @@ export default function ReceptionList({
         doctorName: reservation.doctorName ?? null,
         reservedAt: reservation.reservedAt,
         status: "COMPLETED",
-        note: reservation.note ?? "예약 당일 자동 접수 이관 완료",
+        note: reservation.note ?? "예약 당일 자동 접수 연계 완료",
       });
     };
-    const toReceptionForm = (item: Reception, receptionNo: string) => ({
-      receptionNo,
-      patientId: item.patientId,
-      patientName: item.patientName ?? null,
-      visitType: item.visitType,
-      departmentId: item.departmentId,
-      departmentName: item.departmentName ?? null,
-      doctorId: item.doctorId ?? null,
-      doctorName: item.doctorName ?? null,
-      reservationId: item.reservationId ?? null,
-      scheduledAt: item.scheduledAt ?? null,
-      arrivedAt: item.arrivedAt ?? null,
-      status: normalizeStatus(item.status) as Reception["status"],
-      note: item.note ?? null,
-    });
     const activeReceptionsByReservation = new Map<number, Reception[]>();
     for (const item of receptionsToday) {
       if (typeof item.reservationId !== "number") continue;
@@ -256,30 +273,15 @@ export default function ReceptionList({
       activeReceptionsByReservation.set(item.reservationId, current);
     }
 
-    for (const [reservationId, group] of activeReceptionsByReservation) {
+    for (const group of activeReceptionsByReservation.values()) {
       if (group.length <= 1) continue;
-      const reservation = reservationById.get(reservationId);
-      const preferredNo = reservation?.reservationNo?.trim() ?? "";
-      const keeper =
-        (preferredNo && group.find((item) => item.receptionNo?.trim() === preferredNo)) ||
-        [...group].sort((a, b) => a.receptionId - b.receptionId)[0];
-      const keeperNo = keeper.receptionNo?.trim() ?? "";
-      const canRenameKeeper =
-        preferredNo.length > 0 &&
-        keeperNo !== preferredNo &&
-        !existingReceptionNos.has(preferredNo);
-
-      if (canRenameKeeper) {
-        if (keeperNo) existingReceptionNos.delete(keeperNo);
-        existingReceptionNos.add(preferredNo);
-        await updateReceptionApi(String(keeper.receptionId), toReceptionForm(keeper, preferredNo));
-      }
+      const keeper = [...group].sort((a, b) => a.receptionId - b.receptionId)[0];
 
       for (const item of group) {
         if (item.receptionId === keeper.receptionId) continue;
         await cancelReceptionApi(
           String(item.receptionId),
-          "예약 자동이관 중복 데이터 자동 정리"
+          "예약 자동연계 중복 데이터 자동 정리"
         );
       }
     }
@@ -302,22 +304,13 @@ export default function ReceptionList({
     if (targets.length === 0) return;
 
     for (const reservation of targets) {
-      const preferredReceptionNo = reservation.reservationNo?.trim();
-      const receptionNo =
-        preferredReceptionNo && preferredReceptionNo.length > 0
-          ? preferredReceptionNo
-          : buildNextReceptionNumber({
-              existingNumbers: Array.from(existingReceptionNos),
-              startSequence: 1,
-            });
-
-      if (linkedReservationIds.has(reservation.reservationId) || existingReceptionNos.has(receptionNo)) {
+      if (linkedReservationIds.has(reservation.reservationId)) {
         await completeReservation(reservation);
         continue;
       }
 
       await createReceptionApi({
-        receptionNo,
+        receptionNo: "",
         patientId: reservation.patientId,
         patientName: reservation.patientName ?? null,
         visitType: "OUTPATIENT",
@@ -332,7 +325,6 @@ export default function ReceptionList({
         note: reservation.note ?? "예약 당일 자동 접수 생성",
       });
       linkedReservationIds.add(reservation.reservationId);
-      existingReceptionNos.add(receptionNo);
 
       await completeReservation(reservation);
     }
@@ -440,6 +432,20 @@ export default function ReceptionList({
     };
   }, []);
 
+  React.useEffect(() => {
+    if (!createModalOpen) return;
+    const defaultDepartmentId = OUTPATIENT_DEPARTMENTS[0]?.id ?? 1;
+    const defaultDoctorId =
+      OUTPATIENT_DOCTORS.find((doctor) => doctor.departmentId === defaultDepartmentId)?.id ??
+      null;
+    setCreateModalForm({
+      departmentId: defaultDepartmentId,
+      doctorId: defaultDoctorId,
+      arrivedTime: toLocalTimeValue(new Date()),
+      note: "",
+    });
+  }, [createModalOpen]);
+
 
   React.useEffect(() => {
     if (!filteredList.length) return;
@@ -458,45 +464,51 @@ export default function ReceptionList({
     }
   }, [filteredList, selected, dispatch]);
 
-  const resolveReceptionPatientName = React.useCallback(
-    (item: Reception) =>
-      (item.patientId ? patientNameById[item.patientId] : "") ||
-      item.patientName?.trim() ||
-      "",
-    [patientNameById]
-  );
-
   const onSearch = () => {
     const kw = keyword.trim();
-    if (!kw) return alert("검색어는 필수입니다.");
-    setOpenSuggestion(false);
-    if (searchType === "patientName") {
-      const run = async () => {
-        try {
-          const all = await fetchReceptionsApi();
-          const lowered = kw.toLowerCase();
-          const filtered = all.filter((item) =>
-            resolveReceptionPatientName(item).toLowerCase().includes(lowered)
-          );
-          dispatch(receptionActions.fetchReceptionsSuccess(filtered));
-        } catch (err: unknown) {
-          dispatch(
-            receptionActions.fetchReceptionsFailure(
-              resolveErrorMessage(err, "접수 검색 실패")
-            )
-          );
+    if (!kw) return alert("\uAC80\uC0C9\uC5B4\uB294 \uD544\uC218\uC785\uB2C8\uB2E4.");
+    const run = async () => {
+      try {
+        const patients = await searchPatientsApi("name", kw);
+        setPatientSearchResultCount(patients.length);
+
+        if (patients.length === 0) {
+          setPatientSuggestions([]);
+          setOpenSuggestion(false);
+          return;
         }
-      };
-      void run();
-      return;
-    }
-    dispatch(receptionActions.searchReceptionsRequest({ type: searchType, keyword: kw }));
+
+        if (patients.length === 1 && patients[0]?.patientId) {
+          const single = patients[0];
+          const nextKeyword = single.name?.trim() ?? kw;
+          setKeyword(nextKeyword);
+          setPatientSuggestions([]);
+          setOpenSuggestion(false);
+          setCreateTargetPatient({
+            patientId: single.patientId,
+            patientName: nextKeyword,
+          });
+          setCreateModalOpen(true);
+          return;
+        }
+
+        const suggestions = patients.slice(0, 8);
+        setPatientSuggestions(suggestions);
+        setOpenSuggestion(suggestions.length > 0);
+      } catch {
+        setPatientSearchResultCount(null);
+        setPatientSuggestions([]);
+        setOpenSuggestion(false);
+      }
+    };
+    void run();
   };
 
   const onReset = () => {
     setKeyword("");
-    setSearchType("receptionNo");
-    dispatch(receptionActions.fetchReceptionsRequest());
+    setPatientSuggestions([]);
+    setOpenSuggestion(false);
+    setPatientSearchResultCount(null);
   };
 
   const onSelect = (p: Reception) => {
@@ -511,7 +523,7 @@ export default function ReceptionList({
 
   React.useEffect(() => {
     const kw = keyword.trim();
-    if (!kw || searchType !== "patientName") {
+    if (!kw) {
       setPatientSuggestions([]);
       setOpenSuggestion(false);
       return;
@@ -535,31 +547,64 @@ export default function ReceptionList({
       active = false;
       clearTimeout(timer);
     };
-  }, [keyword, searchType]);
+  }, [keyword]);
 
   const onPickPatientSuggestion = (patient: Patient) => {
+    if (!patient.patientId) return;
     const nextKeyword = patient.name?.trim() ?? "";
-    if (!nextKeyword) return;
-    setSearchType("patientName");
     setKeyword(nextKeyword);
+    setPatientSuggestions([]);
     setOpenSuggestion(false);
-    const run = async () => {
-      try {
-        const all = await fetchReceptionsApi();
-        const lowered = nextKeyword.toLowerCase();
-        const filtered = all.filter((item) =>
-          resolveReceptionPatientName(item).toLowerCase().includes(lowered)
-        );
-        dispatch(receptionActions.fetchReceptionsSuccess(filtered));
-      } catch (err: unknown) {
-        dispatch(
-          receptionActions.fetchReceptionsFailure(
-            resolveErrorMessage(err, "접수 검색 실패")
-          )
-        );
-      }
-    };
-    void run();
+    setPatientSearchResultCount(1);
+    setCreateTargetPatient({
+      patientId: patient.patientId,
+      patientName: nextKeyword,
+    });
+    setCreateModalOpen(true);
+  };
+
+  const onCreateModalSubmit = () => {
+    if (!createTargetPatient.patientId) {
+      alert("\uD658\uC790\uB97C \uBA3C\uC800 \uC120\uD0DD\uD574\uC8FC\uC138\uC694.");
+      return;
+    }
+
+    const department = OUTPATIENT_DEPARTMENTS.find(
+      (item) => item.id === createModalForm.departmentId
+    );
+    if (!department) return;
+
+    const doctor =
+      OUTPATIENT_DOCTORS.find((item) => item.id === createModalForm.doctorId) ??
+      OUTPATIENT_DOCTORS.find((item) => item.departmentId === department.id) ??
+      null;
+    const arrivedTime = createModalForm.arrivedTime || "00:00";
+    const arrivedAt = `${todayKey}T${arrivedTime}`;
+
+    dispatch(
+      receptionActions.createReceptionRequest({
+        receptionNo: "",
+        patientId: createTargetPatient.patientId,
+        patientName: createTargetPatient.patientName || null,
+        visitType: "OUTPATIENT",
+        departmentId: department.id,
+        departmentName: department.name,
+        doctorId: doctor?.id ?? null,
+        doctorName: doctor?.name ?? null,
+        scheduledAt: null,
+        arrivedAt,
+        status: "WAITING",
+        note: createModalForm.note.trim() ? createModalForm.note.trim() : null,
+      })
+    );
+
+    setCreateModalOpen(false);
+    setPatientSuggestions([]);
+    setOpenSuggestion(false);
+  };
+
+  const onCreateModalClose = () => {
+    setCreateModalOpen(false);
   };
 
   const primary =
@@ -586,56 +631,95 @@ export default function ReceptionList({
     <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
       <Card
         sx={{
-          borderRadius: 3,
-          border: "1px solid #dbe5f5",
-          boxShadow: "0 12px 24px rgba(23, 52, 97, 0.12)",
+          borderRadius: 3.5,
+          border: "1px solid rgba(123, 146, 183, 0.25)",
+          background:
+            "linear-gradient(135deg, rgba(255,255,255,0.98), rgba(243,248,255,0.95) 58%, rgba(235,244,255,0.95))",
+          boxShadow: "0 14px 26px rgba(23, 52, 97, 0.12)",
+          overflow: "visible",
         }}
       >
-        <CardContent sx={{ p: 2.5 }}>
+        <CardContent sx={{ p: { xs: 2, md: 2.5 }, overflow: "visible" }}>
           <Stack direction={{ xs: "column", md: "row" }} spacing={2} alignItems={{ md: "center" }}>
-            <Typography fontWeight={800} sx={{ color: "#2b5aa9", minWidth: 110 }}>
-              접수 검색
-            </Typography>
-            <TextField
-              select
-              size="small"
-              value={searchType}
-              onChange={(e) =>
-                setSearchType(e.target.value as ReceptionSearchPayload["type"])
-              }
-              sx={{ width: { xs: "100%", md: 180 } }}
-            >
-              {SEARCH_OPTIONS.map((o) => (
-                <MenuItem key={o.value} value={o.value}>
-                  {o.label}
-                </MenuItem>
-              ))}
-            </TextField>
-            <Box sx={{ width: { xs: "100%", md: 360 }, position: "relative" }}>
+            <Stack spacing={0.35} sx={{ minWidth: 120 }}>
+              <Typography fontWeight={900} sx={{ color: "#1f4f95", letterSpacing: -0.1 }}>
+                {"\uD658\uC790 \uAC80\uC0C9"}
+              </Typography>
+              <Typography sx={{ color: "#6f819f", fontSize: 12, fontWeight: 600 }}>
+                {"\uC774\uB984 \uC870\uD68C \uD6C4 \uBC14\uB85C \uC811\uC218 \uB4F1\uB85D"}
+              </Typography>
+            </Stack>
+            <Box sx={{ width: { xs: "100%", md: 380 }, position: "relative" }}>
               <TextField
                 size="small"
-                placeholder="검색어 입력"
+                placeholder={"\uD658\uC790 \uC774\uB984 \uC785\uB825"}
                 value={keyword}
-                onChange={(e) => setKeyword(e.target.value)}
+                onChange={(e) => {
+                  setKeyword(e.target.value);
+                  setPatientSearchResultCount(null);
+                }}
                 onKeyDown={(e) => e.key === "Enter" && onSearch()}
                 onFocus={() => {
                   if (patientSuggestions.length > 0) {
                     setOpenSuggestion(true);
                   }
                 }}
-                sx={{ width: "100%" }}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <SearchIcon sx={{ fontSize: 19, color: "#7f93b5" }} />
+                    </InputAdornment>
+                  ),
+                }}
+                helperText={
+                  patientSearchResultCount === null
+                    ? " "
+                    : patientSearchResultCount === 0
+                    ? "\uC77C\uCE58 \uD658\uC790 \uC5C6\uC74C"
+                    : `\uAC80\uC0C9 \uACB0\uACFC ${patientSearchResultCount}\uBA85`
+                }
+                FormHelperTextProps={{
+                  sx: {
+                    mt: 0.65,
+                    ml: 0.25,
+                    fontWeight: 700,
+                    fontSize: 12,
+                    color:
+                      patientSearchResultCount === 0
+                        ? "#d32f2f"
+                        : "#6b7a96",
+                  },
+                }}
+                sx={{
+                  width: "100%",
+                  "& .MuiInputBase-root": {
+                    bgcolor: "rgba(255,255,255,0.9)",
+                    borderRadius: 2.25,
+                    boxShadow: "inset 0 1px 0 rgba(255,255,255,0.75)",
+                  },
+                  "& .MuiOutlinedInput-notchedOutline": {
+                    borderColor: "rgba(79, 111, 163, 0.28)",
+                  },
+                  "& .MuiInputBase-root:hover .MuiOutlinedInput-notchedOutline": {
+                    borderColor: "rgba(43, 90, 169, 0.48)",
+                  },
+                  "& .Mui-focused .MuiOutlinedInput-notchedOutline": {
+                    borderColor: "#2b5aa9",
+                    borderWidth: 2,
+                  },
+                }}
               />
               {openSuggestion && patientSuggestions.length > 0 && (
                 <Card
                   sx={{
                     position: "absolute",
-                    top: "calc(100% + 6px)",
+                    top: "calc(100% + 8px)",
                     left: 0,
                     right: 0,
-                    zIndex: 20,
+                    zIndex: 1400,
                     borderRadius: 2,
-                    border: "1px solid #dbe5f5",
-                    boxShadow: "0 10px 24px rgba(23, 52, 97, 0.18)",
+                    border: "1px solid rgba(90, 121, 174, 0.24)",
+                    boxShadow: "0 14px 28px rgba(23, 52, 97, 0.2)",
                     maxHeight: 280,
                     overflowY: "auto",
                   }}
@@ -648,11 +732,14 @@ export default function ReceptionList({
                         sx={{
                           justifyContent: "flex-start",
                           textTransform: "none",
-                          px: 1.5,
-                          py: 1,
+                          px: 1.7,
+                          py: 1.1,
                           borderRadius: 0,
                           color: "#1f2a44",
-                          borderBottom: "1px solid #eef3fb",
+                          borderBottom: "1px solid #edf2fb",
+                          "&:hover": {
+                            bgcolor: "rgba(43, 90, 169, 0.08)",
+                          },
                         }}
                       >
                         <Box sx={{ textAlign: "left", width: "100%" }}>
@@ -675,7 +762,13 @@ export default function ReceptionList({
                 startIcon={<SearchIcon />}
                 onClick={onSearch}
                 disabled={loading}
-                sx={{ bgcolor: "#2b5aa9" }}
+                sx={{
+                  px: 2.1,
+                  borderRadius: 2,
+                  bgcolor: "#2b5aa9",
+                  boxShadow: "0 8px 18px rgba(43,90,169,0.28)",
+                  "&:hover": { bgcolor: "#244e95" },
+                }}
               >
                 검색
               </Button>
@@ -684,7 +777,17 @@ export default function ReceptionList({
                 startIcon={<RefreshIcon />}
                 onClick={onReset}
                 disabled={loading}
-                sx={{ color: "#2b5aa9" }}
+                sx={{
+                  px: 1.8,
+                  borderRadius: 2,
+                  color: "#2b5aa9",
+                  borderColor: "rgba(43,90,169,0.4)",
+                  bgcolor: "rgba(255,255,255,0.85)",
+                  "&:hover": {
+                    borderColor: "#2b5aa9",
+                    bgcolor: "rgba(43,90,169,0.07)",
+                  },
+                }}
               >
                 초기화
               </Button>
@@ -824,20 +927,6 @@ export default function ReceptionList({
                 >
                   접수 수정
                 </Button>
-                <Button
-                  variant="outlined"
-                  sx={{ color: "#2b5aa9" }}
-                  component={Link}
-                  href="/reservations"
-                >
-                  예약 관리
-                </Button>
-                <Button variant="outlined" sx={{ color: "#2b5aa9" }}>
-                  검사 기록
-                </Button>
-                <Button variant="outlined" sx={{ color: "#2b5aa9" }}>
-                  처방 이력
-                </Button>
               </Stack>
             </CardContent>
           </Card>
@@ -852,11 +941,11 @@ export default function ReceptionList({
             }}
           >
             <CardContent sx={{ p: 3 }}>
-              <Stack spacing={2}>
-                <Stack direction="row" justifyContent="space-between" alignItems="center">
+                <Stack spacing={2}>
+                  <Stack direction="row" justifyContent="space-between" alignItems="center">
                   <Typography fontWeight={800}>환자리스트</Typography>
                   <Chip label={`오늘 ${totalCount}`} size="small" color="primary" />
-                </Stack>
+                  </Stack>
 
                 <Tabs
                   value={tab}
@@ -952,6 +1041,127 @@ export default function ReceptionList({
         </Box>
 
       </Box>
+
+      <Dialog
+        open={createModalOpen}
+        onClose={onCreateModalClose}
+        fullWidth
+        maxWidth="sm"
+      >
+        <DialogContent sx={{ p: 3 }}>
+          <Stack spacing={1.75}>
+            <Typography variant="h5" fontWeight={900}>
+              {"\uC811\uC218 \uB4F1\uB85D"}
+            </Typography>
+
+            <TextField
+              select
+              size="small"
+              label={"\uC9C4\uB8CC\uACFC"}
+              value={createModalForm.departmentId}
+              onChange={(e) => {
+                const departmentId = Number(e.target.value);
+                const nextDoctorId =
+                  OUTPATIENT_DOCTORS.find((doctor) => doctor.departmentId === departmentId)?.id ??
+                  null;
+                setCreateModalForm((prev) => ({
+                  ...prev,
+                  departmentId,
+                  doctorId: nextDoctorId,
+                }));
+              }}
+              fullWidth
+            >
+              {OUTPATIENT_DEPARTMENTS.map((item) => (
+                <MenuItem key={item.id} value={item.id}>
+                  {item.name}
+                </MenuItem>
+              ))}
+            </TextField>
+
+            <TextField
+              select
+              size="small"
+              label={"\uB2F4\uB2F9\uC758"}
+              value={createModalForm.doctorId ?? ""}
+              onChange={(e) => {
+                const doctorId = Number(e.target.value);
+                const doctor = OUTPATIENT_DOCTORS.find((item) => item.id === doctorId);
+                setCreateModalForm((prev) => ({
+                  ...prev,
+                  doctorId,
+                  departmentId: doctor?.departmentId ?? prev.departmentId,
+                }));
+              }}
+              fullWidth
+            >
+              {OUTPATIENT_DOCTORS.map((item) => (
+                <MenuItem key={item.id} value={item.id}>
+                  {item.name}
+                </MenuItem>
+              ))}
+            </TextField>
+
+            <TextField
+              size="small"
+              label={"\uB0B4\uC6D0\uC720\uD615"}
+              value={"\uC678\uB798"}
+              InputProps={{ readOnly: true }}
+              fullWidth
+            />
+
+            <Typography sx={{ color: "#7b8aa9", fontSize: 13 }}>
+              {"\uC811\uC218 \uB4F1\uB85D\uC740 \uC678\uB798 \uC811\uC218\uB9CC \uC9C0\uC6D0\uD569\uB2C8\uB2E4."}
+            </Typography>
+
+            <TextField
+              size="small"
+              type="time"
+              label={"\uB0B4\uC6D0 \uC2DC\uAC04(\uC120\uD0DD)"}
+              value={createModalForm.arrivedTime}
+              onChange={(e) =>
+                setCreateModalForm((prev) => ({
+                  ...prev,
+                  arrivedTime: e.target.value,
+                }))
+              }
+              fullWidth
+              InputLabelProps={{ shrink: true }}
+            />
+
+            <Typography sx={{ color: "#7b8aa9", fontSize: 13 }}>
+              {`\uC801\uC6A9 \uB0A0\uC9DC: ${todayKey} (\uC624\uB298)`}
+            </Typography>
+
+            <TextField
+              size="small"
+              label={"\uC811\uC218 \uBA54\uBAA8(\uC120\uD0DD)"}
+              value={createModalForm.note}
+              onChange={(e) =>
+                setCreateModalForm((prev) => ({
+                  ...prev,
+                  note: e.target.value,
+                }))
+              }
+              fullWidth
+            />
+
+            <Stack direction="row" spacing={1} justifyContent="flex-end" sx={{ pt: 1 }}>
+              <Button variant="text" onClick={onCreateModalClose} disabled={loading}>
+                {"\uCDE8\uC18C"}
+              </Button>
+              <Button
+                variant="contained"
+                onClick={onCreateModalSubmit}
+                disabled={loading || !createTargetPatient.patientId}
+                sx={{ bgcolor: "#2b5aa9" }}
+              >
+                {"\uC800\uC7A5"}
+              </Button>
+            </Stack>
+          </Stack>
+        </DialogContent>
+      </Dialog>
 
       {error && (
         <Typography color="error" fontWeight={800}>

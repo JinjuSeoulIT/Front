@@ -18,18 +18,19 @@ import { useDispatch, useSelector } from "react-redux";
 import type { RootState, AppDispatch } from "@/store/store";
 import { patientActions } from "@/features/patients/patientSlice";
 import type { PatientForm as PatientFormPayload } from "@/features/patients/patientTypes";
-import type { PatientRestriction } from "@/lib/patient/restrictionApi";
-import { fetchPatientRestrictionsApi } from "@/lib/patient/restrictionApi";
-import type { PatientFlag } from "@/lib/patient/flagApi";
-import { fetchPatientFlagsApi } from "@/lib/patient/flagApi";
-import { changePatientStatusApi } from "@/lib/patient/patientApi";
+import type { PatientRestriction } from "@/lib/restrictionApi";
+import { fetchPatientRestrictionsApi } from "@/lib/restrictionApi";
+import type { PatientFlag } from "@/lib/flagApi";
+import { fetchPatientFlagsApi } from "@/lib/flagApi";
+import { changePatientStatusApi } from "@/lib/reception/patientApi";
 import { fetchCodesApi } from "@/lib/codeApi";
-import { createReservationApi, fetchReservationsApi } from "@/lib/reservationAdminApi";
-import { createReceptionApi, fetchReceptionsApi } from "@/lib/receptionsCrudApi";
-import { buildNextReceptionNumber } from "@/lib/receptionNumber";
+import { createReservationApi } from "@/lib/reception/reservationAdminApi";
+import { createReceptionApi } from "@/lib/reception/receptionApi";
 
 import {
   toApiDateTime,
+  toLocalDateTime,
+  toTodayDateTime,
   resolveErrorMessage,
   departments,
   defaultDepartment,
@@ -89,11 +90,8 @@ export default function PatientDetailPage() {
   const [reservationForm, setReservationForm] = React.useState<ReservationForm>({
     deptCode: defaultDepartment.name,
     doctorId: String(defaultDepartment.doctorId),
-    reservationId: "",
     scheduledAt: "",
-    arrivalAt: "",
     note: "",
-    memo: "",
   });
 
   const [editDialogOpen, setEditDialogOpen] = React.useState(false);
@@ -240,11 +238,8 @@ export default function PatientDetailPage() {
     setReservationForm({
       deptCode: defaultDepartment.name,
       doctorId: String(defaultDepartment.doctorId),
-      reservationId: "",
       scheduledAt: "",
-      arrivalAt: "",
       note: "",
-      memo: "",
     });
     setReservationDialogOpen(true);
   };
@@ -275,17 +270,12 @@ export default function PatientDetailPage() {
         return;
       }
 
-      const list = await fetchReservationsApi();
-      const reservationNo = buildNextReceptionNumber({
-        existingNumbers: list.map((item) => item.reservationNo),
-        startSequence: 301,
-      });
       const selectedDept = departments.find((dept) => dept.name === reservationForm.deptCode);
       const selectedByDoctor = departments.find((dept) => String(dept.doctorId) === reservationForm.doctorId);
       const resolvedDept = selectedDept ?? selectedByDoctor ?? defaultDepartment;
 
       await createReservationApi({
-        reservationNo,
+        reservationNo: "",
         patientId: p.patientId,
         patientName: p.name,
         departmentId: resolvedDept.id,
@@ -294,7 +284,7 @@ export default function PatientDetailPage() {
         doctorName: resolvedDept.doctor,
         reservedAt,
         status: "RESERVED",
-        note: reservationForm.note?.trim() || reservationForm.memo?.trim() || null,
+        note: reservationForm.note?.trim() || null,
       });
 
       setReservationDialogOpen(false);
@@ -312,31 +302,22 @@ export default function PatientDetailPage() {
 
     try {
       setReceptionSaving(true);
-      const list = await fetchReceptionsApi();
-      const nextReceptionNo = buildNextReceptionNumber({
-        existingNumbers: list.map((item) => item.receptionNo),
-        startSequence: 1,
-      });
       const selectedDept = departments.find((dept) => dept.name === receptionForm.deptCode);
       const selectedByDoctor = departments.find((dept) => String(dept.doctorId) === receptionForm.doctorId);
       const resolvedDept = selectedDept ?? selectedByDoctor ?? defaultDepartment;
 
       await createReceptionApi({
-        receptionNo: nextReceptionNo,
+        receptionNo: "",
         patientId: p.patientId,
-        patientName: p.name,
-        visitType: receptionForm.visitType,
+        visitType: "OUTPATIENT",
         departmentId: resolvedDept.id,
-        departmentName: resolvedDept.name,
         doctorId: Number(receptionForm.doctorId || resolvedDept.doctorId),
-        doctorName: resolvedDept.doctor,
-        arrivedAt: toApiDateTime(receptionForm.arrivedAt) ?? new Date().toISOString().slice(0, 19),
-        status: "WAITING",
+        arrivedAt: toTodayDateTime(receptionForm.arrivedAt) ?? toLocalDateTime(),
         note: receptionForm.note?.trim() || "환자 상세 화면에서 접수 등록",
       });
 
       setReceptionDialogOpen(false);
-      router.push("/receptions");
+      router.push("/reception/outpatient/list")
     } catch (err: unknown) {
       alert(`접수 등록에 실패했습니다.\n원인: ${resolveErrorMessage(err, "알 수 없는 오류")}`);
     } finally {

@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import * as React from "react";
 import {
@@ -16,15 +16,15 @@ import {
 import { useRouter } from "next/navigation";
 import EmergencyOutlinedIcon from "@mui/icons-material/EmergencyOutlined";
 import EditNoteRoundedIcon from "@mui/icons-material/EditNoteRounded";
-import type { EmergencyReceptionForm as EmergencyReceptionFormPayload } from "@/features/EmergencyReceptions/EmergencyReceptionTypes";
+import type { EmergencyReceptionForm as EmergencyReceptionFormPayload } from "@/features/EmergencyReception/EmergencyReceptionTypes";
 import type {
   DepartmentOption,
   DoctorOption,
   PatientOption,
 } from "@/features/Reservations/ReservationTypes";
-import { fetchEmergencyReceptionsApi } from "@/lib/emergencyReceptionApi";
+import { fetchEmergencyReceptionsApi } from "@/lib/reception/emergencyReceptionApi";
 import { fetchPatientsApi } from "@/lib/masterDataApi";
-import { buildNextReceptionNumber } from "@/lib/receptionNumber";
+import { buildNextReceptionNumber } from "@/lib/reception/receptionNumber";
 
 type EmergencyReceptionFormState = {
   receptionNo: string;

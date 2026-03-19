@@ -1,10 +1,10 @@
-﻿import axios from "axios";
+import axios from "axios";
 import type {
   ApiResponse,
   InpatientReception,
   InpatientReceptionForm,
   InpatientReceptionSearchPayload,
-} from "@/features/InpatientReceptions/InpatientReceptionTypes";
+} from "@/features/InpatientReception/InpatientReceptionTypes";
 
 const api = axios.create({
   baseURL: process.env.NEXT_PUBLIC_RECEPTION_API_BASE_URL ?? "http://192.168.1.55:8283",
