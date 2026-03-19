@@ -9,7 +9,6 @@ import {
   Chip,
   Stack,
   Tab,
-  Tabs,
   Typography,
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
@@ -19,21 +18,20 @@ import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch, RootState } from "@/store/store";
 import { fetchRecordsRequest, searchRecordRequest } from "@/features/Record/recordSlice";
 import RecordSearchBar from "./RecordSearchBar";
-import { receptionActions } from "@/features/Receptions/ReceptionSlice";
 
 export default function RecordList() {
   const router = useRouter();
   const dispatch = useDispatch<AppDispatch>();
   const { list, loading, error } = useSelector((s: RootState) => s.records);
-  const {list: receptionList,loading: receptionLoading,error: receptionError,
-} = useSelector((s: RootState) => s.receptions);
 
-const handleSearch = (type:string, value:string) => {
-  dispatch(searchRecordRequest({
-    searchType: type,
-    searchValue: value
-  }));
-};
+  const handleSearch = (type: string, value: string) => {
+    dispatch(
+      searchRecordRequest({
+        searchType: type,
+        searchValue: value,
+      })
+    );
+  };
 
   useEffect(() => {
     dispatch(fetchRecordsRequest());
@@ -42,17 +40,12 @@ const handleSearch = (type:string, value:string) => {
   const handleNew = () => {
     router.push("/medical_support/record/create");
   };
+
+ 
   
-useEffect(() => {
-  {dispatch(receptionActions.fetchReceptionsRequest());}
-}, [dispatch, receptionList.length]);
-
-
 
   return (
-    
     <Stack spacing={2}>
-       
       <Card sx={{ borderRadius: 3, border: "1px solid var(--line)" }}>
         <CardContent sx={{ p: 2.5 }}>
           <Stack
@@ -90,55 +83,21 @@ useEffect(() => {
       </Card>
 
       <Stack direction="row" spacing={1}>
-        <Chip label={`접수 전체 ${receptionList.length}`} size="small" />
-        <Chip label={`간호 기록 전체 ${list.length}`} size="small" />
+        <Chip label={`전체 ${list.length}`} size="small" />
         {loading && <Chip label="로딩 중" size="small" />}
         {error && <Chip label={`오류: ${error}`} color="error" size="small" />}
       </Stack>
-
-
-
       <RecordSearchBar onSearch={handleSearch}/>
-
-      <Stack
-        direction={{ xs: "column", md: "row" }}
-        spacing={2}
-        alignItems="stretch"
+      <Box
+        sx={{
+          display: "grid",
+          gap: 2,
+          gridTemplateColumns: { xs: "1fr", lg: "360px minmax(0,1fr)" },
+        }}
       >
-            <Card sx={{ borderRadius: 3, border: "1px solid var(--line)", flex: 1, minWidth: 0 }}>
-          <CardContent>
-              <Tab label="활성" value="ACTIVE" />
-              <Tab label="비활성" value="INACTIVE" />
-              <Tab label="전체" value="ALL" />
-            
-            <Stack spacing={1} sx={{ mt: 1 }}>
-              {receptionList.map((reception) => (
-                
-                <Box
-                  key={reception.receptionId}
-                 
-                  sx={{
-                    p: 1.25,
-                    border: "1px solid var(--line)",
-                    borderRadius: 2,
-                    cursor: "pointer",
-                  }}
-                >
-                  <Typography fontWeight={700}>{reception?.receptionId}</Typography>
-                  <Typography sx={{ fontSize: 12, color: "var(--muted)" }}>
-                    접수 환자 이름 {reception.patientName ?? "-"}
-                  </Typography>
+        
 
-                  <button
-                  >상세</button>
-                </Box>
-              ))}
-            </Stack>
-          </CardContent>
-        </Card>
-
-
-        <Card sx={{ borderRadius: 3, border: "1px solid var(--line)", flex: 1, minWidth: 0 }}>
+        <Card sx={{ borderRadius: 3, border: "1px solid var(--line)" }}>
           <CardContent>
               <Tab label="활성" value="ACTIVE" />
               <Tab label="비활성" value="INACTIVE" />
@@ -158,7 +117,7 @@ useEffect(() => {
                 >
                   <Typography fontWeight={700}>{record.nursingId}</Typography>
                   <Typography sx={{ fontSize: 12, color: "var(--muted)" }}>
-                    기록 시각 {record.recordedAt ?? "-"}
+                    방문 ID {record.visitId ?? "-"} · 기록 시각 {record.recordedAt ?? "-"}
                   </Typography>
 
                   <button
@@ -170,10 +129,9 @@ useEffect(() => {
             </Stack>
           </CardContent>
         </Card>
-      </Stack>
 
+        
+      </Box>
     </Stack>
-         
-
   );
 }

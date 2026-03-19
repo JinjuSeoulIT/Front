@@ -8,7 +8,7 @@ type Props = {
 };
 
 export default function RecordSearchBar({ onSearch }: Props) {
-  const [searchType, setSearchType] = useState("receptionId");
+  const [searchType, setSearchType] = useState("visitId");
   const [searchValue, setSearchValue] = useState("");
 
   return (
@@ -18,8 +18,8 @@ export default function RecordSearchBar({ onSearch }: Props) {
         value={searchType}
         onChange={(e) => setSearchType(e.target.value)}
       >
-        <MenuItem value="reception_id">접수 아이디</MenuItem>
-        <MenuItem value="recorded_at">기록 날짜</MenuItem>
+        <MenuItem value="visitId">방문 ID</MenuItem>
+        <MenuItem value="recordDate">기록 날짜</MenuItem>
       </Select>
 
       <TextField
