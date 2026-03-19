@@ -1,8 +1,6 @@
 "use client";
 
 import * as React from "react";
-import { useParams } from "next/navigation";
-import MainLayout from "@/components/layout/MainLayout";
 import {
   Button,
   Card,
@@ -24,35 +22,30 @@ import {
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import DeleteOutlineOutlinedIcon from "@mui/icons-material/DeleteOutlineOutlined";
 
-import type { PatientMemo } from "@/lib/memoApi";
+import type { PatientMemo } from "@/lib/patient/memoApi";
 import {
   createPatientMemoApi,
   deletePatientMemoApi,
   fetchPatientMemosApi,
   updatePatientMemoApi,
-} from "@/lib/memoApi";
+} from "@/lib/patient/memoApi";
 
-type MemoFormState = {
-  memo: string;
-};
+type MemoFormState = { memo: string };
 
 function formatDate(value?: string | null) {
   if (!value) return "-";
   return value.slice(0, 16).replace("T", " ");
 }
 
-export default function PatientMemosPage() {
-  const params = useParams<{ id: string }>();
-  const patientId = Number(params.id);
+type Props = { patientId: number; onClose?: () => void };
 
+export default function PatientMemoContent({ patientId }: Props) {
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
   const [memos, setMemos] = React.useState<PatientMemo[]>([]);
 
   const [memoDialogOpen, setMemoDialogOpen] = React.useState(false);
-  const [memoDialogMode, setMemoDialogMode] = React.useState<"create" | "edit">(
-    "create"
-  );
+  const [memoDialogMode, setMemoDialogMode] = React.useState<"create" | "edit">("create");
   const [editingMemo, setEditingMemo] = React.useState<PatientMemo | null>(null);
   const [memoForm, setMemoForm] = React.useState<MemoFormState>({ memo: "" });
 
@@ -94,14 +87,9 @@ export default function PatientMemosPage() {
     if (!patientId || !memoForm.memo.trim()) return;
     try {
       if (memoDialogMode === "create") {
-        await createPatientMemoApi({
-          patientId,
-          memo: memoForm.memo.trim(),
-        });
+        await createPatientMemoApi({ patientId, memo: memoForm.memo.trim() });
       } else if (editingMemo) {
-        await updatePatientMemoApi(editingMemo.memoId, {
-          memo: memoForm.memo.trim(),
-        });
+        await updatePatientMemoApi(editingMemo.memoId, { memo: memoForm.memo.trim() });
       }
       setMemoDialogOpen(false);
       await loadMemos();
@@ -121,22 +109,13 @@ export default function PatientMemosPage() {
   };
 
   return (
-    <MainLayout>
+    <>
       <Card
         elevation={0}
-        sx={{
-          borderRadius: 4,
-          border: "1px solid var(--line)",
-          boxShadow: "var(--shadow-2)",
-        }}
+        sx={{ borderRadius: 4, border: "1px solid var(--line)", boxShadow: "var(--shadow-2)" }}
       >
         <CardContent>
-          <Stack
-            direction="row"
-            alignItems="center"
-            justifyContent="space-between"
-            sx={{ mb: 1 }}
-          >
+          <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 1 }}>
             <Typography fontWeight={900}>메모</Typography>
             <Button size="small" variant="outlined" onClick={openCreateMemo}>
               메모 추가
@@ -151,15 +130,7 @@ export default function PatientMemosPage() {
 
           <Table size="small">
             <TableHead sx={{ bgcolor: "#f4f7fb" }}>
-              <TableRow
-                sx={{
-                  "& th": {
-                    fontWeight: 800,
-                    color: "#425366",
-                    borderBottom: "1px solid var(--line)",
-                  },
-                }}
-              >
+              <TableRow sx={{ "& th": { fontWeight: 800, color: "#425366", borderBottom: "1px solid var(--line)" } }}>
                 <TableCell>내용</TableCell>
                 <TableCell>작성자</TableCell>
                 <TableCell>작성일시</TableCell>
@@ -174,22 +145,16 @@ export default function PatientMemosPage() {
                   </TableCell>
                 </TableRow>
               )}
-
               {!loading && memos.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={4}>
-                    <Typography color="text.secondary">
-                      등록된 메모가 없습니다.
-                    </Typography>
+                    <Typography color="text.secondary">등록된 메모가 없습니다.</Typography>
                   </TableCell>
                 </TableRow>
               )}
-
               {memos.map((item) => (
                 <TableRow key={item.memoId} hover>
-                  <TableCell sx={{ whiteSpace: "pre-line" }}>
-                    {item.memo}
-                  </TableCell>
+                  <TableCell sx={{ whiteSpace: "pre-line" }}>{item.memo}</TableCell>
                   <TableCell>{item.createdBy ?? "-"}</TableCell>
                   <TableCell>{formatDate(item.createdAt)}</TableCell>
                   <TableCell>
@@ -197,11 +162,7 @@ export default function PatientMemosPage() {
                       <IconButton size="small" onClick={() => openEditMemo(item)}>
                         <EditOutlinedIcon fontSize="small" />
                       </IconButton>
-                      <IconButton
-                        size="small"
-                        color="error"
-                        onClick={() => onDeleteMemo(item)}
-                      >
+                      <IconButton size="small" color="error" onClick={() => onDeleteMemo(item)}>
                         <DeleteOutlineOutlinedIcon fontSize="small" />
                       </IconButton>
                     </Stack>
@@ -220,17 +181,13 @@ export default function PatientMemosPage() {
         maxWidth="sm"
         PaperProps={{ sx: { borderRadius: 4 } }}
       >
-        <DialogTitle>
-          {memoDialogMode === "create" ? "메모 추가" : "메모 수정"}
-        </DialogTitle>
+        <DialogTitle>{memoDialogMode === "create" ? "메모 추가" : "메모 수정"}</DialogTitle>
         <DialogContent>
           <Stack spacing={2} sx={{ mt: 1 }}>
             <TextField
               label="메모"
               value={memoForm.memo}
-              onChange={(e) =>
-                setMemoForm((prev) => ({ ...prev, memo: e.target.value }))
-              }
+              onChange={(e) => setMemoForm((prev) => ({ ...prev, memo: e.target.value }))}
               fullWidth
               multiline
               minRows={3}
@@ -239,15 +196,11 @@ export default function PatientMemosPage() {
         </DialogContent>
         <DialogActions>
           <Button onClick={closeMemoDialog}>취소</Button>
-          <Button
-            variant="contained"
-            onClick={onSubmitMemo}
-            disabled={!memoForm.memo.trim()}
-          >
+          <Button variant="contained" onClick={onSubmitMemo} disabled={!memoForm.memo.trim()}>
             {memoDialogMode === "create" ? "등록" : "저장"}
           </Button>
         </DialogActions>
       </Dialog>
-    </MainLayout>
+    </>
   );
 }

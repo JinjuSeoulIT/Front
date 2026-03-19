@@ -11,7 +11,7 @@ import type {
   EmergencyReceptionForm,
   ReceptionStatus,
 } from "@/features/EmergencyReceptions/EmergencyReceptionTypes";
-import { fetchPatientApi } from "@/lib/patientApi";
+import { fetchPatientApi } from "@/lib/patient/patientApi";
 import { Box, Button, Card, CardContent, Divider, Stack, Typography } from "@mui/material";
 
 const statusLabel = (value?: ReceptionStatus | string | null) => {

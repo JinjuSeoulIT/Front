@@ -1,4 +1,4 @@
-﻿import { call, put, takeLatest } from "redux-saga/effects";
+import { call, put, takeLatest } from "redux-saga/effects";
 import type { PayloadAction } from "@reduxjs/toolkit";
 import { patientActions as actions } from "./patientSlice";
 import type {
@@ -7,7 +7,7 @@ import type {
   PatientSearchPayload,
   PatientMultiSearchPayload,
 } from "./patientTypes";
-import * as api from "../../lib/patientApi";
+import * as api from "../../lib/patient/patientApi";
 
 function* fetchPatientsSaga() {
   try {

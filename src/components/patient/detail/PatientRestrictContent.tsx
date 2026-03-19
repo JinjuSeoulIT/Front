@@ -1,8 +1,6 @@
-﻿"use client";
+"use client";
 
 import * as React from "react";
-import { useParams } from "next/navigation";
-import MainLayout from "@/components/layout/MainLayout";
 import {
   Button,
   Card,
@@ -27,13 +25,13 @@ import DeleteOutlineOutlinedIcon from "@mui/icons-material/DeleteOutlineOutlined
 import BlockOutlinedIcon from "@mui/icons-material/BlockOutlined";
 import CheckCircleOutlineOutlinedIcon from "@mui/icons-material/CheckCircleOutlineOutlined";
 
-import type { PatientRestriction } from "@/lib/restrictionApi";
+import type { PatientRestriction } from "@/lib/patient/restrictionApi";
 import {
   createPatientRestrictionApi,
   deletePatientRestrictionApi,
   fetchPatientRestrictionsApi,
   updatePatientRestrictionApi,
-} from "@/lib/restrictionApi";
+} from "@/lib/patient/restrictionApi";
 import { fetchCodesApi } from "@/lib/codeApi";
 
 type RestrictionFormState = {
@@ -57,25 +55,21 @@ function formatDate(value?: string | null) {
 }
 
 function toOptional(value: string) {
-  const trimmed = value.trim();
-  return trimmed.length === 0 ? undefined : trimmed;
+  const t = value.trim();
+  return t.length === 0 ? undefined : t;
 }
 
-export default function PatientRestrictionsPage() {
-  const params = useParams<{ id: string }>();
-  const patientId = Number(params.id);
+type Props = { patientId: number; onClose?: () => void };
 
+export default function PatientRestrictContent({ patientId }: Props) {
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
-  const [restrictions, setRestrictions] = React.useState<PatientRestriction[]>(
-    []
-  );
+  const [restrictions, setRestrictions] = React.useState<PatientRestriction[]>([]);
   const [restrictionOptions, setRestrictionOptions] = React.useState<RestrictionOption[]>([]);
 
   const [dialogOpen, setDialogOpen] = React.useState(false);
   const [dialogMode, setDialogMode] = React.useState<"create" | "edit">("create");
-  const [editingRestriction, setEditingRestriction] =
-    React.useState<PatientRestriction | null>(null);
+  const [editingRestriction, setEditingRestriction] = React.useState<PatientRestriction | null>(null);
   const [form, setForm] = React.useState<RestrictionFormState>({
     restrictionType: "",
     reason: "",
@@ -109,9 +103,7 @@ export default function PatientRestrictionsPage() {
         if (!mounted) return;
         setRestrictionOptions(list.map((c) => ({ value: c.code, label: c.name })));
       } catch {
-        if (mounted) {
-          setRestrictionOptions([]);
-        }
+        if (mounted) setRestrictionOptions([]);
       }
     };
     loadRestrictionCodes();
@@ -123,12 +115,7 @@ export default function PatientRestrictionsPage() {
   const openCreate = () => {
     setDialogMode("create");
     setEditingRestriction(null);
-    setForm({
-      restrictionType: "",
-      reason: "",
-      endAt: "",
-      activeYn: true,
-    });
+    setForm({ restrictionType: "", reason: "", endAt: "", activeYn: true });
     setDialogOpen(true);
   };
 
@@ -173,9 +160,7 @@ export default function PatientRestrictionsPage() {
 
   const onToggleActive = async (item: PatientRestriction) => {
     try {
-      await updatePatientRestrictionApi(item.restrictionId, {
-        activeYn: !item.activeYn,
-      });
+      await updatePatientRestrictionApi(item.restrictionId, { activeYn: !item.activeYn });
       await loadRestrictions();
     } catch (err) {
       setError(err instanceof Error ? err.message : "상태 변경 실패");
@@ -193,22 +178,13 @@ export default function PatientRestrictionsPage() {
   };
 
   return (
-    <MainLayout>
+    <>
       <Card
         elevation={0}
-        sx={{
-          borderRadius: 4,
-          border: "1px solid var(--line)",
-          boxShadow: "var(--shadow-2)",
-        }}
+        sx={{ borderRadius: 4, border: "1px solid var(--line)", boxShadow: "var(--shadow-2)" }}
       >
         <CardContent>
-          <Stack
-            direction="row"
-            alignItems="center"
-            justifyContent="space-between"
-            sx={{ mb: 1 }}
-          >
+          <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 1 }}>
             <Typography fontWeight={900}>환자 제한</Typography>
             <Button size="small" variant="outlined" onClick={openCreate}>
               제한 추가
@@ -223,15 +199,7 @@ export default function PatientRestrictionsPage() {
 
           <Table size="small">
             <TableHead sx={{ bgcolor: "#f4f7fb" }}>
-              <TableRow
-                sx={{
-                  "& th": {
-                    fontWeight: 800,
-                    color: "#425366",
-                    borderBottom: "1px solid var(--line)",
-                  },
-                }}
-              >
+              <TableRow sx={{ "& th": { fontWeight: 800, color: "#425366", borderBottom: "1px solid var(--line)" } }}>
                 <TableCell>유형</TableCell>
                 <TableCell>사유</TableCell>
                 <TableCell>상태</TableCell>
@@ -248,7 +216,6 @@ export default function PatientRestrictionsPage() {
                   </TableCell>
                 </TableRow>
               )}
-
               {!loading && restrictions.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={6}>
@@ -256,7 +223,6 @@ export default function PatientRestrictionsPage() {
                   </TableCell>
                 </TableRow>
               )}
-
               {restrictions.map((item) => (
                 <TableRow key={item.restrictionId} hover>
                   <TableCell sx={{ fontWeight: 800 }}>
@@ -282,11 +248,7 @@ export default function PatientRestrictionsPage() {
                           <CheckCircleOutlineOutlinedIcon fontSize="small" />
                         )}
                       </IconButton>
-                      <IconButton
-                        size="small"
-                        color="error"
-                        onClick={() => onDelete(item)}
-                      >
+                      <IconButton size="small" color="error" onClick={() => onDelete(item)}>
                         <DeleteOutlineOutlinedIcon fontSize="small" />
                       </IconButton>
                     </Stack>
@@ -305,21 +267,14 @@ export default function PatientRestrictionsPage() {
         maxWidth="sm"
         PaperProps={{ sx: { borderRadius: 4 } }}
       >
-        <DialogTitle>
-          {dialogMode === "create" ? "제한 추가" : "제한 수정"}
-        </DialogTitle>
+        <DialogTitle>{dialogMode === "create" ? "제한 추가" : "제한 수정"}</DialogTitle>
         <DialogContent>
           <Stack spacing={2} sx={{ mt: 1 }}>
             <TextField
               select
               label="유형"
               value={form.restrictionType}
-              onChange={(e) =>
-                setForm((prev) => ({
-                  ...prev,
-                  restrictionType: e.target.value,
-                }))
-              }
+              onChange={(e) => setForm((prev) => ({ ...prev, restrictionType: e.target.value }))}
               fullWidth
               disabled={restrictionOptions.length === 0}
             >
@@ -337,9 +292,7 @@ export default function PatientRestrictionsPage() {
             <TextField
               label="사유"
               value={form.reason}
-              onChange={(e) =>
-                setForm((prev) => ({ ...prev, reason: e.target.value }))
-              }
+              onChange={(e) => setForm((prev) => ({ ...prev, reason: e.target.value }))}
               fullWidth
               multiline
               minRows={2}
@@ -349,9 +302,7 @@ export default function PatientRestrictionsPage() {
               label="종료 시각"
               InputLabelProps={{ shrink: true }}
               value={form.endAt}
-              onChange={(e) =>
-                setForm((prev) => ({ ...prev, endAt: e.target.value }))
-              }
+              onChange={(e) => setForm((prev) => ({ ...prev, endAt: e.target.value }))}
               fullWidth
             />
           </Stack>
@@ -367,6 +318,6 @@ export default function PatientRestrictionsPage() {
           </Button>
         </DialogActions>
       </Dialog>
-    </MainLayout>
+    </>
   );
 }

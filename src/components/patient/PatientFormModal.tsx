@@ -22,7 +22,7 @@ import CloseIcon from "@mui/icons-material/Close";
 import PersonOutlineIcon from "@mui/icons-material/PersonOutline";
 import type { Patient } from "@/features/patients/patientTypes";
 import type { PatientForm as PatientFormPayload } from "@/features/patients/patientTypes";
-import { searchPatientsApi } from "@/lib/patientApi";
+import { searchPatientsApi } from "@/lib/patient/patientApi";
 
 type DaumPostcodeData = { address?: string };
 type DaumPostcodeInstance = { open: () => void };
@@ -236,6 +236,8 @@ export default function PatientFormModal({
       isVip: form.patientType === "VIP",
       contactPriority: form.contactPriority || "PATIENT",
       note,
+      consentRequired: form.consentRequired,
+      consentOptional: form.consentOptional,
       families,
     };
   };

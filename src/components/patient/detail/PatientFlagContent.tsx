@@ -1,8 +1,6 @@
-﻿"use client";
+"use client";
 
 import * as React from "react";
-import { useParams } from "next/navigation";
-import MainLayout from "@/components/layout/MainLayout";
 import {
   Button,
   Card,
@@ -27,13 +25,13 @@ import DeleteOutlineOutlinedIcon from "@mui/icons-material/DeleteOutlineOutlined
 import BlockOutlinedIcon from "@mui/icons-material/BlockOutlined";
 import CheckCircleOutlineOutlinedIcon from "@mui/icons-material/CheckCircleOutlineOutlined";
 
-import type { PatientFlag } from "@/lib/flagApi";
+import type { PatientFlag } from "@/lib/patient/flagApi";
 import {
   createPatientFlagApi,
   deletePatientFlagApi,
   fetchPatientFlagsApi,
   updatePatientFlagApi,
-} from "@/lib/flagApi";
+} from "@/lib/patient/flagApi";
 import { fetchCodesApi } from "@/lib/codeApi";
 
 type FlagFormState = {
@@ -55,14 +53,13 @@ function formatDate(value?: string | null) {
 }
 
 function toOptional(value: string) {
-  const trimmed = value.trim();
-  return trimmed.length === 0 ? undefined : trimmed;
+  const t = value.trim();
+  return t.length === 0 ? undefined : t;
 }
 
-export default function PatientFlagsPage() {
-  const params = useParams<{ id: string }>();
-  const patientId = Number(params.id);
+type Props = { patientId: number; onClose?: () => void };
 
+export default function PatientFlagContent({ patientId }: Props) {
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
   const [flags, setFlags] = React.useState<PatientFlag[]>([]);
@@ -115,9 +112,7 @@ export default function PatientFlagsPage() {
   const canCreate = options.length > 0;
 
   const optionsForEdit =
-    dialogMode === "edit" &&
-    form.flagType &&
-    !options.some((o) => o.value === form.flagType)
+    dialogMode === "edit" && form.flagType && !options.some((o) => o.value === form.flagType)
       ? [{ value: form.flagType, label: form.flagType }, ...options]
       : options;
 
@@ -143,12 +138,10 @@ export default function PatientFlagsPage() {
 
   const onSubmit = async () => {
     if (!patientId || !form.flagType.trim()) return;
-
     if (dialogMode === "create" && !canCreate) {
       setError("플래그 유형이 비활성화 상태입니다.");
       return;
     }
-
     try {
       if (dialogMode === "create") {
         await createPatientFlagApi({
@@ -190,22 +183,13 @@ export default function PatientFlagsPage() {
   };
 
   return (
-    <MainLayout>
+    <>
       <Card
         elevation={0}
-        sx={{
-          borderRadius: 4,
-          border: "1px solid var(--line)",
-          boxShadow: "var(--shadow-2)",
-        }}
+        sx={{ borderRadius: 4, border: "1px solid var(--line)", boxShadow: "var(--shadow-2)" }}
       >
         <CardContent>
-          <Stack
-            direction="row"
-            alignItems="center"
-            justifyContent="space-between"
-            sx={{ mb: 1 }}
-          >
+          <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 1 }}>
             <Typography fontWeight={900}>환자 플래그</Typography>
             <Button size="small" variant="outlined" onClick={openCreate}>
               플래그 추가
@@ -220,15 +204,7 @@ export default function PatientFlagsPage() {
 
           <Table size="small">
             <TableHead sx={{ bgcolor: "#f4f7fb" }}>
-              <TableRow
-                sx={{
-                  "& th": {
-                    fontWeight: 800,
-                    color: "#425366",
-                    borderBottom: "1px solid var(--line)",
-                  },
-                }}
-              >
+              <TableRow sx={{ "& th": { fontWeight: 800, color: "#425366", borderBottom: "1px solid var(--line)" } }}>
                 <TableCell>유형</TableCell>
                 <TableCell>메모</TableCell>
                 <TableCell>상태</TableCell>
@@ -245,22 +221,16 @@ export default function PatientFlagsPage() {
                   </TableCell>
                 </TableRow>
               )}
-
               {!loading && flags.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={6}>
-                    <Typography color="text.secondary">
-                      등록된 플래그가 없습니다.
-                    </Typography>
+                    <Typography color="text.secondary">등록된 플래그가 없습니다.</Typography>
                   </TableCell>
                 </TableRow>
               )}
-
               {flags.map((item) => (
                 <TableRow key={item.flagId} hover>
-                  <TableCell sx={{ fontWeight: 800 }}>
-                    {flagLabel(item.flagType, options)}
-                  </TableCell>
+                  <TableCell sx={{ fontWeight: 800 }}>{flagLabel(item.flagType, options)}</TableCell>
                   <TableCell>{item.note ?? "-"}</TableCell>
                   <TableCell>{item.activeYn ? "활성" : "비활성"}</TableCell>
                   <TableCell>{formatDate(item.createdAt)}</TableCell>
@@ -281,11 +251,7 @@ export default function PatientFlagsPage() {
                           <CheckCircleOutlineOutlinedIcon fontSize="small" />
                         )}
                       </IconButton>
-                      <IconButton
-                        size="small"
-                        color="error"
-                        onClick={() => onDelete(item)}
-                      >
+                      <IconButton size="small" color="error" onClick={() => onDelete(item)}>
                         <DeleteOutlineOutlinedIcon fontSize="small" />
                       </IconButton>
                     </Stack>
@@ -304,18 +270,14 @@ export default function PatientFlagsPage() {
         maxWidth="sm"
         PaperProps={{ sx: { borderRadius: 4 } }}
       >
-        <DialogTitle>
-          {dialogMode === "create" ? "플래그 추가" : "플래그 수정"}
-        </DialogTitle>
+        <DialogTitle>{dialogMode === "create" ? "플래그 추가" : "플래그 수정"}</DialogTitle>
         <DialogContent>
           <Stack spacing={2} sx={{ mt: 1 }}>
             <TextField
               select
               label="유형"
               value={form.flagType}
-              onChange={(e) =>
-                setForm((prev) => ({ ...prev, flagType: e.target.value }))
-              }
+              onChange={(e) => setForm((prev) => ({ ...prev, flagType: e.target.value }))}
               fullWidth
               disabled={dialogMode === "create" && !canCreate}
             >
@@ -325,19 +287,15 @@ export default function PatientFlagsPage() {
                 </MenuItem>
               ))}
             </TextField>
-
             {dialogMode === "create" && !canCreate && (
               <Typography variant="caption" color="error">
                 플래그 유형이 비활성화 상태입니다.
               </Typography>
             )}
-
             <TextField
               label="메모"
               value={form.note}
-              onChange={(e) =>
-                setForm((prev) => ({ ...prev, note: e.target.value }))
-              }
+              onChange={(e) => setForm((prev) => ({ ...prev, note: e.target.value }))}
               fullWidth
               multiline
               minRows={2}
@@ -355,6 +313,6 @@ export default function PatientFlagsPage() {
           </Button>
         </DialogActions>
       </Dialog>
-    </MainLayout>
+    </>
   );
 }

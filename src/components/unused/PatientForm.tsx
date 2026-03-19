@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import * as React from "react";
 import Link from "next/link";
@@ -22,7 +22,7 @@ import {
 } from "@mui/material";
 import type { PatientForm as PatientFormPayload } from "@/features/patients/patientTypes";
 import type { Patient } from "@/features/patients/patientTypes";
-import { searchPatientsApi } from "@/lib/patientApi";
+import { searchPatientsApi } from "@/lib/patient/patientApi";
 
 type PatientFormState = {
   name: string;
