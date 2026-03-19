@@ -37,35 +37,35 @@ async function parseJson<T>(res: Response): Promise<T> {
     return v as T;
   }
   return body as T;
-};
+}
 
 type OrderItemRaw = { itemName?: string | null; itemCode?: string | null };
 type OrderRaw = {
   orderId: number;
-  clinicalId: number;
+  visitId: number;
+  clinicalId?: number;
   orderType?: string | null;
   orderStatus?: string | null;
   items?: OrderItemRaw[] | null;
 };
 
 function mapOrderToClinical(o: OrderRaw): ClinicalOrder {
-  const orderType = (o.orderType ?? "BLOOD") as LabOrderType;
+  const vid = o.visitId ?? o.clinicalId ?? 0;
+  const orderType = (o.orderType ?? "BLOOD") as string;
   const orderName = o.items?.[0]?.itemName ?? o.items?.[0]?.itemCode ?? orderType;
+  const t =
+    orderType === "BLOOD" || orderType === "IMAGING" || orderType === "PROCEDURE" ? orderType : "BLOOD";
   return {
     id: o.orderId,
-    clinicalId: o.clinicalId,
-    orderType: orderType === "BLOOD" || orderType === "IMAGING" || orderType === "PROCEDURE" ? orderType : "BLOOD",
-    orderName: orderName || orderType,
+    clinicalId: vid,
+    orderType: t as LabOrderType,
+    orderName: orderName || t,
     status: o.orderStatus ?? null,
   };
 }
-export async function fetchClinicalOrdersApi(
-  clinicalId: number
-): Promise<ClinicalOrder[]> {
-  const res = await fetch(
-    `${CLINICAL_API_BASE}/api/clinicals/${clinicalId}/orders`,
-    { cache: "no-store" }
-  );
+
+export async function fetchClinicalOrdersApi(visitId: number): Promise<ClinicalOrder[]> {
+  const res = await fetch(`${CLINICAL_API_BASE}/api/visits/${visitId}/orders`, { cache: "no-store" });
   if (!res.ok) {
     if (res.status === 404) return [];
     throw new Error(`검사 오더 조회 실패 (${res.status})`);
@@ -76,44 +76,39 @@ export async function fetchClinicalOrdersApi(
 }
 
 export async function createClinicalOrderApi(
-  clinicalId: number,
+  visitId: number,
   payload: ClinicalOrderCreatePayload
 ): Promise<ClinicalOrder> {
   const body = {
     orderType: payload.orderType,
     items: [{ itemCode: payload.orderCode ?? payload.orderType, itemName: payload.orderName }],
   };
-  const res = await fetch(
-    `${CLINICAL_API_BASE}/api/clinicals/${clinicalId}/orders`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    }
-  );
+  const res = await fetch(`${CLINICAL_API_BASE}/api/visits/${visitId}/orders`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
   if (!res.ok) {
-    const body = await res.json().catch(() => ({})) as { message?: string };
-    throw new Error(body?.message ?? `검사 오더 등록 실패 (${res.status})`);
+    const err = (await res.json().catch(() => ({}))) as { message?: string };
+    throw new Error(err?.message ?? `검사 오더 등록 실패 (${res.status})`);
   }
   const value = await parseJson<OrderRaw>(res);
   return mapOrderToClinical(value as OrderRaw);
 }
+
 export async function updateClinicalOrderStatusApi(
-  clinicalId: number,
+  visitId: number,
   orderId: number,
   status: OrderStatus
 ): Promise<ClinicalOrder> {
-  const res = await fetch(
-    `${CLINICAL_API_BASE}/api/clinicals/${clinicalId}/orders/${orderId}/status`,
-    {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status }),
-    }
-  );
+  const res = await fetch(`${CLINICAL_API_BASE}/api/visits/${visitId}/orders/${orderId}/status`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ orderStatus: status }),
+  });
   if (!res.ok) {
-    const body = await res.json().catch(() => ({})) as { message?: string };
-    throw new Error(body?.message ?? `검사 상태 변경 실패 (${res.status})`);
+    const err = (await res.json().catch(() => ({}))) as { message?: string };
+    throw new Error(err?.message ?? `검사 상태 변경 실패 (${res.status})`);
   }
   const value = await parseJson<OrderRaw>(res);
   return mapOrderToClinical(value as OrderRaw);
