@@ -28,9 +28,11 @@ import {
 import type { ClinicalRes, ClinicalTab } from "./types";
 import {
   fetchClinicalApi,
-  createClinicalApi,
+  fetchReceptionQueueApi,
+  startVisitApi,
   isNetworkError,
   clinicalConnectionMessage,
+  type ReceptionQueueItem,
 } from "./visitApi";
 import { clinicalStatusView, resolveClinicalStatus } from "./clinicalDocumentation";
 import { ClinicalToolbar } from "./ClinicalEncounter";
@@ -55,6 +57,9 @@ export default function ClinicalPage() {
 
   const [patients, setPatients] = React.useState<Patient[]>([]);
   const [clinicals, setClinicals] = React.useState<ClinicalRes[]>([]);
+  const [receptions, setReceptions] = React.useState<ReceptionQueueItem[]>([]);
+  const [receptionLoading, setReceptionLoading] = React.useState(false);
+  const [selectedReception, setSelectedReception] = React.useState<ReceptionQueueItem | null>(null);
   const [query, setQuery] = React.useState("");
   const [tab, setTab] = React.useState<ClinicalTab>("ALL");
   const [leftPage, setLeftPage] = React.useState(1);
@@ -235,16 +240,59 @@ export default function ClinicalPage() {
     }
   }, []);
 
+  const toDateKey = React.useCallback((d: Date) => {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${y}-${m}-${day}`;
+  }, []);
+
+  const loadReceptionQueue = React.useCallback(async () => {
+    setReceptionLoading(true);
+    setErrorMessage(null);
+    try {
+      const today = toDateKey(new Date());
+      let list = await fetchReceptionQueueApi({ date: today });
+      if (list.length === 0) {
+        try {
+          const anyList = await fetchReceptionQueueApi({});
+          const todayPrefix = today.replace(/-/g, "");
+          list = anyList.filter(
+            (r) =>
+              (r.receptionNo && r.receptionNo.startsWith(todayPrefix)) ||
+              (r as { arrivedAt?: string; createdAt?: string }).arrivedAt?.startsWith?.(today) ||
+              (r as { arrivedAt?: string; createdAt?: string }).createdAt?.startsWith?.(today)
+          );
+        } catch {
+          list = [];
+        }
+      }
+      setReceptions(list);
+    } catch (err) {
+      setReceptions([]);
+      setErrorMessage(err instanceof Error ? err.message : "접수 대기열을 불러오지 못했습니다.");
+    } finally {
+      setReceptionLoading(false);
+    }
+  }, [toDateKey]);
+
   React.useEffect(() => {
     loadData();
   }, [loadData]);
 
   React.useEffect(() => {
-    if (!queryPatientId || patients.length === 0) return;
-    if (!patients.some((p) => p.patientId === queryPatientId)) return;
-    setTab("ALL");
-    setSelectedPatientId(queryPatientId);
-  }, [queryPatientId, patients]);
+    loadReceptionQueue();
+  }, [loadReceptionQueue]);
+
+  React.useEffect(() => {
+    if (!queryPatientId) return;
+    const r = receptions.find((x) => x.patientId === queryPatientId);
+    if (r) {
+      setTab("ALL");
+      setSelectedReception(r);
+      setSelectedPatientId(queryPatientId);
+    }
+  }, [queryPatientId, receptions]);
 
   const clinicalByPatientId = React.useMemo(() => {
     const sorted = [...clinicals].sort(
@@ -265,39 +313,52 @@ export default function ClinicalPage() {
 
   const listForLeft = React.useMemo(() => {
     const k = query.trim().toLowerCase();
-    const match = (p: Patient) =>
-      !k || [p.name, p.patientNo, p.phone].some((v) => (v ?? "").toLowerCase().includes(k));
-    if (tab === "ALL") return patients.filter(match);
+    const match = (r: ReceptionQueueItem) =>
+      !k ||
+      [r.patientName, r.receptionNo].some((v) => (v ?? "").toLowerCase().includes(k));
+    const filtered = receptions.filter(match);
     if (tab === "WAIT") {
-      const waitPids = new Set(
-        clinicals
-          .filter((v) => {
-            const s = resolveClinicalStatus(v);
-            return s === "WAITING" || s === "CALLED" || s === "READY";
-          })
-          .map((c) => c.patientId)
+      return filtered.filter(
+        (r) =>
+          r.status === "WAITING" ||
+          r.status === "CALLED" ||
+          r.status === "IN_PROGRESS"
       );
-      const waiting = patients.filter((p) => waitPids.has(p.patientId) && match(p));
-      const rest = patients.filter((p) => !waitPids.has(p.patientId) && match(p));
-      return [...waiting, ...rest];
     }
-    return patients.filter((p) => {
-      const c = clinicalByPatientId.get(p.patientId);
-      return c?.clinicalType === "RESERVATION" && match(p);
-    });
-  }, [patients, clinicals, clinicalByPatientId, query, tab]);
+    return filtered;
+  }, [receptions, query, tab]);
 
-  const selectedPatient = React.useMemo(() => {
-    if (selectedPatientId) return patientMap.get(selectedPatientId) ?? null;
-    if (listForLeft.length) return listForLeft[0];
-    return patients[0] ?? null;
-  }, [selectedPatientId, listForLeft, patients, patientMap]);
+  const selectedPatient = React.useMemo((): Patient | null => {
+    if (!selectedReception) return null;
+    const p = patientMap.get(selectedReception.patientId);
+    if (p) return p;
+    return {
+      patientId: selectedReception.patientId,
+      name: selectedReception.patientName?.trim() ?? `환자 ${selectedReception.patientId}`,
+    } as Patient;
+  }, [selectedReception, patientMap]);
+
+  React.useEffect(() => {
+    if (listForLeft.length === 0) return;
+    const currentInList =
+      selectedReception &&
+      listForLeft.some((r) => r.receptionId === selectedReception.receptionId);
+    if (!currentInList) {
+      setSelectedReception(listForLeft[0]);
+      setSelectedPatientId(listForLeft[0].patientId);
+    }
+  }, [listForLeft, selectedReception]);
 
   const totalLeftPages = Math.max(1, Math.ceil(listForLeft.length / LEFT_LIST_PAGE_SIZE));
   const paginatedLeftList = React.useMemo(() => {
     const start = (leftPage - 1) * LEFT_LIST_PAGE_SIZE;
     return listForLeft.slice(start, start + LEFT_LIST_PAGE_SIZE);
   }, [listForLeft, leftPage, LEFT_LIST_PAGE_SIZE]);
+
+  const handleSelectReception = React.useCallback((r: ReceptionQueueItem) => {
+    setSelectedReception(r);
+    setSelectedPatientId(r.patientId);
+  }, []);
 
   const selectedClinical = selectedPatient
     ? clinicalByPatientId.get(selectedPatient.patientId) ?? null
@@ -398,8 +459,8 @@ export default function ClinicalPage() {
   }, [leftPage, totalLeftPages]);
 
   const handleStartNewClinical = React.useCallback(async () => {
-    if (!selectedPatient) {
-      window.alert("환자를 먼저 선택해 주세요.");
+    if (!selectedReception) {
+      window.alert("접수 환자를 먼저 선택해 주세요.");
       return;
     }
     if (creatingClinicalRef.current) return;
@@ -407,25 +468,29 @@ export default function ClinicalPage() {
     setCreatingClinical(true);
     try {
       setErrorMessage(null);
-      await createClinicalApi(selectedPatient.patientId);
-      await loadData();
-      setTab("WAIT");
-      setSelectedPatientId(selectedPatient.patientId);
-      window.alert("신규 진료가 등록되었습니다.");
+      await startVisitApi(selectedReception.receptionId);
+      const currentReceptionId = selectedReception.receptionId;
+      await Promise.all([loadData(), loadReceptionQueue()]);
+      setSelectedPatientId(selectedReception.patientId);
+      setSelectedReception((prev) => {
+        if (!prev) return prev;
+        return { ...prev, status: "IN_PROGRESS" };
+      });
+      window.alert("진료가 시작되었습니다.");
     } catch (err) {
       const message =
         err instanceof Error
           ? isNetworkError(err)
             ? clinicalConnectionMessage()
             : err.message
-          : "신규 진료 생성에 실패했습니다.";
+          : "진료 시작에 실패했습니다.";
       setErrorMessage(message);
       window.alert(message);
     } finally {
       creatingClinicalRef.current = false;
       setCreatingClinical(false);
     }
-  }, [selectedPatient, loadData]);
+  }, [selectedReception, loadData, loadReceptionQueue]);
 
   const openVitalDialog = React.useCallback(
     (mode: "new" | "edit") => {
@@ -523,7 +588,7 @@ export default function ClinicalPage() {
           query={query}
           onQueryChange={setQuery}
           creatingClinical={creatingClinical}
-          selectedPatient={selectedPatient}
+          selectedPatient={selectedReception ? selectedPatient : null}
           onStartNewClinical={handleStartNewClinical}
         />
 
@@ -548,8 +613,9 @@ export default function ClinicalPage() {
             totalLeftPages={totalLeftPages}
             onLeftPageChange={setLeftPage}
             clinicalByPatientId={clinicalByPatientId}
-            selectedPatient={selectedPatient}
-            onSelectPatient={setSelectedPatientId}
+            selectedReception={selectedReception}
+            onSelectReception={handleSelectReception}
+            receptionLoading={receptionLoading}
           />
 
           <ClinicalChartCenter
