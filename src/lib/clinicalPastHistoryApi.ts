@@ -23,6 +23,8 @@ function unwrap<T>(body: ApiEnvelope<T> | T): T {
   return body as T;
 }
 
+
+
 export async function fetchPastHistoryApi(visitId: number): Promise<PastHistoryItem[]> {
   const res = await fetch(`${CLINICAL_API_BASE}/api/visits/${visitId}/past-history`, {
     cache: "no-store",
