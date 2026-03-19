@@ -5,13 +5,12 @@ import { Box, Button, FormControl, InputLabel, MenuItem, Select, Stack, TextFiel
 import type { RecordForm as RecordFormState } from "@/features/Record/recordTypes";
 
 export default function RecordForm({
-  title, initial, mode, loading, error, onSubmit, onCancel, receptionId
+  title, initial, mode, loading, error, onSubmit, onCancel,
 }: {
   title: string; initial: RecordFormState; mode: "create" | "edit";
   loading: boolean; error?: string | null;
   onSubmit: (payload: any) => void; // 가공 없이 보내므로 타입을 any로 유연하게 둡니다
   onCancel: () => void;
-  receptionId : string | null
 }) {
   const [form, setForm] = useState<RecordFormState>(initial);
 
@@ -35,16 +34,14 @@ export default function RecordForm({
       {error && <Typography color="error">{error}</Typography>}
       
       <Box sx={{ display: "grid", gap: 1.1, gridTemplateColumns: { xs: "1fr", md: "repeat(2, minmax(0, 1fr))" } }}>
-         <TextField label="기록 시각" type="datetime-local" value={(form.recordedAt ?? "").slice(0, 16)} 
-         onChange={(e) => updateField("recordedAt", e.target.value)} size="small" fullWidth InputLabelProps={{ shrink: true }} />
+        <TextField label="방문 ID" value={form.visitId ?? ""} onChange={(e) => updateField("visitId", e.target.value)} size="small" fullWidth />
+        <TextField label="기록 시각" type="datetime-local" value={(form.recordedAt ?? "").slice(0, 16)} onChange={(e) => updateField("recordedAt", e.target.value)} size="small" fullWidth InputLabelProps={{ shrink: true }} />
         <TextField label="수축기 혈압" value={form.systolicBp ?? ""} onChange={(e) => updateField("systolicBp", e.target.value)} size="small" />
         <TextField label="이완기 혈압" value={form.diastolicBp ?? ""} onChange={(e) => updateField("diastolicBp", e.target.value)} size="small" />
         <TextField label="맥박" value={form.pulse ?? ""} onChange={(e) => updateField("pulse", e.target.value)} size="small" />
         <TextField label="호흡" value={form.respiration ?? ""} onChange={(e) => updateField("respiration", e.target.value)} size="small" />
         <TextField label="체온" value={form.temperature ?? ""} onChange={(e) => updateField("temperature", e.target.value)} size="small" />
         <TextField label="SpO2" value={form.spo2 ?? ""} onChange={(e) => updateField("spo2", e.target.value)} size="small" />
-        <TextField label="접수 아이디" value={form.receptionId ?? ""} onChange={(e) => updateField("receptionId", e.target.value)} size="small" />
-
 
         <FormControl size="small" fullWidth>
           <InputLabel>통증 점수</InputLabel>

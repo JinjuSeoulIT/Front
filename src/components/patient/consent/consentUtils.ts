@@ -1,6 +1,6 @@
 "use client";
 
-import type { ConsentType } from "@/lib/consentApi";
+import type { ConsentType } from "@/lib/patient/consentApi";
 
 export type ConsentFormState = {
   consentType: string;
