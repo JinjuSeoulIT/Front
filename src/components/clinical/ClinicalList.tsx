@@ -103,9 +103,12 @@ export function ClinicalPatientList({
         <FormControl size="small" fullWidth>
           <InputLabel>진료실</InputLabel>
           <Select value={department} label="진료실" onChange={(e) => onDepartmentChange(e.target.value)}>
-            <MenuItem value="내과1">내과1</MenuItem>
-            <MenuItem value="내과2">내과2</MenuItem>
-            <MenuItem value="외과">외과</MenuItem>
+            <MenuItem value="">전체</MenuItem>
+            <MenuItem value="내과">내과</MenuItem>
+            <MenuItem value="정형외과">정형외과</MenuItem>
+            <MenuItem value="소아과">소아과</MenuItem>
+            <MenuItem value="이비인후과">이비인후과</MenuItem>
+            <MenuItem value="피부과">피부과</MenuItem>
           </Select>
         </FormControl>
         <TextField

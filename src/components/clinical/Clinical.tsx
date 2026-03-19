@@ -96,7 +96,7 @@ export default function ClinicalPage() {
     currentMedication: "",
   });
 
-  const [department, setDepartment] = React.useState("내과1");
+  const [department, setDepartment] = React.useState("");
   const [doctorNote, setDoctorNote] = React.useState<DoctorNoteRes | null>(null);
   const [diagnoses, setDiagnoses] = React.useState<
     Awaited<ReturnType<typeof fetchDiagnosesApi>>
@@ -313,10 +313,15 @@ export default function ClinicalPage() {
 
   const listForLeft = React.useMemo(() => {
     const k = query.trim().toLowerCase();
-    const match = (r: ReceptionQueueItem) =>
-      !k ||
-      [r.patientName, r.receptionNo].some((v) => (v ?? "").toLowerCase().includes(k));
-    const filtered = receptions.filter(match);
+    let filtered = receptions.filter(
+      (r) =>
+        (!k || [r.patientName, r.receptionNo].some((v) => (v ?? "").toLowerCase().includes(k)))
+    );
+    if (department) {
+      filtered = filtered.filter(
+        (r) => (r.departmentName ?? "").includes(department)
+      );
+    }
     if (tab === "WAIT") {
       return filtered.filter(
         (r) =>
@@ -326,7 +331,7 @@ export default function ClinicalPage() {
       );
     }
     return filtered;
-  }, [receptions, query, tab]);
+  }, [receptions, query, tab, department]);
 
   const selectedPatient = React.useMemo((): Patient | null => {
     if (!selectedReception) return null;
