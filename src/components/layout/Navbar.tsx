@@ -25,7 +25,7 @@ export default function Navbar() {
     try {
       await logoutApi();
     } catch {
-      // 서버 로그아웃 실패 시에도 로컬 세션은 정리한다.
+      // 서버 로그아웃 실패 시에도 로컬 세션은 정리
     } finally {
       clearSession();
       router.push("/login");
@@ -46,7 +46,11 @@ export default function Navbar() {
         zIndex: 1200,
       }}
     >
-      <Toolbar sx={{ minHeight: { xs: 64, md: 76 } }}>
+      <Toolbar
+        sx={{
+          minHeight: { xs: 64, md: 76 },
+        }}
+      >
         <Stack
           direction="row"
           spacing={1.5}
@@ -68,6 +72,7 @@ export default function Navbar() {
           >
             <MedicalServicesOutlinedIcon sx={{ color: "#fff" }} />
           </Box>
+
           <Box>
             <Typography
               variant="h6"
@@ -89,15 +94,17 @@ export default function Navbar() {
               <NotificationsNoneOutlinedIcon />
             </Badge>
           </IconButton>
+
           <Stack direction="row" spacing={1} alignItems="center">
             <PersonOutlineOutlinedIcon sx={{ color: "#dbe8ff" }} />
             <Typography sx={{ color: "#e8f1ff", fontSize: 14, fontWeight: 600 }}>
               관리자
             </Typography>
-              <Typography sx={{ color: "#cbd9f5", fontSize: 12 }}>
-                운영팀
-              </Typography>
-            </Stack>
+            <Typography sx={{ color: "#cbd9f5", fontSize: 12 }}>
+              운영팀
+            </Typography>
+          </Stack>
+
           <Button
             onClick={handleLogout}
             variant="outlined"
