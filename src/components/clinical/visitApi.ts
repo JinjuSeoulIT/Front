@@ -1,7 +1,7 @@
 import type { ApiEnvelope, ClinicalRes } from "./types";
 
 const CLINICAL_API_BASE =
-  process.env.NEXT_PUBLIC_CLINICAL_API_BASE_URL ?? "http://192.168.1.70:8090";
+  process.env.NEXT_PUBLIC_CLINICAL_API_BASE_URL ?? "http://localhost:8090";
 
 function formatBackendDateTime(v: unknown): string | null {
   if (v == null) return null;
@@ -86,4 +86,66 @@ export async function createClinicalApi(patientId: number): Promise<ClinicalRes>
   if (!created || (created.clinicalId == null && created.id == null))
     throw new Error("신규 진료 생성 응답이 올바르지 않습니다.");
   return created;
+}
+
+export interface ReceptionQueueItem {
+  receptionId: number;
+  receptionNo?: string | null;
+  patientId: number;
+  patientName?: string | null;
+  departmentId?: number | null;
+  departmentName?: string | null;
+  doctorId?: number | null;
+  doctorName?: string | null;
+  status?: string | null;
+}
+
+export async function fetchReceptionQueueApi(params?: {
+  departmentId?: number | null;
+  doctorId?: number | null;
+  date?: string | null;
+}): Promise<ReceptionQueueItem[]> {
+  const sp = new URLSearchParams();
+  if (params?.departmentId != null) sp.set("departmentId", String(params.departmentId));
+  if (params?.doctorId != null) sp.set("doctorId", String(params.doctorId));
+  if (params?.date?.trim()) sp.set("date", params.date.trim());
+  const qs = sp.toString();
+  const url = `${CLINICAL_API_BASE}/api/clinical/reception-queue${qs ? `?${qs}` : ""}`;
+  let res: Response;
+  try {
+    res = await fetch(url, { cache: "no-store" });
+  } catch (e) {
+    if (isNetworkError(e)) throw new Error(clinicalConnectionMessage());
+    throw e;
+  }
+  const body = (await res.json().catch(() => ({}))) as {
+    success?: boolean;
+    message?: string;
+    result?: ReceptionQueueItem[];
+    data?: ReceptionQueueItem[];
+  };
+  if (!res.ok) {
+    throw new Error(body?.message ?? `접수 대기열 조회 실패 (${res.status})`);
+  }
+  if (body?.success === false) {
+    throw new Error(body?.message ?? "접수 대기열 조회에 실패했습니다.");
+  }
+  const list = body?.result ?? body?.data ?? [];
+  return Array.isArray(list) ? list : [];
+}
+
+export async function startVisitApi(receptionId: number, changedBy?: number | null): Promise<{ visitId: number }> {
+  const res = await fetch(`${CLINICAL_API_BASE}/api/clinical/start`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ receptionId, changedBy: changedBy ?? undefined }),
+  });
+  if (!res.ok) {
+    const err = (await res.json().catch(() => ({}))) as { message?: string };
+    throw new Error(err?.message ?? `진료 시작 실패 (${res.status})`);
+  }
+  const body = (await res.json()) as { success?: boolean; result?: { visitId: number } };
+  const result = body?.result;
+  if (!result?.visitId) throw new Error("진료 시작 응답이 올바르지 않습니다.");
+  return result;
 }
