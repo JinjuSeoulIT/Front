@@ -81,14 +81,6 @@ const RecordDashboard = () => {
         </Box>
 
 
-
-
-
-
-
-
-
-
     );
 };
 
