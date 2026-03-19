@@ -3,8 +3,8 @@
 import * as React from "react";
 import { Box, Chip, FormControlLabel, Grid, Stack, Switch, Typography } from "@mui/material";
 import type { Patient } from "@/features/patients/patientTypes";
-import type { PatientRestriction } from "@/lib/restrictionApi";
-import type { PatientFlag } from "@/lib/flagApi";
+import type { PatientRestriction } from "@/lib/patient/restrictionApi";
+import type { PatientFlag } from "@/lib/patient/flagApi";
 import type { Option } from "./PatientDetailUtils";
 import { resolveFileUrl, sexLabel, buildFlags } from "./PatientDetailUtils";
 

@@ -1,5 +1,6 @@
 import MainLayout from "@/components/layout/MainLayout";
-import EmergencyReceptionList from "@/components/EmergencyReceptionList";
+import EmergencyReceptionList from "@/components/reception/EmergencyReceptionList";
+
 
 export default function EmergencyReceptionsPage() {
   return (

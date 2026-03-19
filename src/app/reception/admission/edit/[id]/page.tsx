@@ -3,11 +3,12 @@
 import * as React from "react";
 import { useParams, useRouter } from "next/navigation";
 import MainLayout from "@/components/layout/MainLayout";
-import InpatientReceptionForm from "@/components/InpatientReceptionForm";
+
 import { useDispatch, useSelector } from "react-redux";
 import type { RootState, AppDispatch } from "@/store/store";
 import { inpatientReceptionActions } from "@/features/InpatientReceptions/InpatientReceptionSlice";
 import type { InpatientReceptionForm as InpatientReceptionFormPayload } from "@/features/InpatientReceptions/InpatientReceptionTypes";
+import InpatientReceptionForm from "@/components/reception/InpatientReceptionForm";
 
 export default function EditInpatientReceptionPage() {
   const params = useParams<{ id: string }>();
@@ -24,7 +25,7 @@ export default function EditInpatientReceptionPage() {
 
   const onSubmit = (form: InpatientReceptionFormPayload) => {
     dispatch(inpatientReceptionActions.updateInpatientReceptionRequest({ receptionId, form }));
-    router.push(`/inpatient-receptions/${receptionId}`);
+    router.push(`/reception/admission/detail/${receptionId}`);
   };
 
   return (
@@ -49,7 +50,7 @@ export default function EditInpatientReceptionPage() {
         error={error}
         mode="edit"
         onSubmit={onSubmit}
-        onCancel={() => router.push(`/inpatient-receptions/${receptionId}`)}
+        onCancel={() => router.push(`/reception/admission/detail/${receptionId}`)}
       />
     </MainLayout>
   );

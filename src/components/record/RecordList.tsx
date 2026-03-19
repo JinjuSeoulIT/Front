@@ -16,7 +16,7 @@ import RefreshIcon from "@mui/icons-material/Refresh";
 import { useRouter } from "next/navigation";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch, RootState } from "@/store/store";
-import { fetchRecordsRequest } from "@/features/Record/recordSlice";
+import { fetchRecordsRequest, searchRecordRequest } from "@/features/Record/recordSlice";
 import RecordSearchBar from "./RecordSearchBar";
 
 export default function RecordList() {
@@ -24,22 +24,25 @@ export default function RecordList() {
   const dispatch = useDispatch<AppDispatch>();
   const { list, loading, error } = useSelector((s: RootState) => s.records);
 
-const handleSearch = (type, value) => {
-  dispatch(searchRecordThunk({
-    searchType: type,
-    searchValue: value
-  }));
-};
+  const handleSearch = (type: string, value: string) => {
+    dispatch(
+      searchRecordRequest({
+        searchType: type,
+        searchValue: value,
+      })
+    );
+  };
 
   useEffect(() => {
     dispatch(fetchRecordsRequest());
   }, [dispatch]);
 
   const handleNew = () => {
-    router.push("/nurse/record/create");
+    router.push("/medical_support/record/create");
   };
 
  
+  
 
   return (
     <Stack spacing={2}>
@@ -84,7 +87,7 @@ const handleSearch = (type, value) => {
         {loading && <Chip label="로딩 중" size="small" />}
         {error && <Chip label={`오류: ${error}`} color="error" size="small" />}
       </Stack>
-
+      <RecordSearchBar onSearch={handleSearch}/>
       <Box
         sx={{
           display: "grid",
@@ -92,7 +95,7 @@ const handleSearch = (type, value) => {
           gridTemplateColumns: { xs: "1fr", lg: "360px minmax(0,1fr)" },
         }}
       >
-        <RecordSearchBar onSearch={handleSearch}/>
+        
 
         <Card sx={{ borderRadius: 3, border: "1px solid var(--line)" }}>
           <CardContent>
@@ -119,7 +122,7 @@ const handleSearch = (type, value) => {
 
                   <button
                    onClick={() =>
-                    router.push(`/nurse/record/${record.nursingId}`)}
+                    router.push(`/medical_support/record/detail/${record.nursingId}`)}
                   >상세</button>
                 </Box>
               ))}

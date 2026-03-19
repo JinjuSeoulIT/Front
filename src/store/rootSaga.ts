@@ -1,15 +1,12 @@
 import { all, fork } from "redux-saga/effects";
+import billingSaga from "@/features/billing/billingSaga";
 import { watchConsentSaga } from "@/features/consent/consentSaga";
 import { watchEmergencyReceptionSaga } from "@/features/EmergencyReceptions/EmergencyReceptionSaga";
 import { watchInsuranceSaga } from "@/features/insurance/insuranceSaga";
 import { watchInpatientReceptionSaga } from "@/features/InpatientReceptions/InpatientReceptionSaga";
 import { watchPatientSaga } from "@/features/patients/patientSaga";
-import { watchReceptionSaga as watchReceptionsSaga } from "@/features/Receptions/ReceptionSaga";
-// import { watchReservationSaga } from "@/features/Reservations/ReservationSaga";
-import { watchEmployeeStaffSaga } from "@/features/employee/Staff/BasiclnfoSaga";
 import { watchRecordSaga } from "@/features/Record/recordSaga";
-import { watchEmployeeNurseSaga } from "@/features/employee/nurse/nurseSaga";
-import { watchEmployeedoctorSaga } from "@/features/employee/doctor/doctorSaga";
+import { watchReceptionSaga as watchReceptionsSaga } from "@/features/Receptions/ReceptionSaga";
 import { watchReservationSaga } from "@/features/Reservations/ReservationSaga";
 
 export default function* rootSaga() {
@@ -17,14 +14,11 @@ export default function* rootSaga() {
     fork(watchEmergencyReceptionSaga),
     fork(watchInpatientReceptionSaga),
     fork(watchPatientSaga),
+    fork(watchRecordSaga),
     fork(watchInsuranceSaga),
     fork(watchConsentSaga),
-    fork(watchRecordSaga),
     fork(watchReceptionsSaga),
-    
     fork(watchReservationSaga),
-    fork(watchEmployeeNurseSaga),
-    fork(watchEmployeedoctorSaga),
-    fork(watchEmployeeStaffSaga),
+    fork(billingSaga),
   ]);
 }

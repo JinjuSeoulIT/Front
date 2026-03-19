@@ -1,4 +1,4 @@
-﻿import axios from "axios";
+import axios from "axios";
 import type { ApiResponse } from "@/features/patients/patientTypes";
 
 export type NursingRecord = {
@@ -37,7 +37,8 @@ export type NursingRecordCreatePayload = {
 };
 
 export type NursingRecordUpdatePayload = NursingRecordCreatePayload;
-
+//mui - UI 컴포넌트 라이브러리
+//백엔드와 통신?
 const api = axios.create({
   baseURL: process.env.NEXT_PUBLIC_NURSING_API_BASE_URL ?? "http://192.168.1.66:8181",
 });
@@ -51,9 +52,9 @@ export const fetchRecordsApi = async (): Promise<NursingRecord[]> => {
 };
 
 export const fetchRecordApi = async (
-  id: string | number
+  nursingId: string | number
 ): Promise<NursingRecord> => {
-  const res = await api.get<ApiResponse<NursingRecord>>(`/api/record/${id}`);
+  const res = await api.get<ApiResponse<NursingRecord>>(`/api/record/${nursingId}`);
   if (!res.data.success) {
     throw new Error(res.data.message || "Fetch failed");
   }
@@ -81,6 +82,8 @@ export const updateRecordApi = async (
   return res.data.result;
 };
 
+
+
 export const deleteRecordApi = async (id: string | number): Promise<void> => {
   const res = await api.delete<ApiResponse<void>>(`/api/record/${id}`);
   if (!res.data.success) {
@@ -88,20 +91,9 @@ export const deleteRecordApi = async (id: string | number): Promise<void> => {
   }
 };
 
-export const searchRecordApi = async (
-  type: string,
-  value: string
-): Promise<NursingRecord[]> => {
-  const res = await api.get<ApiResponse<NursingRecord[]>>("/api/search", {
-    params: {
-      type,
-      value,
-    },
-  });
-
+export const searchRecordApi = async (type: string | number, value: string|number): Promise<void> => {
+  const res = await api.get<ApiResponse<void>>(`/api/search`);
   if (!res.data.success) {
-    throw new Error(res.data.message || "Search failed");
+    throw new Error(res.data.message || "search failed");
   }
-
-  return res.data.result;
 };

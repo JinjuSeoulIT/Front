@@ -12,7 +12,7 @@ import {
   type ConsentLatest,
   type ConsentType,
   type ConsentWithdrawHistory,
-} from "@/lib/consentApi";
+} from "@/lib/patient/consentApi";
 
 import { useDispatch, useSelector } from "react-redux";
 import type { RootState, AppDispatch } from "@/store/store";
