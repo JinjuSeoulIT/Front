@@ -11,7 +11,7 @@ import { patientActions } from "@/features/patients/patientSlice";
 import type { Patient, PatientSearchPayload, PatientMultiSearchPayload } from "@/features/patients/patientTypes";
 import type { PatientForm as PatientFormPayload } from "@/features/patients/patientTypes";
 import { createPatientApi } from "@/lib/reception/patientApi";
-import { createConsentApi } from "@/lib/consentApi";
+import { createConsentApi } from "@/lib/patient/consentApi";
 import MainLayout from "@/components/layout/MainLayout";
 import PatientSearchCard from "@/components/patient/PatientSearchCard";
 import PatientTable from "@/components/patient/PatientTable";

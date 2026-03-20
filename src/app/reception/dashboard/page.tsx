@@ -23,7 +23,7 @@ import PatientFormModal from "@/components/patient/PatientFormModal";
 import React from "react";
 import type { PatientForm as PatientFormPayload } from "@/features/patients/patientTypes";
 import { createPatientApi } from "@/lib/reception/patientApi";
-import { createConsentApi } from "@/lib/consentApi";
+import { createConsentApi } from "@/lib/patient/consentApi";
 import { patientActions } from "@/features/patients/patientSlice";
 import { resolveErrorMessage } from "@/components/patient/detail/PatientDetailUtils";
 import { AppDispatch } from "@/store/store";
