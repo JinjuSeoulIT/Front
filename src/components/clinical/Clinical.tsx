@@ -33,7 +33,7 @@ import {
   isNetworkError,
   clinicalConnectionMessage,
   type ReceptionQueueItem,
-} from "./visitApi";
+} from "@/lib/visitApi";
 import { resolveClinicalStatus } from "./clinicalDocumentation";
 import { ClinicalToolbar } from "./ClinicalEncounter";
 import { ClinicalPatientList } from "./ClinicalList";

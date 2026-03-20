@@ -19,7 +19,7 @@ import {
 import SearchOutlinedIcon from "@mui/icons-material/SearchOutlined";
 import type { ClinicalRes } from "./types";
 import type { ClinicalTab } from "./types";
-import type { ReceptionQueueItem } from "./visitApi";
+import type { ReceptionQueueItem } from "@/lib/visitApi";
 import { clinicalStatusView, resolveClinicalStatus } from "./clinicalDocumentation";
 import { formatDepartmentName } from "@/lib/departmentLabel";
 

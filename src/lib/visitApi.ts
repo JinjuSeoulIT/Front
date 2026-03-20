@@ -1,4 +1,22 @@
-import type { ApiEnvelope, ClinicalRes } from "./types";
+export type ApiEnvelope<T> = {
+  success?: boolean;
+  message?: string | null;
+  data?: T;
+  result?: T;
+};
+
+export type ClinicalRes = {
+  id?: number;
+  clinicalId?: number;
+  receptionId?: number | null;
+  patientId: number;
+  clinicalType?: string | null;
+  status?: string | null;
+  clinicalStatus?: string | null;
+  priorityYn?: boolean;
+  clinicalAt?: string | null;
+  createdAt?: string | null;
+};
 
 const CLINICAL_API_BASE =
   process.env.NEXT_PUBLIC_CLINICAL_API_BASE_URL ?? "http://localhost:8090";
@@ -136,7 +154,10 @@ export async function fetchReceptionQueueApi(params?: {
   return Array.isArray(list) ? list : [];
 }
 
-export async function startVisitApi(receptionId: number, changedBy?: number | null): Promise<{ visitId: number }> {
+export async function startVisitApi(
+  receptionId: number,
+  changedBy?: number | null
+): Promise<{ visitId: number }> {
   const res = await fetch(`${CLINICAL_API_BASE}/api/clinical/start`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
