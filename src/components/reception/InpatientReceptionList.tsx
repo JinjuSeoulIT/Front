@@ -14,6 +14,7 @@ import {
   Divider,
   InputAdornment,
   MenuItem,
+  Pagination,
   Stack,
   TextField,
   Typography,
@@ -82,6 +83,8 @@ const toOptionalNumber = (value: string) => {
   return Number.isNaN(parsed) ? null : parsed;
 };
 
+const ITEMS_PER_PAGE = 10;
+
 export default function InpatientReceptionList() {
   const dispatch = useDispatch<AppDispatch>();
   const { list, loading, error, selected } = useSelector(
@@ -120,6 +123,7 @@ export default function InpatientReceptionList() {
     roomId: "",
     note: "",
   });
+  const [page, setPage] = React.useState(1);
 
   React.useEffect(() => {
     dispatch(inpatientReceptionActions.fetchInpatientReceptionsRequest());
@@ -149,6 +153,7 @@ export default function InpatientReceptionList() {
 
   const onSearch = () => {
     const kw = keyword.trim();
+    setPage(1);
     if (!kw) return alert("검색어를 입력해주세요.");
 
     const run = async () => {
@@ -186,6 +191,7 @@ export default function InpatientReceptionList() {
   };
 
   const onReset = () => {
+    setPage(1);
     setKeyword("");
     setPatientSuggestions([]);
     setOpenSuggestion(false);
@@ -227,6 +233,7 @@ export default function InpatientReceptionList() {
   const onPickPatientSuggestion = (patient: Patient) => {
     if (!patient.patientId) return;
     const nextKeyword = patient.name?.trim() ?? "";
+    setPage(1);
     setKeyword(nextKeyword);
     setPatientSuggestions([]);
     setOpenSuggestion(false);
@@ -299,17 +306,27 @@ export default function InpatientReceptionList() {
   };
 
   const visibleList = list;
+  const totalCount = visibleList.length;
+  const totalPages = Math.max(1, Math.ceil(totalCount / ITEMS_PER_PAGE));
+  const pagedList = React.useMemo(() => {
+    const start = (page - 1) * ITEMS_PER_PAGE;
+    return visibleList.slice(start, start + ITEMS_PER_PAGE);
+  }, [visibleList, page]);
+  React.useEffect(() => {
+    setPage((prev) => Math.min(prev, totalPages));
+  }, [totalPages]);
 
   const primary =
-    (selected && visibleList.find((item) => item.receptionId === selected.receptionId)) ||
+    (selected && pagedList.find((item) => item.receptionId === selected.receptionId)) ||
+    pagedList[0] ||
     visibleList[0];
 
   React.useEffect(() => {
-    if (!visibleList.length) return;
-    if (!selected || !visibleList.some((item) => item.receptionId === selected.receptionId)) {
-      dispatch(inpatientReceptionActions.fetchInpatientReceptionSuccess(visibleList[0]));
+    if (!pagedList.length) return;
+    if (!selected || !pagedList.some((item) => item.receptionId === selected.receptionId)) {
+      dispatch(inpatientReceptionActions.fetchInpatientReceptionSuccess(pagedList[0]));
     }
-  }, [visibleList, selected, dispatch]);
+  }, [pagedList, selected, dispatch]);
 
   return (
     <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
@@ -482,7 +499,7 @@ export default function InpatientReceptionList() {
               </Button>
             </Stack>
             <Box sx={{ flex: 1 }} />
-            <Chip label={`전체 ${visibleList.length}`} color="primary" />
+            <Chip label={`전체 ${totalCount}`} color="primary" />
           </Stack>
         </CardContent>
       </Card>
@@ -581,11 +598,11 @@ export default function InpatientReceptionList() {
               <Stack spacing={2}>
                 <Stack direction="row" justifyContent="space-between" alignItems="center">
                   <Typography fontWeight={800}>입원 접수 목록</Typography>
-                  <Chip label={`총 ${visibleList.length}`} size="small" color="primary" />
+                  <Chip label={`총 ${totalCount}`} size="small" color="primary" />
                 </Stack>
 
                 <Stack spacing={1}>
-                  {visibleList.map((p) => {
+                  {pagedList.map((p) => {
                     const isSelected = selected?.receptionId === p.receptionId;
                     return (
                       <Box
@@ -630,6 +647,17 @@ export default function InpatientReceptionList() {
                     <Typography color="#7b8aa9">조회된 입원 접수가 없습니다.</Typography>
                   )}
                 </Stack>
+                {visibleList.length > 0 && totalPages > 1 && (
+                  <Stack direction="row" justifyContent="center" sx={{ pt: 1 }}>
+                    <Pagination
+                      page={page}
+                      count={totalPages}
+                      onChange={(_, value) => setPage(value)}
+                      color="primary"
+                      size="small"
+                    />
+                  </Stack>
+                )}
               </Stack>
             </CardContent>
           </Card>

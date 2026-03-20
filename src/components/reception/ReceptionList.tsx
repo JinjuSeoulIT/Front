@@ -15,6 +15,7 @@ import {
   IconButton,
   InputAdornment,
   MenuItem,
+  Pagination,
   Stack,
   Tab,
   Tabs,
@@ -24,6 +25,7 @@ import {
 import SearchIcon from "@mui/icons-material/Search";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import BlockOutlinedIcon from "@mui/icons-material/BlockOutlined";
+import ListAltIcon from "@mui/icons-material/ListAlt";
 import { useDispatch, useSelector } from "react-redux";
 import type { RootState, AppDispatch } from "@/store/store";
 import { receptionActions } from "@/features/Reception/ReceptionSlice";
@@ -56,6 +58,10 @@ const visitTypeLabel = (value?: string | null) => {
   }
 };
 
+const ITEMS_PER_PAGE = 10;
+const PATIENT_LIST_ITEMS_PER_PAGE = 8;
+const RECEPTION_LIST_REFRESH_INTERVAL_MS = 5000;
+
 const statusLabel = (value?: string | null) => {
   switch (value) {
     case "WAITING":
@@ -71,6 +77,7 @@ const statusLabel = (value?: string | null) => {
     case "ON_HOLD":
       return "보류";
     case "CANCELED":
+    case "CANCELLED":
       return "취소";
     case "INACTIVE":
       return "비활성";
@@ -96,12 +103,70 @@ const normalizeStatus = (value?: string | null) => {
     case "보류":
       return "ON_HOLD";
     case "취소":
+    case "CANCELLED":
       return "CANCELED";
     case "비활성":
       return "INACTIVE";
     default:
       return trimmed;
   }
+};
+
+const statusChipSx = (value?: string | null) => {
+  switch (normalizeStatus(value)) {
+    case "WAITING":
+      return {
+        color: "#ffffff",
+        bgcolor: "#1f5fb8",
+      };
+    case "IN_PROGRESS":
+      return {
+        color: "#ffffff",
+        bgcolor: "#2e7d32",
+      };
+    case "CALLED":
+      return {
+        color: "#ffffff",
+        bgcolor: "#8e24aa",
+      };
+    case "COMPLETED":
+      return {
+        color: "#ffffff",
+        bgcolor: "#455a64",
+      };
+    case "PAYMENT_WAIT":
+      return {
+        color: "#ffffff",
+        bgcolor: "#ef6c00",
+      };
+    case "ON_HOLD":
+      return {
+        color: "#ffffff",
+        bgcolor: "#6d4c41",
+      };
+    case "CANCELED":
+      return {
+        color: "#ffffff",
+        bgcolor: "#c62828",
+      };
+    case "INACTIVE":
+      return {
+        color: "#ffffff",
+        bgcolor: "#607d8b",
+      };
+    default:
+      return {
+        color: "#ffffff",
+        bgcolor: "#546e7a",
+      };
+  }
+};
+
+const genderLabel = (value?: string | null) => {
+  if (!value) return "-";
+  if (value === "M") return "남";
+  if (value === "F") return "여";
+  return value;
 };
 
 const resolveErrorMessage = (err: unknown, fallback: string) => {
@@ -188,6 +253,18 @@ const isTodayReception = (item: Reception, todayKey: string) => {
   return candidates.some((dateKey) => dateKey === todayKey);
 };
 
+const resolvePatientDisplayName = (
+  item: Reception,
+  patientNameById: Record<number, string>
+) => {
+  const fromMap = item.patientId ? patientNameById[item.patientId] : "";
+  const fromReception = item.patientName?.trim() ?? "";
+  if (fromMap) return fromMap;
+  if (fromReception) return fromReception;
+  if (item.patientId) return `환자 ${item.patientId}`;
+  return "환자";
+};
+
 type ReceptionListProps = {
   initialSearchType?: ReceptionSearchPayload["type"];
   initialKeyword?: string;
@@ -210,6 +287,12 @@ export default function ReceptionList({
   const [openSuggestion, setOpenSuggestion] = React.useState(false);
   const [patientSearchResultCount, setPatientSearchResultCount] = React.useState<number | null>(null);
   const [createModalOpen, setCreateModalOpen] = React.useState(false);
+  const [patientListModalOpen, setPatientListModalOpen] = React.useState(false);
+  const [patientListKeyword, setPatientListKeyword] = React.useState("");
+  const [patientListPage, setPatientListPage] = React.useState(1);
+  const [patientCatalog, setPatientCatalog] = React.useState<Patient[]>([]);
+  const [patientCatalogLoading, setPatientCatalogLoading] = React.useState(false);
+  const [patientCatalogError, setPatientCatalogError] = React.useState<string | null>(null);
   const [createTargetPatient, setCreateTargetPatient] = React.useState<{
     patientId: number | null;
     patientName: string;
@@ -232,6 +315,7 @@ export default function ReceptionList({
   });
   const [patientNameById, setPatientNameById] = React.useState<Record<number, string>>({});
   const [todayKey, setTodayKey] = React.useState(() => toLocalDateKey(new Date()));
+  const [page, setPage] = React.useState(1);
   const syncingReservationRef = React.useRef(false);
 
   const syncTodayReservationsToWaitingReceptions = React.useCallback(async () => {
@@ -342,15 +426,24 @@ export default function ReceptionList({
     [isCanceledView, list, todayKey]
   );
 
+  const refreshReceptionsByCurrentMode = React.useCallback(() => {
+    const trimmedKeyword = initialKeyword.trim();
+    if (autoSearch && trimmedKeyword) {
+      dispatch(
+        receptionActions.searchReceptionsRequest({
+          type: initialSearchType,
+          keyword: trimmedKeyword,
+        })
+      );
+      return;
+    }
+    dispatch(receptionActions.fetchReceptionsRequest());
+  }, [dispatch, autoSearch, initialKeyword, initialSearchType]);
+
   React.useEffect(() => {
     const initialize = async () => {
       if (autoSearch && initialKeyword.trim()) {
-        dispatch(
-          receptionActions.searchReceptionsRequest({
-            type: initialSearchType,
-            keyword: initialKeyword.trim(),
-          })
-        );
+        refreshReceptionsByCurrentMode();
         return;
       }
       try {
@@ -362,7 +455,7 @@ export default function ReceptionList({
           )
         );
       } finally {
-        dispatch(receptionActions.fetchReceptionsRequest());
+        refreshReceptionsByCurrentMode();
       }
     };
 
@@ -372,6 +465,7 @@ export default function ReceptionList({
     autoSearch,
     initialKeyword,
     initialSearchType,
+    refreshReceptionsByCurrentMode,
     syncTodayReservationsToWaitingReceptions,
   ]);
 
@@ -395,18 +489,28 @@ export default function ReceptionList({
         } catch (err: unknown) {
           dispatch(
             receptionActions.fetchReceptionsFailure(
-              resolveErrorMessage(err, "예약 당일 자동 접수 생성 실패")
-            )
-          );
-        } finally {
-          dispatch(receptionActions.fetchReceptionsRequest());
+            resolveErrorMessage(err, "예약 당일 자동 접수 생성 실패")
+          )
+        );
+      } finally {
+          refreshReceptionsByCurrentMode();
         }
       };
       void runAtMidnight();
     }, delay);
 
     return () => window.clearTimeout(timer);
-  }, [todayKey, dispatch, syncTodayReservationsToWaitingReceptions]);
+  }, [todayKey, dispatch, refreshReceptionsByCurrentMode, syncTodayReservationsToWaitingReceptions]);
+
+  React.useEffect(() => {
+    const timer = window.setInterval(() => {
+      refreshReceptionsByCurrentMode();
+    }, RECEPTION_LIST_REFRESH_INTERVAL_MS);
+
+    return () => {
+      window.clearInterval(timer);
+    };
+  }, [refreshReceptionsByCurrentMode]);
 
   React.useEffect(() => {
     let active = true;
@@ -446,23 +550,30 @@ export default function ReceptionList({
     });
   }, [createModalOpen]);
 
+  const openCreateWithPatient = React.useCallback((patient: Patient, nextKeyword?: string) => {
+    if (!patient.patientId) return;
+    const name = (nextKeyword ?? patient.name ?? "").trim();
+    setKeyword(name);
+    setPatientSuggestions([]);
+    setOpenSuggestion(false);
+    setPatientSearchResultCount(1);
+    setCreateTargetPatient({
+      patientId: patient.patientId,
+      patientName: name,
+    });
+    setCreateModalOpen(true);
+  }, []);
 
-  React.useEffect(() => {
-    if (!filteredList.length) return;
-    const first = filteredList[0];
-    if (!selected || !filteredList.some((p) => p.receptionId === selected.receptionId)) {
-      dispatch(receptionActions.fetchReceptionSuccess(first));
-      dispatch(receptionActions.fetchReceptionRequest({ receptionId: String(first.receptionId) }));
-      return;
-    }
-    if (!selected.patientName && !selected.departmentName && !selected.doctorName) {
-      dispatch(
-        receptionActions.fetchReceptionRequest({
-          receptionId: String(selected.receptionId),
-        })
-      );
-    }
-  }, [filteredList, selected, dispatch]);
+  const onOpenPatientListModal = () => {
+    setPatientListKeyword("");
+    setPatientListPage(1);
+    setPatientCatalogError(null);
+    setPatientListModalOpen(true);
+  };
+
+  const onClosePatientListModal = () => {
+    setPatientListModalOpen(false);
+  };
 
   const onSearch = () => {
     const kw = keyword.trim();
@@ -481,14 +592,7 @@ export default function ReceptionList({
         if (patients.length === 1 && patients[0]?.patientId) {
           const single = patients[0];
           const nextKeyword = single.name?.trim() ?? kw;
-          setKeyword(nextKeyword);
-          setPatientSuggestions([]);
-          setOpenSuggestion(false);
-          setCreateTargetPatient({
-            patientId: single.patientId,
-            patientName: nextKeyword,
-          });
-          setCreateModalOpen(true);
+          openCreateWithPatient(single, nextKeyword);
           return;
         }
 
@@ -550,17 +654,65 @@ export default function ReceptionList({
   }, [keyword]);
 
   const onPickPatientSuggestion = (patient: Patient) => {
-    if (!patient.patientId) return;
     const nextKeyword = patient.name?.trim() ?? "";
-    setKeyword(nextKeyword);
-    setPatientSuggestions([]);
-    setOpenSuggestion(false);
-    setPatientSearchResultCount(1);
-    setCreateTargetPatient({
-      patientId: patient.patientId,
-      patientName: nextKeyword,
+    openCreateWithPatient(patient, nextKeyword);
+  };
+
+  React.useEffect(() => {
+    if (!patientListModalOpen) return;
+    let active = true;
+    const loadPatients = async () => {
+      try {
+        setPatientCatalogLoading(true);
+        setPatientCatalogError(null);
+        const patients = await fetchPatientsApi();
+        if (!active) return;
+        setPatientCatalog(patients);
+      } catch (err: unknown) {
+        if (!active) return;
+        setPatientCatalogError(resolveErrorMessage(err, "환자 목록 조회 실패"));
+      } finally {
+        if (!active) return;
+        setPatientCatalogLoading(false);
+      }
+    };
+    loadPatients();
+    return () => {
+      active = false;
+    };
+  }, [patientListModalOpen]);
+
+  const filteredPatientCatalog = React.useMemo(() => {
+    const kw = patientListKeyword.trim().toLowerCase();
+    if (!kw) return patientCatalog;
+    return patientCatalog.filter((patient) => {
+      const fields = [
+        patient.name,
+        patient.patientNo,
+        patient.phone,
+        patient.birthDate,
+        patient.patientId ? String(patient.patientId) : "",
+      ];
+      return fields.some((value) => (value ?? "").toLowerCase().includes(kw));
     });
-    setCreateModalOpen(true);
+  }, [patientCatalog, patientListKeyword]);
+
+  const patientListTotalPages = Math.max(
+    1,
+    Math.ceil(filteredPatientCatalog.length / PATIENT_LIST_ITEMS_PER_PAGE)
+  );
+  const pagedPatientCatalog = React.useMemo(() => {
+    const start = (patientListPage - 1) * PATIENT_LIST_ITEMS_PER_PAGE;
+    return filteredPatientCatalog.slice(start, start + PATIENT_LIST_ITEMS_PER_PAGE);
+  }, [filteredPatientCatalog, patientListPage]);
+
+  React.useEffect(() => {
+    setPatientListPage((prev) => Math.min(prev, patientListTotalPages));
+  }, [patientListTotalPages]);
+
+  const onSelectPatientFromListModal = (patient: Patient) => {
+    onClosePatientListModal();
+    openCreateWithPatient(patient);
   };
 
   const onCreateModalSubmit = () => {
@@ -607,14 +759,53 @@ export default function ReceptionList({
     setCreateModalOpen(false);
   };
 
+  const totalCount = filteredList.length;
+  const totalPages = Math.max(1, Math.ceil(totalCount / ITEMS_PER_PAGE));
+  const pagedList = React.useMemo(() => {
+    const start = (page - 1) * ITEMS_PER_PAGE;
+    return filteredList.slice(start, start + ITEMS_PER_PAGE);
+  }, [filteredList, page]);
+  React.useEffect(() => {
+    setPage((prev) => Math.min(prev, totalPages));
+  }, [totalPages]);
+  React.useEffect(() => {
+    if (!pagedList.length) return;
+    const first = pagedList[0];
+    if (!selected || !pagedList.some((p) => p.receptionId === selected.receptionId)) {
+      dispatch(receptionActions.fetchReceptionSuccess(first));
+      dispatch(
+        receptionActions.fetchReceptionRequest({ receptionId: String(first.receptionId) })
+      );
+      return;
+    }
+    const selectedInPage = pagedList.find((p) => p.receptionId === selected.receptionId);
+    if (
+      selectedInPage &&
+      (normalizeStatus(selected.status) !== normalizeStatus(selectedInPage.status) ||
+        selected.patientName !== selectedInPage.patientName ||
+        selected.departmentName !== selectedInPage.departmentName ||
+        selected.doctorName !== selectedInPage.doctorName)
+    ) {
+      dispatch(
+        receptionActions.fetchReceptionSuccess({
+          ...selected,
+          ...selectedInPage,
+        })
+      );
+    }
+    if (!selected.patientName && !selected.departmentName && !selected.doctorName) {
+      dispatch(
+        receptionActions.fetchReceptionRequest({
+          receptionId: String(selected.receptionId),
+        })
+      );
+    }
+  }, [pagedList, selected, dispatch]);
   const primary =
-    selected && filteredList.some((p) => p.receptionId === selected.receptionId)
+    selected && pagedList.some((p) => p.receptionId === selected.receptionId)
       ? selected
-      : filteredList[0];
-  const primaryName =
-    (primary?.patientId ? patientNameById[primary.patientId] : "") ||
-    primary?.patientName?.trim() ||
-    "";
+      : pagedList[0] ?? filteredList[0];
+  const primaryName = primary ? resolvePatientDisplayName(primary, patientNameById) : "";
   const primaryDepartment = formatDepartmentName(
     primary?.departmentName,
     primary?.departmentId
@@ -625,7 +816,6 @@ export default function ReceptionList({
     : primary?.patientId
     ? String(primary.patientId).slice(-2)
     : "R";
-  const totalCount = filteredList.length;
 
   return (
     <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
@@ -790,6 +980,25 @@ export default function ReceptionList({
                 }}
               >
                 초기화
+              </Button>
+              <Button
+                variant="outlined"
+                startIcon={<ListAltIcon />}
+                onClick={onOpenPatientListModal}
+                disabled={loading}
+                sx={{
+                  px: 1.8,
+                  borderRadius: 2,
+                  color: "#1f4f95",
+                  borderColor: "rgba(31,79,149,0.38)",
+                  bgcolor: "rgba(255,255,255,0.9)",
+                  "&:hover": {
+                    borderColor: "#1f4f95",
+                    bgcolor: "rgba(31,79,149,0.08)",
+                  },
+                }}
+              >
+                환자목록
               </Button>
             </Stack>
             <Box sx={{ flex: 1 }} />
@@ -967,12 +1176,13 @@ export default function ReceptionList({
                 </Tabs>
 
                 <Stack spacing={1}>
-                  {filteredList.map((p) => {
+                  {pagedList.map((p) => {
                     const isSelected = selected?.receptionId === p.receptionId;
-                    const displayPatientName =
-                      (p.patientId ? patientNameById[p.patientId] : "") ||
-                      p.patientName?.trim() ||
-                      `환자 ${p.patientId ?? "-"}`;
+                    const displayPatientName = resolvePatientDisplayName(
+                      p,
+                      patientNameById
+                    );
+                    const rowStatusLabel = statusLabel(p.status);
                     return (
                       <Box
                         key={p.receptionId}
@@ -1017,16 +1227,33 @@ export default function ReceptionList({
                             {statusLabel(p.status)}
                           </Typography>
                         </Box>
-                        <IconButton
-                          size="small"
-                          color="warning"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onCancel(String(p.receptionId));
-                          }}
-                        >
-                          <BlockOutlinedIcon fontSize="small" />
-                        </IconButton>
+                        <Stack direction="row" spacing={0.75} alignItems="center">
+                          <Chip
+                            label={rowStatusLabel}
+                            size="small"
+                            variant="filled"
+                            sx={{
+                              height: 24,
+                              borderRadius: 999,
+                              fontWeight: 800,
+                              fontSize: 11,
+                              minWidth: 58,
+                              "& .MuiChip-label": { px: 1.15 },
+                              boxShadow: "0 2px 6px rgba(16, 38, 72, 0.25)",
+                              ...statusChipSx(p.status),
+                            }}
+                          />
+                          <IconButton
+                            size="small"
+                            color="warning"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onCancel(String(p.receptionId));
+                            }}
+                          >
+                            <BlockOutlinedIcon fontSize="small" />
+                          </IconButton>
+                        </Stack>
                       </Box>
                     );
                   })}
@@ -1035,12 +1262,121 @@ export default function ReceptionList({
                     <Typography color="#7b8aa9">조회된 접수가 없습니다.</Typography>
                   )}
                 </Stack>
+                {filteredList.length > 0 && totalPages > 1 && (
+                  <Stack direction="row" justifyContent="center" sx={{ pt: 1 }}>
+                    <Pagination
+                      page={page}
+                      count={totalPages}
+                      onChange={(_, value) => setPage(value)}
+                      color="primary"
+                      size="small"
+                    />
+                  </Stack>
+                )}
               </Stack>
             </CardContent>
           </Card>
         </Box>
 
       </Box>
+
+      <Dialog
+        open={patientListModalOpen}
+        onClose={onClosePatientListModal}
+        fullWidth
+        maxWidth="md"
+      >
+        <DialogContent sx={{ p: 3 }}>
+          <Stack spacing={1.5}>
+            <Stack direction="row" justifyContent="space-between" alignItems="center">
+              <Typography variant="h5" fontWeight={900}>
+                환자목록
+              </Typography>
+              <Chip label={`총 ${filteredPatientCatalog.length}`} color="primary" />
+            </Stack>
+
+            <TextField
+              size="small"
+              placeholder="이름/환자번호/연락처로 검색"
+              value={patientListKeyword}
+              onChange={(e) => {
+                setPatientListKeyword(e.target.value);
+                setPatientListPage(1);
+              }}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchIcon sx={{ fontSize: 19, color: "#7f93b5" }} />
+                  </InputAdornment>
+                ),
+              }}
+            />
+
+            {patientCatalogLoading ? (
+              <Typography sx={{ color: "#7b8aa9" }}>환자 목록 불러오는 중...</Typography>
+            ) : (
+              <Stack spacing={1}>
+                {pagedPatientCatalog.map((patient) => (
+                  <Button
+                    key={patient.patientId}
+                    onClick={() => onSelectPatientFromListModal(patient)}
+                    sx={{
+                      justifyContent: "flex-start",
+                      textTransform: "none",
+                      px: 1.6,
+                      py: 1.25,
+                      borderRadius: 2,
+                      color: "#1f2a44",
+                      border: "1px solid #e3ebf8",
+                      bgcolor: "#fff",
+                      "&:hover": {
+                        borderColor: "#9cb5de",
+                        bgcolor: "rgba(43,90,169,0.06)",
+                      },
+                    }}
+                  >
+                    <Box sx={{ textAlign: "left", width: "100%", minWidth: 0 }}>
+                      <Typography fontWeight={800} noWrap>
+                        {patient.name} · {genderLabel(patient.gender)} · {patient.birthDate ?? "-"}
+                      </Typography>
+                      <Typography sx={{ color: "#7b8aa9", fontSize: 12 }} noWrap>
+                        환자ID {patient.patientId} · {patient.patientNo ?? "-"} · {patient.phone ?? "-"}
+                      </Typography>
+                    </Box>
+                  </Button>
+                ))}
+                {!pagedPatientCatalog.length && (
+                  <Typography sx={{ color: "#7b8aa9" }}>조회된 환자가 없습니다.</Typography>
+                )}
+              </Stack>
+            )}
+
+            {filteredPatientCatalog.length > 0 && patientListTotalPages > 1 && (
+              <Stack direction="row" justifyContent="center">
+                <Pagination
+                  page={patientListPage}
+                  count={patientListTotalPages}
+                  onChange={(_, value) => setPatientListPage(value)}
+                  color="primary"
+                  size="small"
+                />
+              </Stack>
+            )}
+
+            {patientCatalogError && (
+              <Typography color="error" fontWeight={700}>
+                {patientCatalogError}
+              </Typography>
+            )}
+
+            <Stack direction="row" justifyContent="flex-end">
+              <Button variant="text" onClick={onClosePatientListModal}>
+                닫기
+              </Button>
+            </Stack>
+          </Stack>
+        </DialogContent>
+      </Dialog>
 
       <Dialog
         open={createModalOpen}
