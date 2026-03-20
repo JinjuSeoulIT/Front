@@ -7,10 +7,6 @@ export interface ApiResponse<T> {
   result: T;
 }
 
-<<<<<<< HEAD
-const api = axios.create({
-  baseURL: "",
-=======
 /**
  결제 수단 타입 정의
  */
@@ -24,7 +20,6 @@ const baseURL =
 
 const api = axios.create({
   baseURL,
->>>>>>> feature/billing
 });
 
 applyAuthInterceptors(api);
