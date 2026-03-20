@@ -13,6 +13,7 @@ import {
   Divider,
   InputAdornment,
   IconButton,
+  Pagination,
   Stack,
   TextField,
   Typography,
@@ -107,6 +108,8 @@ const summarizeOneLine = (value?: string | null, max = 18) => {
   return `${text.slice(0, max)}...`;
 };
 
+const ITEMS_PER_PAGE = 10;
+
 export default function EmergencyReceptionList() {
   const router = useRouter();
   const dispatch = useDispatch<AppDispatch>();
@@ -121,6 +124,7 @@ export default function EmergencyReceptionList() {
     null
   );
   const [patientNameById, setPatientNameById] = React.useState<Record<number, string>>({});
+  const [page, setPage] = React.useState(1);
 
   React.useEffect(() => {
     dispatch(emergencyReceptionActions.fetchEmergencyReceptionsRequest());
@@ -178,6 +182,7 @@ export default function EmergencyReceptionList() {
   const onSearch = () => {
     const kw = keyword.trim();
     if (!kw) return alert("검색어를 입력해주세요.");
+    setPage(1);
 
     const run = async () => {
       try {
@@ -214,6 +219,7 @@ export default function EmergencyReceptionList() {
   };
 
   const onReset = () => {
+    setPage(1);
     setKeyword("");
     setPatientSuggestions([]);
     setOpenSuggestion(false);
@@ -255,6 +261,7 @@ export default function EmergencyReceptionList() {
   const onPickPatientSuggestion = (patient: Patient) => {
     if (!patient.patientId) return;
     const nextKeyword = patient.name?.trim() ?? "";
+    setPage(1);
     setKeyword(nextKeyword);
     setPatientSuggestions([]);
     setOpenSuggestion(false);
@@ -302,18 +309,28 @@ export default function EmergencyReceptionList() {
   );
 
   const visibleList = baseVisibleList;
+  const totalCount = visibleList.length;
+  const totalPages = Math.max(1, Math.ceil(totalCount / ITEMS_PER_PAGE));
+  const pagedList = React.useMemo(() => {
+    const start = (page - 1) * ITEMS_PER_PAGE;
+    return visibleList.slice(start, start + ITEMS_PER_PAGE);
+  }, [visibleList, page]);
+  React.useEffect(() => {
+    setPage((prev) => Math.min(prev, totalPages));
+  }, [totalPages]);
 
   const primary =
-    (selected && visibleList.find((item) => item.receptionId === selected.receptionId)) ||
+    (selected && pagedList.find((item) => item.receptionId === selected.receptionId)) ||
+    pagedList[0] ||
     visibleList[0] ||
     null;
 
   React.useEffect(() => {
-    if (!visibleList.length) return;
-    if (!selected || !visibleList.some((item) => item.receptionId === selected.receptionId)) {
-      dispatch(emergencyReceptionActions.fetchEmergencyReceptionSuccess(visibleList[0]));
+    if (!pagedList.length) return;
+    if (!selected || !pagedList.some((item) => item.receptionId === selected.receptionId)) {
+      dispatch(emergencyReceptionActions.fetchEmergencyReceptionSuccess(pagedList[0]));
     }
-  }, [visibleList, selected, dispatch]);
+  }, [pagedList, selected, dispatch]);
 
   const resolvePatientName = React.useCallback(
     (item?: EmergencyReception | null) => {
@@ -506,7 +523,7 @@ export default function EmergencyReceptionList() {
               </Button>
             </Stack>
             <Box sx={{ flex: 1 }} />
-            <Chip label={`전체 ${visibleList.length}`} color="primary" />
+            <Chip label={`전체 ${totalCount}`} color="primary" />
           </Stack>
         </CardContent>
       </Card>
@@ -620,11 +637,11 @@ export default function EmergencyReceptionList() {
               <Stack spacing={2}>
                 <Stack direction="row" justifyContent="space-between" alignItems="center">
                   <Typography fontWeight={800}>응급 접수 목록</Typography>
-                  <Chip label={`총 ${visibleList.length}`} size="small" color="primary" />
+                  <Chip label={`총 ${totalCount}`} size="small" color="primary" />
                 </Stack>
 
                 <Stack spacing={1}>
-                  {visibleList.map((item) => {
+                  {pagedList.map((item) => {
                     const isSelected = selected?.receptionId === item.receptionId;
                     const patientName = resolvePatientName(item);
 
@@ -685,6 +702,17 @@ export default function EmergencyReceptionList() {
                     <Typography color="#7b8aa9">조회된 응급 접수가 없습니다.</Typography>
                   )}
                 </Stack>
+                {visibleList.length > 0 && totalPages > 1 && (
+                  <Stack direction="row" justifyContent="center" sx={{ pt: 1 }}>
+                    <Pagination
+                      page={page}
+                      count={totalPages}
+                      onChange={(_, value) => setPage(value)}
+                      color="primary"
+                      size="small"
+                    />
+                  </Stack>
+                )}
               </Stack>
             </CardContent>
           </Card>
