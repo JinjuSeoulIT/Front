@@ -14,13 +14,14 @@ export interface ApiResponse<T> {
  */
 export type PaymentMethod = "CASH" | "CARD" | "TRANSFER";
 
-/**
- * 공통 axios 인스턴스
- */
+const baseURL =
+  typeof window !== "undefined" &&
+  window.location.hostname !== "localhost"
+    ? `http://${window.location.hostname}:8081`
+    : "http://localhost:8081";
+
 const api = axios.create({
-  baseURL:
-    process.env.NEXT_PUBLIC_BILLING_API_BASE_URL ??
-    "http://localhost:8081",
+  baseURL,
 });
 
 api.interceptors.request.use((config) => {
