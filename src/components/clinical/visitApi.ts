@@ -21,6 +21,7 @@ function formatBackendDateTime(v: unknown): string | null {
 export function mapVisitRow(raw: Record<string, unknown>): ClinicalRes {
   const visitId = Number(raw.visitId ?? raw.clinicalId ?? raw.id);
   const patientId = Number(raw.patientId ?? raw.receptionId ?? 0);
+  const receptionIdRaw = Number(raw.receptionId);
   const visitStatus = (raw.visitStatus ?? raw.clinicalStatus ?? raw.status) as string | undefined;
   const clinicalAt =
     formatBackendDateTime(raw.startTime) ??
@@ -28,6 +29,7 @@ export function mapVisitRow(raw: Record<string, unknown>): ClinicalRes {
     formatBackendDateTime(raw.createdAt);
   return {
     patientId,
+    receptionId: Number.isFinite(receptionIdRaw) ? receptionIdRaw : null,
     clinicalId: Number.isFinite(visitId) ? visitId : undefined,
     id: Number.isFinite(visitId) ? visitId : undefined,
     clinicalStatus: visitStatus ?? null,

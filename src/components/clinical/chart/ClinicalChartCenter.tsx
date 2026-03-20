@@ -12,11 +12,8 @@ import { ClinicalPastHistoryCard } from "./ClinicalPastHistoryCard";
 import { ClinicalPastVisitsCard } from "./ClinicalPastVisitsCard";
 import { ClinicalSoapCard } from "./ClinicalSoapCard";
 
-type StatusChip = { label: string; color: "default" | "primary" | "secondary" | "error" | "info" | "success" | "warning" };
-
 type Props = {
   selectedPatient: Patient | null;
-  selectedStatus: StatusChip;
   visitId: number | null;
   vitals: VitalSignsRes | null;
   assessment: AssessmentRes | null;
@@ -73,7 +70,6 @@ export function ClinicalChartCenter(p: Props) {
               </Typography>
               <Stack direction="row" spacing={0.75}>
                 <Chip label="건강보험" size="small" />
-                <Chip label={p.selectedStatus.label} color={p.selectedStatus.color} size="small" />
               </Stack>
             </Stack>
           </CardContent>
@@ -84,6 +80,7 @@ export function ClinicalChartCenter(p: Props) {
             <ClinicalVitalsCard
               selectedPatient={p.selectedPatient}
               vitals={p.vitals}
+              assessment={p.assessment}
               vitalsLoading={p.vitalsLoading}
               assessmentLoading={p.assessmentLoading}
               visitId={p.visitId}

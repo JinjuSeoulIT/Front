@@ -34,7 +34,7 @@ import {
   clinicalConnectionMessage,
   type ReceptionQueueItem,
 } from "./visitApi";
-import { clinicalStatusView, resolveClinicalStatus } from "./clinicalDocumentation";
+import { resolveClinicalStatus } from "./clinicalDocumentation";
 import { ClinicalToolbar } from "./ClinicalEncounter";
 import { ClinicalPatientList } from "./ClinicalList";
 import { ClinicalRightPanel } from "./ClinicalOrder";
@@ -315,6 +315,7 @@ export default function ClinicalPage() {
     const k = query.trim().toLowerCase();
     let filtered = receptions.filter(
       (r) =>
+        r.status !== "CANCELLED" &&
         (!k || [r.patientName, r.receptionNo].some((v) => (v ?? "").toLowerCase().includes(k)))
     );
     if (department) {
@@ -368,8 +369,27 @@ export default function ClinicalPage() {
   const selectedClinical = selectedPatient
     ? clinicalByPatientId.get(selectedPatient.patientId) ?? null
     : null;
-  const selectedStatus = clinicalStatusView(resolveClinicalStatus(selectedClinical));
-  const currentClinicalId = selectedClinical?.clinicalId ?? selectedClinical?.id ?? null;
+  const activeVisitClinical = React.useMemo(() => {
+    if (!selectedReception || selectedReception.status !== "IN_PROGRESS") return null;
+    const byReception = clinicals
+      .filter(
+        (c) =>
+          c.receptionId === selectedReception.receptionId &&
+          resolveClinicalStatus(c) === "IN_PROGRESS"
+      )
+      .sort((a, b) => (b.clinicalId ?? b.id ?? 0) - (a.clinicalId ?? a.id ?? 0))[0];
+    if (byReception) return byReception;
+    return (
+      clinicals
+        .filter(
+          (c) =>
+            c.patientId === selectedReception.patientId &&
+            resolveClinicalStatus(c) === "IN_PROGRESS"
+        )
+        .sort((a, b) => (b.clinicalId ?? b.id ?? 0) - (a.clinicalId ?? a.id ?? 0))[0] ?? null
+    );
+  }, [clinicals, selectedReception]);
+  const currentClinicalId = activeVisitClinical?.clinicalId ?? activeVisitClinical?.id ?? null;
 
   const pastClinicalsForPatient = React.useMemo(() => {
     if (!selectedPatient) return [];
@@ -625,7 +645,6 @@ export default function ClinicalPage() {
 
           <ClinicalChartCenter
             selectedPatient={selectedPatient}
-            selectedStatus={selectedStatus}
             visitId={currentClinicalId}
             vitals={vitals}
             assessment={assessment}

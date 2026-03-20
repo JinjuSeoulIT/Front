@@ -1,6 +1,7 @@
 export type ClinicalRes = {
   id?: number;
   clinicalId?: number;
+  receptionId?: number | null;
   patientId: number;
   clinicalType?: string | null;
   status?: string | null;
