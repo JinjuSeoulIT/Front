@@ -32,7 +32,23 @@ import {
   type DiagnosisRes,
   type PrescriptionRes,
 } from "@/lib/clinicalRecordApi";
-import { MEDICATION_OPTIONS } from "../clinicalDocumentation";
+import {
+  searchDrugsForChoseongMatch,
+  searchDrugsForVisit,
+} from "@/lib/drugSearchApi";
+import { isChoseongOnlyQuery } from "@/lib/koreanChoseong";
+
+const DRUG_SEARCH_MIN_CHARS = 2;
+const DRUG_SEARCH_DEBOUNCE_MS = 380;
+const DRUG_SEARCH_PAGE_SIZE = 25;
+const DRUG_SEARCH_CHOSEONG_DISPLAY_MAX = 80;
+
+type DrugSuggestOption = {
+  key: string;
+  itemSeq: string;
+  itemName: string;
+  entpName?: string;
+};
 
 type Props = {
   visitId: number | null;
@@ -85,6 +101,120 @@ export function ClinicalSoapCard({
   onDiagnosesReload,
   onPrescriptionsReload,
 }: Props) {
+  const [drugOptions, setDrugOptions] = React.useState<DrugSuggestOption[]>([]);
+  const [drugLoading, setDrugLoading] = React.useState(false);
+  const [drugHint, setDrugHint] = React.useState<string | null>(null);
+
+  React.useEffect(() => {
+    if (visitId == null) {
+      setDrugOptions([]);
+      setDrugHint(null);
+      return;
+    }
+    const q = prescriptionNameInput.trim();
+    const compactChoseong = q.replace(/\s+/g, "");
+    if (compactChoseong.length < DRUG_SEARCH_MIN_CHARS) {
+      setDrugOptions([]);
+      setDrugHint(
+        compactChoseong.length === 0
+          ? null
+          : `제품명 또는 초성 ${DRUG_SEARCH_MIN_CHARS}자 이상 입력 시 식약처 e약은요에서 검색합니다. (예: 타이, ㅌㅇ)`
+      );
+      return;
+    }
+    const ac = new AbortController();
+    const timer = window.setTimeout(() => {
+      void (async () => {
+        setDrugLoading(true);
+        setDrugHint(null);
+        try {
+          const choseongMode =
+            isChoseongOnlyQuery(compactChoseong) &&
+            compactChoseong.length >= DRUG_SEARCH_MIN_CHARS;
+          let mapped: DrugSuggestOption[];
+          if (choseongMode) {
+            const cho = await searchDrugsForChoseongMatch(visitId, {
+              compactChoseong,
+              signal: ac.signal,
+            });
+            if (cho.resultCode && cho.resultCode !== "00") {
+              setDrugOptions([]);
+              setDrugHint(cho.resultMsg || "공공데이터 응답 오류");
+              return;
+            }
+            const raw = cho.items.filter((it) => (it.itemName ?? "").trim().length > 0);
+            mapped = raw.slice(0, DRUG_SEARCH_CHOSEONG_DISPLAY_MAX).map((it, idx) => {
+              const name = (it.itemName ?? "").trim();
+              const seq = (it.itemSeq ?? "").trim();
+              return {
+                key: seq ? `${seq}-${idx}` : `${name}-${idx}`,
+                itemSeq: seq,
+                itemName: name,
+                entpName: (it.entpName ?? "").trim() || undefined,
+              };
+            });
+            setDrugOptions(mapped);
+            if (mapped.length === 0) {
+              setDrugHint(
+                `초성 '${compactChoseong}'에 맞는 품목이 없습니다. 한글 제품명으로 검색해 보세요.`
+              );
+            } else if (raw.length > DRUG_SEARCH_CHOSEONG_DISPLAY_MAX) {
+              setDrugHint(
+                `초성 일치 ${raw.length.toLocaleString()}건 중 ${DRUG_SEARCH_CHOSEONG_DISPLAY_MAX}건만 표시`
+              );
+            } else if (cho.totalCountMain != null && cho.totalCountMain > raw.length) {
+              setDrugHint(
+                `‘${compactChoseong[0]}’로 시작하는 품목 약 ${cho.totalCountMain.toLocaleString()}건 중 초성 일치 ${raw.length.toLocaleString()}건`
+              );
+            }
+          } else {
+            const result = await searchDrugsForVisit(visitId, {
+              itemName: q,
+              numOfRows: DRUG_SEARCH_PAGE_SIZE,
+              signal: ac.signal,
+            });
+            if (result.resultCode && result.resultCode !== "00") {
+              setDrugOptions([]);
+              setDrugHint(result.resultMsg || "공공데이터 응답 오류");
+              return;
+            }
+            const raw = result.items ?? [];
+            const items = raw.filter((it) => (it.itemName ?? "").trim().length > 0);
+            mapped = items.map((it, idx) => {
+              const name = (it.itemName ?? "").trim();
+              const seq = (it.itemSeq ?? "").trim();
+              return {
+                key: seq ? `${seq}-${idx}` : `${name}-${idx}`,
+                itemSeq: seq,
+                itemName: name,
+                entpName: (it.entpName ?? "").trim() || undefined,
+              };
+            });
+            setDrugOptions(mapped);
+            if (mapped.length === 0) {
+              setDrugHint("검색 결과가 없습니다. 직접 입력 후 추가할 수 있습니다.");
+            } else if (
+              result.totalCount != null &&
+              result.totalCount > mapped.length
+            ) {
+              setDrugHint(`전체 ${result.totalCount.toLocaleString()}건 중 상위 ${mapped.length}건`);
+            }
+          }
+        } catch (e) {
+          if (e instanceof Error && e.name === "AbortError") return;
+          setDrugOptions([]);
+          setDrugHint(e instanceof Error ? e.message : "약품 검색에 실패했습니다.");
+        } finally {
+          setDrugLoading(false);
+        }
+      })();
+    }, DRUG_SEARCH_DEBOUNCE_MS);
+    return () => {
+      window.clearTimeout(timer);
+      ac.abort();
+    };
+  }, [visitId, prescriptionNameInput]);
+
   return (
     <Card sx={{ borderRadius: 2, border: "1px solid var(--line)" }}>
       <CardContent sx={{ py: 1.5, "&:last-child": { pb: 1.5 } }}>
@@ -264,29 +394,60 @@ export function ClinicalSoapCard({
           />
           <Autocomplete
             size="small"
-            sx={{ minWidth: 220, "& .MuiOutlinedInput-root": { bgcolor: "#fff" } }}
-            options={MEDICATION_OPTIONS}
-            getOptionLabel={(opt) => (typeof opt === "string" ? opt : `${opt.code} ${opt.name}`)}
+            sx={{ minWidth: 280, flex: "1 1 220px", "& .MuiOutlinedInput-root": { bgcolor: "#fff" } }}
+            options={drugOptions}
+            loading={drugLoading}
+            filterOptions={(opts) => opts}
+            getOptionLabel={(opt) =>
+              typeof opt === "string"
+                ? opt
+                : [opt.itemName, opt.entpName ? `(${opt.entpName})` : "", opt.itemSeq ? `#${opt.itemSeq}` : ""]
+                    .filter(Boolean)
+                    .join(" ")
+            }
+            isOptionEqualToValue={(a, b) =>
+              typeof a === "object" &&
+              typeof b === "object" &&
+              "key" in a &&
+              "key" in b &&
+              a.key === b.key
+            }
             inputValue={prescriptionNameInput}
-            onInputChange={(_, value) => onPrescriptionNameInputChange(value)}
+            onInputChange={(_, value, reason) => {
+              if (reason === "input" || reason === "clear" || reason === "reset") {
+                onPrescriptionNameInputChange(value);
+              }
+            }}
             onChange={(_, value) => {
-              if (value && typeof value === "object" && "code" in value && "name" in value) {
-                onPrescriptionNameInputChange(`${value.code} ${value.name}`);
+              if (value && typeof value === "object" && "itemName" in value) {
+                const o = value as DrugSuggestOption;
+                onPrescriptionNameInputChange(
+                  o.itemSeq ? `${o.itemName} (${o.itemSeq})` : o.itemName
+                );
               } else if (typeof value === "string") {
                 onPrescriptionNameInputChange(value);
               } else {
                 onPrescriptionNameInputChange("");
               }
             }}
-            filterOptions={(options, { inputValue }) => {
-              const q = inputValue.trim().toLowerCase();
-              if (!q) return options;
-              return options.filter(
-                (opt) => opt.name.toLowerCase().includes(q) || opt.code.toLowerCase().includes(q)
-              );
-            }}
+            noOptionsText={
+              visitId == null
+                ? "진료(방문)을 선택한 뒤 검색할 수 있습니다."
+                : drugLoading
+                  ? "검색 중…"
+                  : prescriptionNameInput.trim().length < DRUG_SEARCH_MIN_CHARS
+                    ? `제품명 ${DRUG_SEARCH_MIN_CHARS}글자 이상 입력하세요.`
+                    : "일치하는 품목이 없습니다."
+            }
             freeSolo
-            renderInput={(params) => <TextField {...params} placeholder="약품명 검색" />}
+            renderInput={(params) => (
+              <TextField
+                {...params}
+                placeholder="약품명 검색 (e약은요)"
+                helperText={drugHint}
+                FormHelperTextProps={{ sx: { mx: 0, fontSize: 11 } }}
+              />
+            )}
           />
           <Button
             size="small"
