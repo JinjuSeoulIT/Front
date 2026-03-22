@@ -19,7 +19,7 @@ export type ClinicalRes = {
 };
 
 const CLINICAL_API_BASE =
-  process.env.NEXT_PUBLIC_CLINICAL_API_BASE_URL ?? "http://localhost:8090";
+  process.env.NEXT_PUBLIC_CLINICAL_API_BASE_URL ?? "http://192.168.1.70:8090";
 
 function formatBackendDateTime(v: unknown): string | null {
   if (v == null) return null;

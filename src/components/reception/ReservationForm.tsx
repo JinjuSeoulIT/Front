@@ -20,7 +20,7 @@ import type {
   PatientOption,
   ReservationForm as ReservationFormPayload,
 } from "@/features/Reservations/ReservationTypes";
-import { fetchPatientsApi } from "@/lib/admin/masterDataApi";
+import { fetchDepartmentsApi, fetchDoctorsApi, fetchPatientsApi } from "@/lib/masterDataApi";
 
 type ReservationFormState = {
   reservationNo: string;
@@ -50,22 +50,6 @@ const statusOptions = [
   { value: "RESERVED", label: "예약" },
   { value: "COMPLETED", label: "완료" },
   { value: "CANCELED", label: "취소" },
-];
-
-const departmentOptions: DepartmentOption[] = [
-  { departmentId: 1, departmentName: "내과" },
-  { departmentId: 2, departmentName: "정형외과" },
-  { departmentId: 3, departmentName: "소아과" },
-  { departmentId: 4, departmentName: "이비인후과" },
-  { departmentId: 5, departmentName: "피부과" },
-];
-
-const doctorOptions: DoctorOption[] = [
-  { doctorId: 1, doctorName: "송태민", departmentId: 1 },
-  { doctorId: 2, doctorName: "이현석", departmentId: 2 },
-  { doctorId: 3, doctorName: "성숙희", departmentId: 3 },
-  { doctorId: 4, doctorName: "최효정", departmentId: 4 },
-  { doctorId: 5, doctorName: "홍예진", departmentId: 5 },
 ];
 
 function toOptionalNumber(value: string) {
@@ -127,6 +111,8 @@ export default function ReservationForm({
 
   const [form, setForm] = React.useState<ReservationFormState>(initial);
   const [patients, setPatients] = React.useState<PatientOption[]>([]);
+  const [departmentOptions, setDepartmentOptions] = React.useState<DepartmentOption[]>([]);
+  const [doctorOptions, setDoctorOptions] = React.useState<DoctorOption[]>([]);
   const [listError, setListError] = React.useState<string | null>(null);
 
   React.useEffect(() => {
@@ -138,9 +124,15 @@ export default function ReservationForm({
     const load = async () => {
       try {
         setListError(null);
-        const [patientList] = await Promise.all([fetchPatientsApi()]);
+        const [patientList, departments, doctors] = await Promise.all([
+          fetchPatientsApi(),
+          fetchDepartmentsApi(),
+          fetchDoctorsApi(),
+        ]);
         if (!mounted) return;
         setPatients(patientList);
+        setDepartmentOptions(departments);
+        setDoctorOptions(doctors);
       } catch (err) {
         if (!mounted) return;
         const message =
@@ -219,9 +211,9 @@ export default function ReservationForm({
       patientId,
       patientName: toOptionalString(form.patientName) ?? null,
       departmentId,
-      departmentName: toOptionalString(form.departmentName) ?? null,
+      departmentName: null,
       doctorId: doctorId ?? null,
-      doctorName: toOptionalString(form.doctorName) ?? null,
+      doctorName: null,
       reservedAt: form.reservedAt,
       status: (form.status || "RESERVED") as ReservationFormPayload["status"],
       note: toOptionalString(form.note) ?? null,

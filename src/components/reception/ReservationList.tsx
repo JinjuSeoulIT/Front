@@ -23,15 +23,13 @@ import {
 import SearchIcon from "@mui/icons-material/Search";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import BlockOutlinedIcon from "@mui/icons-material/BlockOutlined";
+import ListAltIcon from "@mui/icons-material/ListAlt";
 import { useDispatch, useSelector } from "react-redux";
 import type { RootState, AppDispatch } from "@/store/store";
 import { reservationActions } from "@/features/Reservations/ReservationSlice";
-import type {
-  Reservation,
-  ReservationForm,
-} from "@/features/Reservations/ReservationTypes";
+import type { Reservation, ReservationForm } from "@/features/Reservations/ReservationTypes";
 import type { Patient } from "@/features/patients/patientTypes";
-import { searchPatientsApi } from "@/lib/patient/patientApi";
+import { fetchPatientsApi, searchPatientsApi } from "@/lib/patient/patientApi";
 
 const statusLabel = (value?: string | null) => {
   switch (value) {
@@ -108,6 +106,38 @@ const toLocalDateTimeValue = (date: Date) => {
   return `${year}-${month}-${day}T${hour}:${minute}`;
 };
 
+const parseDateTimeToMillis = (value?: string | null) => {
+  if (!value) return null;
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  const normalized = trimmed.includes("T") ? trimmed : trimmed.replace(" ", "T");
+  const parsed = Date.parse(normalized);
+  if (Number.isNaN(parsed)) return null;
+  return parsed;
+};
+
+const compareReservationsByLatest = (a: Reservation, b: Reservation) => {
+  const aCreatedAt = parseDateTimeToMillis(a.createdAt);
+  const bCreatedAt = parseDateTimeToMillis(b.createdAt);
+  if (aCreatedAt !== bCreatedAt) {
+    if (aCreatedAt == null) return 1;
+    if (bCreatedAt == null) return -1;
+    return bCreatedAt - aCreatedAt;
+  }
+
+  const aReservedAt = parseDateTimeToMillis(a.reservedAt);
+  const bReservedAt = parseDateTimeToMillis(b.reservedAt);
+  if (aReservedAt !== bReservedAt) {
+    if (aReservedAt == null) return 1;
+    if (bReservedAt == null) return -1;
+    return bReservedAt - aReservedAt;
+  }
+
+  return b.reservationId - a.reservationId;
+};
+
+const ITEMS_PER_PAGE = 10;
+const PATIENT_LIST_ITEMS_PER_PAGE = 8;
 const RESERVATION_DEPARTMENTS = [
   { id: 1, name: "내과" },
   { id: 2, name: "정형외과" },
@@ -124,8 +154,6 @@ const RESERVATION_DOCTORS = [
   { id: 5, name: "홍예진", departmentId: 5 },
 ];
 
-const ITEMS_PER_PAGE = 10;
-
 export default function ReservationList({
   hideCanceled = true,
 }: ReservationListProps) {
@@ -141,6 +169,12 @@ export default function ReservationList({
     null
   );
   const [createModalOpen, setCreateModalOpen] = React.useState(false);
+  const [patientListModalOpen, setPatientListModalOpen] = React.useState(false);
+  const [patientListKeyword, setPatientListKeyword] = React.useState("");
+  const [patientListPage, setPatientListPage] = React.useState(1);
+  const [patientCatalog, setPatientCatalog] = React.useState<Patient[]>([]);
+  const [patientCatalogLoading, setPatientCatalogLoading] = React.useState(false);
+  const [patientCatalogError, setPatientCatalogError] = React.useState<string | null>(null);
   const [createTargetPatient, setCreateTargetPatient] = React.useState<{
     patientId: number | null;
     patientName: string;
@@ -154,11 +188,8 @@ export default function ReservationList({
     reservedAt: string;
     note: string;
   }>({
-    departmentId: RESERVATION_DEPARTMENTS[0]?.id ?? 1,
-    doctorId:
-      RESERVATION_DOCTORS.find(
-        (doctor) => doctor.departmentId === (RESERVATION_DEPARTMENTS[0]?.id ?? 1)
-      )?.id ?? null,
+    departmentId: 0,
+    doctorId: null,
     reservedAt: toLocalDateTimeValue(new Date()),
     note: "",
   });
@@ -189,6 +220,17 @@ export default function ReservationList({
     },
     []
   );
+
+  const onOpenPatientListModal = () => {
+    setPatientListKeyword("");
+    setPatientListPage(1);
+    setPatientCatalogError(null);
+    setPatientListModalOpen(true);
+  };
+
+  const onClosePatientListModal = () => {
+    setPatientListModalOpen(false);
+  };
 
   const onSearch = () => {
     const kw = keyword.trim();
@@ -281,8 +323,76 @@ export default function ReservationList({
   };
 
   React.useEffect(() => {
+    if (!patientListModalOpen) return;
+    let active = true;
+
+    const loadPatients = async () => {
+      try {
+        setPatientCatalogLoading(true);
+        setPatientCatalogError(null);
+        const patients = await fetchPatientsApi();
+        if (!active) return;
+        setPatientCatalog(patients);
+      } catch (err: unknown) {
+        if (!active) return;
+        const message =
+          err instanceof Error && err.message ? err.message : "환자 목록 조회 실패";
+        setPatientCatalogError(message);
+      } finally {
+        if (!active) return;
+        setPatientCatalogLoading(false);
+      }
+    };
+
+    void loadPatients();
+    return () => {
+      active = false;
+    };
+  }, [patientListModalOpen]);
+
+  const filteredPatientCatalog = React.useMemo(() => {
+    const kw = patientListKeyword.trim().toLowerCase();
+    if (!kw) return patientCatalog;
+    return patientCatalog.filter((patient) => {
+      const fields = [
+        patient.name,
+        patient.patientNo,
+        patient.phone,
+        patient.birthDate,
+        patient.patientId ? String(patient.patientId) : "",
+      ];
+      return fields.some((value) => (value ?? "").toLowerCase().includes(kw));
+    });
+  }, [patientCatalog, patientListKeyword]);
+
+  const patientListTotalPages = Math.max(
+    1,
+    Math.ceil(filteredPatientCatalog.length / PATIENT_LIST_ITEMS_PER_PAGE)
+  );
+  const pagedPatientCatalog = React.useMemo(() => {
+    const start = (patientListPage - 1) * PATIENT_LIST_ITEMS_PER_PAGE;
+    return filteredPatientCatalog.slice(start, start + PATIENT_LIST_ITEMS_PER_PAGE);
+  }, [filteredPatientCatalog, patientListPage]);
+
+  React.useEffect(() => {
+    setPatientListPage((prev) => Math.min(prev, patientListTotalPages));
+  }, [patientListTotalPages]);
+
+  const onSelectPatientFromListModal = (patient: Patient) => {
+    onClosePatientListModal();
+    openCreateWithPatient(patient);
+  };
+
+  const doctorsForSelectedDepartment = React.useMemo(() => {
+    if (!createModalForm.departmentId) return RESERVATION_DOCTORS;
+    return RESERVATION_DOCTORS.filter(
+      (doctor) => (doctor.departmentId ?? null) === createModalForm.departmentId
+    );
+  }, [createModalForm.departmentId]);
+
+  React.useEffect(() => {
     if (!createModalOpen) return;
-    const defaultDepartmentId = RESERVATION_DEPARTMENTS[0]?.id ?? 1;
+    const defaultDepartmentId = RESERVATION_DEPARTMENTS[0]?.id ?? 0;
     const defaultDoctorId =
       RESERVATION_DOCTORS.find((doctor) => doctor.departmentId === defaultDepartmentId)?.id ??
       null;
@@ -300,9 +410,7 @@ export default function ReservationList({
       return;
     }
 
-    const department = RESERVATION_DEPARTMENTS.find(
-      (item) => item.id === createModalForm.departmentId
-    );
+    const department = RESERVATION_DEPARTMENTS.find((item) => item.id === createModalForm.departmentId);
     if (!department) {
       alert("진료과를 선택해주세요.");
       return;
@@ -328,6 +436,7 @@ export default function ReservationList({
       })
     );
 
+    setPage(1);
     setCreateModalOpen(false);
     setPatientSuggestions([]);
     setOpenSuggestion(false);
@@ -391,13 +500,12 @@ export default function ReservationList({
     );
   };
 
-  const visibleList = React.useMemo(
-    () =>
-      hideCanceled
-        ? list.filter((item) => !["CANCELED", "COMPLETED"].includes(normalizeStatus(item.status) ?? ""))
-        : list,
-    [hideCanceled, list]
-  );
+  const visibleList = React.useMemo(() => {
+    const baseList = hideCanceled
+      ? list.filter((item) => !["CANCELED", "COMPLETED"].includes(normalizeStatus(item.status) ?? ""))
+      : list;
+    return [...baseList].sort(compareReservationsByLatest);
+  }, [hideCanceled, list]);
   const totalCount = visibleList.length;
   const totalPages = Math.max(1, Math.ceil(totalCount / ITEMS_PER_PAGE));
   const pagedList = React.useMemo(() => {
@@ -579,6 +687,25 @@ export default function ReservationList({
                 }}
               >
                 초기화
+              </Button>
+              <Button
+                variant="outlined"
+                startIcon={<ListAltIcon />}
+                onClick={onOpenPatientListModal}
+                disabled={loading}
+                sx={{
+                  px: 1.8,
+                  borderRadius: 2,
+                  color: "#1f4f95",
+                  borderColor: "rgba(31,79,149,0.38)",
+                  bgcolor: "rgba(255,255,255,0.9)",
+                  "&:hover": {
+                    borderColor: "#1f4f95",
+                    bgcolor: "rgba(31,79,149,0.08)",
+                  },
+                }}
+              >
+                환자목록
               </Button>
             </Stack>
             <Box sx={{ flex: 1 }} />
@@ -841,6 +968,104 @@ export default function ReservationList({
         </Box>
       </Box>
 
+      <Dialog
+        open={patientListModalOpen}
+        onClose={onClosePatientListModal}
+        fullWidth
+        maxWidth="md"
+      >
+        <DialogContent sx={{ p: 3 }}>
+          <Stack spacing={1.5}>
+            <Stack direction="row" justifyContent="space-between" alignItems="center">
+              <Typography variant="h5" fontWeight={900}>
+                환자목록
+              </Typography>
+              <Chip label={`총 ${filteredPatientCatalog.length}`} color="primary" />
+            </Stack>
+
+            <TextField
+              size="small"
+              placeholder="이름/환자번호/연락처로 검색"
+              value={patientListKeyword}
+              onChange={(e) => {
+                setPatientListKeyword(e.target.value);
+                setPatientListPage(1);
+              }}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchIcon sx={{ fontSize: 19, color: "#7f93b5" }} />
+                  </InputAdornment>
+                ),
+              }}
+            />
+
+            {patientCatalogLoading ? (
+              <Typography sx={{ color: "#7b8aa9" }}>환자 목록 불러오는 중...</Typography>
+            ) : (
+              <Stack spacing={1}>
+                {pagedPatientCatalog.map((patient) => (
+                  <Button
+                    key={patient.patientId}
+                    onClick={() => onSelectPatientFromListModal(patient)}
+                    sx={{
+                      justifyContent: "flex-start",
+                      textTransform: "none",
+                      px: 1.6,
+                      py: 1.25,
+                      borderRadius: 2,
+                      color: "#1f2a44",
+                      border: "1px solid #e3ebf8",
+                      bgcolor: "#fff",
+                      "&:hover": {
+                        borderColor: "#9cb5de",
+                        bgcolor: "rgba(43,90,169,0.06)",
+                      },
+                    }}
+                  >
+                    <Box sx={{ textAlign: "left", width: "100%", minWidth: 0 }}>
+                      <Typography fontWeight={800} noWrap>
+                        {patient.name} · {patient.gender ?? "-"} · {patient.birthDate ?? "-"}
+                      </Typography>
+                      <Typography sx={{ color: "#7b8aa9", fontSize: 12 }} noWrap>
+                        환자ID {patient.patientId} · {patient.patientNo ?? "-"} · {patient.phone ?? "-"}
+                      </Typography>
+                    </Box>
+                  </Button>
+                ))}
+                {!pagedPatientCatalog.length && (
+                  <Typography sx={{ color: "#7b8aa9" }}>조회된 환자가 없습니다.</Typography>
+                )}
+              </Stack>
+            )}
+
+            {filteredPatientCatalog.length > 0 && patientListTotalPages > 1 && (
+              <Stack direction="row" justifyContent="center">
+                <Pagination
+                  page={patientListPage}
+                  count={patientListTotalPages}
+                  onChange={(_, value) => setPatientListPage(value)}
+                  color="primary"
+                  size="small"
+                />
+              </Stack>
+            )}
+
+            {patientCatalogError && (
+              <Typography color="error" fontWeight={700}>
+                {patientCatalogError}
+              </Typography>
+            )}
+
+            <Stack direction="row" justifyContent="flex-end">
+              <Button variant="text" onClick={onClosePatientListModal}>
+                닫기
+              </Button>
+            </Stack>
+          </Stack>
+        </DialogContent>
+      </Dialog>
+
       <Dialog open={createModalOpen} onClose={onCreateModalClose} fullWidth maxWidth="sm">
         <DialogContent sx={{ p: 3 }}>
           <Stack spacing={1.75}>
@@ -863,15 +1088,15 @@ export default function ReservationList({
             <TextField
               select
               size="small"
-              label={"진료과"}
-              value={createModalForm.departmentId}
-              onChange={(e) => {
-                const departmentId = Number(e.target.value);
-                const nextDoctorId =
-                  RESERVATION_DOCTORS.find((doctor) => doctor.departmentId === departmentId)?.id ??
-                  null;
-                setCreateModalForm((prev) => ({
-                  ...prev,
+                label={"진료과"}
+                value={createModalForm.departmentId}
+                onChange={(e) => {
+                  const departmentId = Number(e.target.value);
+                  const nextDoctorId =
+                    RESERVATION_DOCTORS.find((doctor) => doctor.departmentId === departmentId)?.id ??
+                    null;
+                  setCreateModalForm((prev) => ({
+                    ...prev,
                   departmentId,
                   doctorId: nextDoctorId,
                 }));
@@ -901,11 +1126,16 @@ export default function ReservationList({
               }}
               fullWidth
             >
-              {RESERVATION_DOCTORS.map((item) => (
+              {doctorsForSelectedDepartment.map((item) => (
                 <MenuItem key={item.id} value={item.id}>
                   {item.name}
                 </MenuItem>
               ))}
+              {!doctorsForSelectedDepartment.length && (
+                <MenuItem disabled value="">
+                  담당의 없음
+                </MenuItem>
+              )}
             </TextField>
 
             <TextField
@@ -943,7 +1173,12 @@ export default function ReservationList({
               <Button
                 variant="contained"
                 onClick={onCreateModalSubmit}
-                disabled={loading || !createTargetPatient.patientId || !createModalForm.reservedAt}
+                disabled={
+                  loading ||
+                  !createTargetPatient.patientId ||
+                  !createModalForm.departmentId ||
+                  !createModalForm.reservedAt
+                }
                 sx={{ bgcolor: "#2b5aa9" }}
               >
                 {"저장"}
