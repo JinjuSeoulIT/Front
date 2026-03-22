@@ -20,7 +20,7 @@ import type { EmergencyReceptionForm as EmergencyReceptionFormPayload } from "@/
 import type {
   PatientOption,
 } from "@/features/Reservations/ReservationTypes";
-import { fetchPatientsApi } from "@/lib/admin/masterDataApi";
+import { fetchPatientsApi } from "@/lib/masterDataApi";
 import EmergencyReceptionStatusTimeline from "@/components/reception/EmergencyReceptionStatusTimeline";
 
 type EmergencyReceptionFormState = {

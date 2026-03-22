@@ -61,6 +61,21 @@ const visitTypeLabel = (value?: string | null) => {
 const ITEMS_PER_PAGE = 10;
 const PATIENT_LIST_ITEMS_PER_PAGE = 8;
 const RECEPTION_LIST_REFRESH_INTERVAL_MS = 5000;
+const OUTPATIENT_DEPARTMENTS = [
+  { id: 1, name: "내과" },
+  { id: 2, name: "정형외과" },
+  { id: 3, name: "소아과" },
+  { id: 4, name: "이비인후과" },
+  { id: 5, name: "피부과" },
+];
+
+const OUTPATIENT_DOCTORS = [
+  { id: 1, name: "송태민", departmentId: 1 },
+  { id: 2, name: "이현석", departmentId: 2 },
+  { id: 3, name: "성숙희", departmentId: 3 },
+  { id: 4, name: "최효정", departmentId: 4 },
+  { id: 5, name: "홍예진", departmentId: 5 },
+];
 
 const statusLabel = (value?: string | null) => {
   switch (value) {
@@ -190,27 +205,21 @@ const extractDateKeyFromDateTime = (value?: string | null) => {
   return null;
 };
 
+const parseDateTimeToMillis = (value?: string | null) => {
+  if (!value) return null;
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  const normalized = trimmed.includes("T") ? trimmed : trimmed.replace(" ", "T");
+  const parsed = Date.parse(normalized);
+  if (Number.isNaN(parsed)) return null;
+  return parsed;
+};
+
 const toLocalTimeValue = (date: Date) => {
   const hours = String(date.getHours()).padStart(2, "0");
   const minutes = String(date.getMinutes()).padStart(2, "0");
   return `${hours}:${minutes}`;
 };
-
-const OUTPATIENT_DEPARTMENTS = [
-  { id: 1, name: "내과" },
-  { id: 2, name: "정형외과" },
-  { id: 3, name: "소아과" },
-  { id: 4, name: "이비인후과" },
-  { id: 5, name: "피부과" },
-];
-
-const OUTPATIENT_DOCTORS = [
-  { id: 1, name: "송태민", departmentId: 1 },
-  { id: 2, name: "이현석", departmentId: 2 },
-  { id: 3, name: "성숙희", departmentId: 3 },
-  { id: 4, name: "최효정", departmentId: 4 },
-  { id: 5, name: "홍예진", departmentId: 5 },
-];
 
 const normalizeReservationStatus = (value?: string | null) => {
   if (!value) return value;
@@ -265,6 +274,44 @@ const resolvePatientDisplayName = (
   return "환자";
 };
 
+const resolveOutpatientDepartmentName = (item: Reception) => {
+  const byId =
+    item.departmentId != null
+      ? OUTPATIENT_DEPARTMENTS.find((department) => department.id === item.departmentId)?.name
+      : undefined;
+  if (byId) return byId;
+  return formatDepartmentName(item.departmentName, item.departmentId);
+};
+
+const resolveOutpatientDoctorName = (item: Reception) => {
+  const byId =
+    item.doctorId != null
+      ? OUTPATIENT_DOCTORS.find((doctor) => doctor.id === item.doctorId)?.name
+      : undefined;
+  if (byId) return byId;
+  return item.doctorName?.trim() || "";
+};
+
+const compareReceptionsByLatest = (a: Reception, b: Reception) => {
+  const aCreatedAt = parseDateTimeToMillis(a.createdAt);
+  const bCreatedAt = parseDateTimeToMillis(b.createdAt);
+  if (aCreatedAt !== bCreatedAt) {
+    if (aCreatedAt == null) return 1;
+    if (bCreatedAt == null) return -1;
+    return bCreatedAt - aCreatedAt;
+  }
+
+  const aArrivedAt = parseDateTimeToMillis(a.arrivedAt);
+  const bArrivedAt = parseDateTimeToMillis(b.arrivedAt);
+  if (aArrivedAt !== bArrivedAt) {
+    if (aArrivedAt == null) return 1;
+    if (bArrivedAt == null) return -1;
+    return bArrivedAt - aArrivedAt;
+  }
+
+  return b.receptionId - a.receptionId;
+};
+
 type ReceptionListProps = {
   initialSearchType?: ReceptionSearchPayload["type"];
   initialKeyword?: string;
@@ -306,10 +353,8 @@ export default function ReceptionList({
     arrivedTime: string;
     note: string;
   }>({
-    departmentId: OUTPATIENT_DEPARTMENTS[0]?.id ?? 1,
-    doctorId: OUTPATIENT_DOCTORS.find(
-      (doctor) => doctor.departmentId === (OUTPATIENT_DEPARTMENTS[0]?.id ?? 1)
-    )?.id ?? null,
+    departmentId: 0,
+    doctorId: null,
     arrivedTime: toLocalTimeValue(new Date()),
     note: "",
   });
@@ -417,14 +462,13 @@ export default function ReceptionList({
     }
   }, []);
   const isCanceledView = initialSearchType === "status" && initialKeyword === "CANCELED";
-  const filteredList = React.useMemo(
-    () =>
-      (isCanceledView
-        ? list
-        : list.filter((p) => normalizeStatus(p.status) !== "CANCELED")
-      ).filter((p) => isTodayReception(p, todayKey)),
-    [isCanceledView, list, todayKey]
-  );
+  const filteredList = React.useMemo(() => {
+    const baseList = (isCanceledView
+      ? list
+      : list.filter((p) => normalizeStatus(p.status) !== "CANCELED")
+    ).filter((p) => isTodayReception(p, todayKey));
+    return [...baseList].sort(compareReceptionsByLatest);
+  }, [isCanceledView, list, todayKey]);
 
   const refreshReceptionsByCurrentMode = React.useCallback(() => {
     const trimmedKeyword = initialKeyword.trim();
@@ -454,9 +498,8 @@ export default function ReceptionList({
             resolveErrorMessage(err, "예약 당일 자동 접수 생성 실패")
           )
         );
-      } finally {
-        refreshReceptionsByCurrentMode();
       }
+      refreshReceptionsByCurrentMode();
     };
 
     void initialize();
@@ -489,18 +532,22 @@ export default function ReceptionList({
         } catch (err: unknown) {
           dispatch(
             receptionActions.fetchReceptionsFailure(
-            resolveErrorMessage(err, "예약 당일 자동 접수 생성 실패")
-          )
-        );
-      } finally {
-          refreshReceptionsByCurrentMode();
+              resolveErrorMessage(err, "예약 당일 자동 접수 생성 실패")
+            )
+          );
         }
+        refreshReceptionsByCurrentMode();
       };
       void runAtMidnight();
     }, delay);
 
     return () => window.clearTimeout(timer);
-  }, [todayKey, dispatch, refreshReceptionsByCurrentMode, syncTodayReservationsToWaitingReceptions]);
+  }, [
+    todayKey,
+    dispatch,
+    refreshReceptionsByCurrentMode,
+    syncTodayReservationsToWaitingReceptions,
+  ]);
 
   React.useEffect(() => {
     const timer = window.setInterval(() => {
@@ -538,7 +585,7 @@ export default function ReceptionList({
 
   React.useEffect(() => {
     if (!createModalOpen) return;
-    const defaultDepartmentId = OUTPATIENT_DEPARTMENTS[0]?.id ?? 1;
+    const defaultDepartmentId = OUTPATIENT_DEPARTMENTS[0]?.id ?? 0;
     const defaultDoctorId =
       OUTPATIENT_DOCTORS.find((doctor) => doctor.departmentId === defaultDepartmentId)?.id ??
       null;
@@ -715,15 +762,20 @@ export default function ReceptionList({
     openCreateWithPatient(patient);
   };
 
+  const doctorsForSelectedDepartment = React.useMemo(() => {
+    if (!createModalForm.departmentId) return OUTPATIENT_DOCTORS;
+    return OUTPATIENT_DOCTORS.filter(
+      (doctor) => (doctor.departmentId ?? null) === createModalForm.departmentId
+    );
+  }, [createModalForm.departmentId]);
+
   const onCreateModalSubmit = () => {
     if (!createTargetPatient.patientId) {
       alert("\uD658\uC790\uB97C \uBA3C\uC800 \uC120\uD0DD\uD574\uC8FC\uC138\uC694.");
       return;
     }
 
-    const department = OUTPATIENT_DEPARTMENTS.find(
-      (item) => item.id === createModalForm.departmentId
-    );
+    const department = OUTPATIENT_DEPARTMENTS.find((item) => item.id === createModalForm.departmentId);
     if (!department) return;
 
     const doctor =
@@ -750,6 +802,7 @@ export default function ReceptionList({
       })
     );
 
+    setPage(1);
     setCreateModalOpen(false);
     setPatientSuggestions([]);
     setOpenSuggestion(false);
@@ -806,11 +859,12 @@ export default function ReceptionList({
       ? selected
       : pagedList[0] ?? filteredList[0];
   const primaryName = primary ? resolvePatientDisplayName(primary, patientNameById) : "";
-  const primaryDepartment = formatDepartmentName(
-    primary?.departmentName,
-    primary?.departmentId
-  );
-  const primaryDoctor = primary?.doctorName?.trim() || "";
+  const primaryDepartment = primary
+    ? resolveOutpatientDepartmentName(primary)
+    : "-";
+  const primaryDoctor = primary
+    ? resolveOutpatientDoctorName(primary)
+    : "";
   const avatarLabel = primaryName
     ? primaryName.slice(0, 1)
     : primary?.patientId
@@ -1220,10 +1274,9 @@ export default function ReceptionList({
                           >
                             {p.receptionNo}
                           </Typography>
-                          <Typography sx={{ color: "#7b8aa9", fontSize: 12 }} noWrap>
-                            {displayPatientName}{" "}
-                            ·{" "}
-                            {formatDepartmentName(p.departmentName, p.departmentId)} ·{" "}
+                            <Typography sx={{ color: "#7b8aa9", fontSize: 12 }} noWrap>
+                            {displayPatientName} ·{" "}
+                            {resolveOutpatientDepartmentName(p)} ·{" "}
                             {statusLabel(p.status)}
                           </Typography>
                         </Box>
@@ -1431,11 +1484,16 @@ export default function ReceptionList({
               }}
               fullWidth
             >
-              {OUTPATIENT_DOCTORS.map((item) => (
+              {doctorsForSelectedDepartment.map((item) => (
                 <MenuItem key={item.id} value={item.id}>
                   {item.name}
                 </MenuItem>
               ))}
+              {!doctorsForSelectedDepartment.length && (
+                <MenuItem disabled value="">
+                  담당의 없음
+                </MenuItem>
+              )}
             </TextField>
 
             <TextField
@@ -1489,7 +1547,11 @@ export default function ReceptionList({
               <Button
                 variant="contained"
                 onClick={onCreateModalSubmit}
-                disabled={loading || !createTargetPatient.patientId}
+                disabled={
+                  loading ||
+                  !createTargetPatient.patientId ||
+                  !createModalForm.departmentId
+                }
                 sx={{ bgcolor: "#2b5aa9" }}
               >
                 {"\uC800\uC7A5"}
