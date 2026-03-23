@@ -1,14 +1,18 @@
 import { combineReducers } from "@reduxjs/toolkit";
 import consentReducer from "@/features/consent/consentSlice";
 import billingReducer from "@/features/billing/billingSlice";
-import emergencyReceptionsReducer from "@/features/EmergencyReception/EmergencyReceptionSlice";
+import emergencyReceptionsReducer from "@/features/EmergencyReceptions/EmergencyReceptionSlice";
 import insuranceReducer from "@/features/insurance/insuranceSlice";
-import inpatientReceptionsReducer from "@/features/InpatientReception/InpatientReceptionSlice";
+import inpatientReceptionsReducer from "@/features/InpatientReceptions/InpatientReceptionSlice";
 import patientsReducer from "@/features/patients/patientSlice";
 import recordsReducer from "@/features/medical_support/record/recordSlice";
 import testexecutionsReducer from "@/features/medical_support/testExecution/testExecutionSlice";
-import receptionsReducer from "@/features/Reception/ReceptionSlice";
+import receptionsReducer from "@/features/Receptions/ReceptionSlice";
 import reservationsReducer from "@/features/Reservations/ReservationSlice";
+import employeeNurseReducer from "@/features/staff/nurse/nurseSlice"
+import employeedoctorReducer from "@/features/staff/doctor/doctorSlice"
+import employeeBasiclnfoReducer from "@/features/staff/Basiclnfo/BasiclnfoSlict"
+import receptionReducer from "@/features/staff/reception/receptionSlice"
 
 const rootReducer = combineReducers({
   consent: consentReducer,
@@ -21,6 +25,10 @@ const rootReducer = combineReducers({
   testexecutions: testexecutionsReducer,
   receptions: receptionsReducer,
   reservations: reservationsReducer,
+  nurse: employeeNurseReducer,
+  doctor :employeedoctorReducer,
+  staff: employeeBasiclnfoReducer,
+  reception: receptionReducer,
 });
 
 export type RootState = ReturnType<typeof rootReducer>;
