@@ -12,7 +12,7 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import type { TestExecution } from "@/features/medical_support/testexecution/testexecutionType";
+import type { TestExecution } from "@/features/medical_support/testExecution/testExecutionType";
 
 type TestExecutionFormData = {
   testExecutionId: string;

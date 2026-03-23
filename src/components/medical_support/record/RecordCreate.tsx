@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useRouter, useSearchParams } from "next/navigation";
 import dayjs from "dayjs";
@@ -36,32 +36,26 @@ const emptyForm: RecordFormType = {
 };
 
 const RecordCreate = () => {
-  const [form, setForm] = useState<RecordFormType>(emptyForm);
   const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
   const searchParams = useSearchParams();
+  const initialForm = useMemo<RecordFormType>(
+    () => ({
+      ...emptyForm,
+      visitId: searchParams.get("visitId") ?? "",
+      nursingId: searchParams.get("nursingId") ?? "",
+      patientName: searchParams.get("patientName") ?? "",
+      nurseName: searchParams.get("nurseName") ?? "",
+      departmentName: searchParams.get("departmentName") ?? "",
+      status: "ACTIVE",
+    }),
+    [searchParams]
+  );
+  const [form, setForm] = useState<RecordFormType>(initialForm);
 
   const { loading, error, createSuccess } = useSelector(
     (state: RootState) => state.records
   );
-
-  useEffect(() => {
-    const visitId = searchParams.get("visitId") ?? "";
-    const nursingId = searchParams.get("nursingId") ?? "";
-    const patientName = searchParams.get("patientName") ?? "";
-    const nurseName = searchParams.get("nurseName") ?? "";
-    const departmentName = searchParams.get("departmentName") ?? "";
-
-    setForm((prev) => ({
-      ...prev,
-      visitId,
-      nursingId,
-      patientName,
-      nurseName,
-      departmentName,
-      status: prev.status || "ACTIVE",
-    }));
-  }, [searchParams]);
 
   useEffect(() => {
     if (!createSuccess) return;

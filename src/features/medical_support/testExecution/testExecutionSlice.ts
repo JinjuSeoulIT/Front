@@ -1,5 +1,5 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
-import type { TestExecution } from "@/features/medical_support/testexecution/testexecutionType";
+import type { TestExecution } from "@/features/medical_support/testExecution/testExecutionType";
 
 type TestExecutionState = {
   list: TestExecution[];

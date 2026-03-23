@@ -7,8 +7,8 @@ import { useDispatch, useSelector } from "react-redux";
 import TestExecutionForm, {
   toTestExecutionPayload,
   toTestExecutionFormData,
-} from "@/components/medical_support/testexecution/TestExecutionForm";
-import { TestExecutionActions } from "@/features/medical_support/testexecution/testexecutionSlice";
+} from "@/components/medical_support/testExecution/TestExecutionForm";
+import { TestExecutionActions } from "@/features/medical_support/testExecution/testExecutionSlice";
 import type { RootState } from "@/store/rootReducer";
 import type { AppDispatch } from "@/store/store";
 
@@ -25,7 +25,7 @@ export default function TestExecutionCreate() {
 
     alert("검사 수행이 등록되었습니다.");
     dispatch(TestExecutionActions.resetCreateSuccess());
-    router.push("/medical_support/testexecution/list");
+    router.push("/medical_support/testExecution/list");
   }, [createSuccess, dispatch, router]);
 
   useEffect(() => {

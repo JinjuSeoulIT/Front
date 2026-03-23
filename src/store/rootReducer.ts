@@ -6,7 +6,7 @@ import insuranceReducer from "@/features/insurance/insuranceSlice";
 import inpatientReceptionsReducer from "@/features/InpatientReceptions/InpatientReceptionSlice";
 import patientsReducer from "@/features/patients/patientSlice";
 import recordsReducer from "@/features/medical_support/record/recordSlice";
-import testexecutionsReducer from "@/features/medical_support/testexecution/testexecutionSlice";
+import testexecutionsReducer from "@/features/medical_support/testExecution/testExecutionSlice";
 import receptionsReducer from "@/features/Receptions/ReceptionSlice";
 import reservationsReducer from "@/features/Reservations/ReservationSlice";
 

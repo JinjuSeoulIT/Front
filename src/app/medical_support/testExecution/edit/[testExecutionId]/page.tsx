@@ -1,4 +1,4 @@
-import TestExecutionEdit from "@/components/medical_support/testexecution/TestExecutionEdit";
+import TestExecutionEdit from "@/components/medical_support/testExecution/TestExecutionEdit";
 
 const TestExecutionEditPage = () => {
   return (

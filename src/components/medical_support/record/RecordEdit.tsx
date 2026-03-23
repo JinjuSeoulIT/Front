@@ -26,18 +26,19 @@ const RecordEdit = () => {
     (state: RootState) => state.records
   );
 
-  const [form, setForm] = useState<RecordFormType | null>(null);
+  const [draftForm, setDraftForm] = useState<RecordFormType | null>(null);
 
   useEffect(() => {
     if (!recordId) return;
     dispatch(RecActions.fetchRecordRequest(recordId));
   }, [dispatch, recordId]);
 
-  useEffect(() => {
-    if (!selected.recordId) return;
-    if (selected.recordId !== recordId) return;
+  const form = useMemo(() => {
+    if (draftForm) return draftForm;
+    if (!selected.recordId) return null;
+    if (selected.recordId !== recordId) return null;
 
-    setForm({
+    return {
       recordId: selected.recordId ?? "",
       nursingId: selected.nursingId ?? "",
       visitId: selected.visitId ?? "",
@@ -60,8 +61,8 @@ const RecordEdit = () => {
       departmentName: selected.departmentName ?? "",
       heightCm: selected.heightCm ?? "",
       weightKg: selected.weightKg ?? "",
-    });
-  }, [selected, recordId]);
+    };
+  }, [draftForm, recordId, selected]);
 
   useEffect(() => {
     if (!updateSuccess) return;
@@ -120,7 +121,7 @@ const RecordEdit = () => {
       <RecordForm
         mode="edit"
         form={form}
-        onChange={setForm}
+        onChange={setDraftForm}
         onSubmit={handleSubmit}
         loading={loading}
       />

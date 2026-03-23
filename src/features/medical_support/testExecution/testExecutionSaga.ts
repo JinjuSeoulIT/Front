@@ -1,9 +1,9 @@
 import { call, put, takeLatest } from "redux-saga/effects";
 import type { SagaIterator } from "redux-saga";
 import type { PayloadAction } from "@reduxjs/toolkit";
-import type { TestExecution } from "@/features/medical_support/testexecution/testexecutionType";
-import * as api from "@/lib/medical_support/testexecutionApi";
-import { TestExecutionActions as actions } from "./testexecutionSlice";
+import type { TestExecution } from "@/features/medical_support/testExecution/testExecutionType";
+import * as api from "@/lib/medical_support/testExecutionApi";
+import { TestExecutionActions as actions } from "./testExecutionSlice";
 
 const getErrorMessage = (err: unknown, fallback: string) => {
   if (err instanceof Error && err.message) {
