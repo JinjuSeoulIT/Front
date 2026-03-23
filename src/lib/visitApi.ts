@@ -1,3 +1,5 @@
+import { CLINICAL_API_BASE } from "./clinicalApiBase";
+
 export type ApiEnvelope<T> = {
   success?: boolean;
   message?: string | null;
@@ -17,9 +19,6 @@ export type ClinicalRes = {
   clinicalAt?: string | null;
   createdAt?: string | null;
 };
-
-const CLINICAL_API_BASE =
-  process.env.NEXT_PUBLIC_CLINICAL_API_BASE_URL ?? "http://192.168.1.70:8090";
 
 function formatBackendDateTime(v: unknown): string | null {
   if (v == null) return null;
@@ -75,8 +74,7 @@ export function isNetworkError(e: unknown): boolean {
 }
 
 export function clinicalConnectionMessage(): string {
-  const base = process.env.NEXT_PUBLIC_CLINICAL_API_BASE_URL ?? "http://localhost:8090";
-  return `진료 서버에 연결할 수 없습니다. hospital-clinical 백엔드(${base})가 실행 중인지 확인해 주세요.`;
+  return `진료 서버에 연결할 수 없습니다. hospital-clinical 백엔드(${CLINICAL_API_BASE})가 실행 중인지 확인해 주세요.`;
 }
 
 export async function createClinicalApi(patientId: number): Promise<ClinicalRes> {
