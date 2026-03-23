@@ -25,13 +25,13 @@ import DeleteOutlineOutlinedIcon from "@mui/icons-material/DeleteOutlineOutlined
 import BlockOutlinedIcon from "@mui/icons-material/BlockOutlined";
 import CheckCircleOutlineOutlinedIcon from "@mui/icons-material/CheckCircleOutlineOutlined";
 
-import type { PatientRestriction } from "@/lib/restrictionApi";
+import type { PatientRestriction } from "@/lib/patient/restrictionApi";
 import {
   createPatientRestrictionApi,
   deletePatientRestrictionApi,
   fetchPatientRestrictionsApi,
   updatePatientRestrictionApi,
-} from "@/lib/restrictionApi";
+} from "@/lib/patient/restrictionApi";
 import { fetchCodesApi } from "@/lib/codeApi";
 
 type RestrictionFormState = {

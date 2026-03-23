@@ -1,7 +1,8 @@
-"use client";
+﻿"use client";
 
 import * as React from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   Avatar,
   Box,
@@ -10,158 +11,494 @@ import {
   CardContent,
   Chip,
   Divider,
-  MenuItem,
+  InputAdornment,
+  IconButton,
+  Pagination,
   Stack,
   TextField,
   Typography,
 } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import RefreshIcon from "@mui/icons-material/Refresh";
+import BlockOutlinedIcon from "@mui/icons-material/BlockOutlined";
 import { useDispatch, useSelector } from "react-redux";
 import type { RootState, AppDispatch } from "@/store/store";
-import { emergencyReceptionActions } from "@/features/EmergencyReceptions/EmergencyReceptionSlice";
+import { emergencyReceptionActions } from "@/features/EmergencyReception/EmergencyReceptionSlice";
 import type {
   EmergencyReception,
-  EmergencyReceptionSearchPayload,
-} from "@/features/EmergencyReceptions/EmergencyReceptionTypes";
-
-const SEARCH_OPTIONS: { label: string; value: EmergencyReceptionSearchPayload["type"] }[] = [
-  { label: "환자ID", value: "patientId" },
-  { label: "상태", value: "status" },
-  { label: "중증도", value: "triageLevel" },
-];
+  EmergencyReceptionForm,
+} from "@/features/EmergencyReception/EmergencyReceptionTypes";
+import type { Patient } from "@/features/patients/patientTypes";
+import { fetchPatientsApi, searchPatientsApi } from "@/lib/patient/patientApi";
 
 const statusLabel = (value?: string | null) => {
-  switch (value) {
+  switch ((value ?? "").toUpperCase()) {
+    case "REGISTERED":
+      return "접수 완료";
     case "WAITING":
       return "대기";
     case "CALLED":
       return "호출";
+    case "TRIAGE":
+      return "중증도분류";
     case "IN_PROGRESS":
       return "진행중";
     case "COMPLETED":
       return "완료";
     case "PAYMENT_WAIT":
       return "수납대기";
+    case "OBSERVATION":
+      return "관찰중";
     case "ON_HOLD":
       return "보류";
     case "CANCELED":
       return "취소";
     case "INACTIVE":
       return "비활성";
+    case "TRANSFERRED":
+      return "전원";
     default:
       return value ?? "-";
   }
 };
 
-type EmergencyReceptionListProps = {
-  initialSearchType?: EmergencyReceptionSearchPayload["type"];
-  initialKeyword?: string;
-  autoSearch?: boolean;
+const normalizeEmergencyStatus = (value?: string | null) => {
+  if (!value) return value;
+  const raw = value.trim();
+  const upper = raw.toUpperCase();
+
+  const map: Record<string, string> = {
+    REGISTERED: "REGISTERED",
+    WAITING: "WAITING",
+    CALLED: "CALLED",
+    TRIAGE: "TRIAGE",
+    IN_PROGRESS: "IN_PROGRESS",
+    COMPLETED: "COMPLETED",
+    PAYMENT_WAIT: "PAYMENT_WAIT",
+    OBSERVATION: "OBSERVATION",
+    ON_HOLD: "ON_HOLD",
+    CANCELED: "CANCELED",
+    CANCELLED: "CANCELED",
+    INACTIVE: "INACTIVE",
+    TRANSFERRED: "TRANSFERRED",
+    "접수완료": "REGISTERED",
+    "접수 완료": "REGISTERED",
+    "대기": "WAITING",
+    "호출": "CALLED",
+    "중증도분류": "TRIAGE",
+    "진행중": "IN_PROGRESS",
+    "완료": "COMPLETED",
+    "취소": "CANCELED",
+    "비활성": "INACTIVE",
+    "전원": "TRANSFERRED",
+  };
+
+  return map[upper] ?? map[raw] ?? raw;
 };
 
-export default function EmergencyReceptionList({
-  initialSearchType = "patientId",
-  initialKeyword = "",
-  autoSearch = false,
-}: EmergencyReceptionListProps) {
+const formatDateTime = (value?: string | null) => {
+  if (!value) return "-";
+  return value.replace("T", " ").slice(0, 16);
+};
+
+const summarizeOneLine = (value?: string | null, max = 18) => {
+  const text = (value ?? "").replace(/\s+/g, " ").trim();
+  if (!text) return "-";
+  if (text.length <= max) return text;
+  return `${text.slice(0, max)}...`;
+};
+
+const ITEMS_PER_PAGE = 10;
+
+export default function EmergencyReceptionList() {
+  const router = useRouter();
   const dispatch = useDispatch<AppDispatch>();
   const { list, loading, error, selected } = useSelector(
     (s: RootState) => s.emergencyReceptions
   );
 
-  const [searchType, setSearchType] = React.useState<
-    EmergencyReceptionSearchPayload["type"]
-  >(initialSearchType);
-  const [keyword, setKeyword] = React.useState(initialKeyword);
+  const [keyword, setKeyword] = React.useState("");
+  const [patientSuggestions, setPatientSuggestions] = React.useState<Patient[]>([]);
+  const [openSuggestion, setOpenSuggestion] = React.useState(false);
+  const [patientSearchResultCount, setPatientSearchResultCount] = React.useState<number | null>(
+    null
+  );
+  const [patientNameById, setPatientNameById] = React.useState<Record<number, string>>({});
+  const [page, setPage] = React.useState(1);
 
   React.useEffect(() => {
-    if (autoSearch && initialKeyword.trim()) {
-      dispatch(
-        emergencyReceptionActions.searchEmergencyReceptionsRequest({
-          type: initialSearchType,
-          keyword: initialKeyword.trim(),
-        })
-      );
-      return;
-    }
     dispatch(emergencyReceptionActions.fetchEmergencyReceptionsRequest());
-  }, [dispatch, autoSearch, initialKeyword, initialSearchType]);
+  }, [dispatch]);
 
   React.useEffect(() => {
     if (!list.length) return;
     if (selected) {
-      const still = list.find((p) => p.receptionId === selected.receptionId);
+      const still = list.find((item) => item.receptionId === selected.receptionId);
       if (still) return;
     }
     dispatch(emergencyReceptionActions.fetchEmergencyReceptionSuccess(list[0]));
   }, [list, selected, dispatch]);
 
+  React.useEffect(() => {
+    let active = true;
+    const loadPatients = async () => {
+      try {
+        const patients = await fetchPatientsApi();
+        if (!active) return;
+
+        const byId = patients.reduce<Record<number, string>>((acc, item: Patient) => {
+          if (item.patientId && item.name?.trim()) {
+            acc[item.patientId] = item.name.trim();
+          }
+          return acc;
+        }, {});
+
+        setPatientNameById(byId);
+      } catch {
+        if (!active) return;
+        setPatientNameById({});
+      }
+    };
+
+    void loadPatients();
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const openCreateWithPatient = React.useCallback(
+    (patient: Patient) => {
+      if (!patient.patientId) return;
+      const patientName = patient.name?.trim() ?? "";
+      const params = new URLSearchParams({
+        patientId: String(patient.patientId),
+        patientName,
+      });
+      router.push(`/reception/emergency/create?${params.toString()}`);
+    },
+    [router]
+  );
+
   const onSearch = () => {
     const kw = keyword.trim();
-    if (!kw) return alert("검색어는 필수입니다.");
+    if (!kw) return alert("검색어를 입력해주세요.");
+    setPage(1);
+
+    const run = async () => {
+      try {
+        const patients = await searchPatientsApi("name", kw);
+        setPatientSearchResultCount(patients.length);
+
+        if (patients.length === 0) {
+          setPatientSuggestions([]);
+          setOpenSuggestion(false);
+          return;
+        }
+
+        if (patients.length === 1 && patients[0]?.patientId) {
+          const single = patients[0];
+          const nextKeyword = single.name?.trim() ?? kw;
+          setKeyword(nextKeyword);
+          setPatientSuggestions([]);
+          setOpenSuggestion(false);
+          openCreateWithPatient(single);
+          return;
+        }
+
+        const suggestions = patients.slice(0, 8);
+        setPatientSuggestions(suggestions);
+        setOpenSuggestion(suggestions.length > 0);
+      } catch {
+        setPatientSearchResultCount(null);
+        setPatientSuggestions([]);
+        setOpenSuggestion(false);
+      }
+    };
+
+    void run();
+  };
+
+  const onReset = () => {
+    setPage(1);
+    setKeyword("");
+    setPatientSuggestions([]);
+    setOpenSuggestion(false);
+    setPatientSearchResultCount(null);
+  };
+
+  const onSelect = (item: EmergencyReception) => {
+    dispatch(emergencyReceptionActions.fetchEmergencyReceptionSuccess(item));
+  };
+
+  React.useEffect(() => {
+    const kw = keyword.trim();
+    if (!kw) {
+      setPatientSuggestions([]);
+      setOpenSuggestion(false);
+      return;
+    }
+
+    let active = true;
+    const timer = window.setTimeout(async () => {
+      try {
+        const byName = await searchPatientsApi("name", kw);
+        if (!active) return;
+        setPatientSuggestions(byName.slice(0, 8));
+        setOpenSuggestion(byName.length > 0);
+      } catch {
+        if (!active) return;
+        setPatientSuggestions([]);
+        setOpenSuggestion(false);
+      }
+    }, 250);
+
+    return () => {
+      active = false;
+      window.clearTimeout(timer);
+    };
+  }, [keyword]);
+
+  const onPickPatientSuggestion = (patient: Patient) => {
+    if (!patient.patientId) return;
+    const nextKeyword = patient.name?.trim() ?? "";
+    setPage(1);
+    setKeyword(nextKeyword);
+    setPatientSuggestions([]);
+    setOpenSuggestion(false);
+    setPatientSearchResultCount(1);
+    openCreateWithPatient(patient);
+  };
+
+  const onCancelEmergencyReceptionItem = (item: EmergencyReception) => {
+    if (normalizeEmergencyStatus(item.status) === "CANCELED") return;
+    const ok = window.confirm("응급 접수를 취소하시겠습니까?");
+    if (!ok) return;
+
+    const payload: EmergencyReceptionForm = {
+      receptionNo: item.receptionNo,
+      patientId: item.patientId,
+      departmentId: item.departmentId,
+      doctorId: item.doctorId ?? null,
+      scheduledAt: item.scheduledAt ?? null,
+      arrivedAt: item.arrivedAt ?? null,
+      status: "CANCELED",
+      note: item.note ?? null,
+      triageLevel: item.triageLevel,
+      chiefComplaint: item.chiefComplaint,
+      vitalTemp: item.vitalTemp ?? null,
+      vitalBpSystolic: item.vitalBpSystolic ?? null,
+      vitalBpDiastolic: item.vitalBpDiastolic ?? null,
+      vitalHr: item.vitalHr ?? null,
+      vitalRr: item.vitalRr ?? null,
+      vitalSpo2: item.vitalSpo2 ?? null,
+      arrivalMode: item.arrivalMode ?? null,
+      triageNote: item.triageNote ?? null,
+    };
+
     dispatch(
-      emergencyReceptionActions.searchEmergencyReceptionsRequest({
-        type: searchType,
-        keyword: kw,
+      emergencyReceptionActions.updateEmergencyReceptionRequest({
+        receptionId: String(item.receptionId),
+        form: payload,
       })
     );
   };
 
-  const onReset = () => {
-    setKeyword("");
-    setSearchType("patientId");
-    dispatch(emergencyReceptionActions.fetchEmergencyReceptionsRequest());
-  };
+  const baseVisibleList = React.useMemo(
+    () => list.filter((item) => normalizeEmergencyStatus(item.status) !== "CANCELED"),
+    [list]
+  );
 
-  const onSelect = (p: EmergencyReception) => {
-    dispatch(emergencyReceptionActions.fetchEmergencyReceptionSuccess(p));
-  };
+  const visibleList = baseVisibleList;
+  const totalCount = visibleList.length;
+  const totalPages = Math.max(1, Math.ceil(totalCount / ITEMS_PER_PAGE));
+  const pagedList = React.useMemo(() => {
+    const start = (page - 1) * ITEMS_PER_PAGE;
+    return visibleList.slice(start, start + ITEMS_PER_PAGE);
+  }, [visibleList, page]);
+  React.useEffect(() => {
+    setPage((prev) => Math.min(prev, totalPages));
+  }, [totalPages]);
 
-  const primary = selected ?? list[0];
+  const primary =
+    (selected && pagedList.find((item) => item.receptionId === selected.receptionId)) ||
+    pagedList[0] ||
+    visibleList[0] ||
+    null;
+
+  React.useEffect(() => {
+    if (!pagedList.length) return;
+    if (!selected || !pagedList.some((item) => item.receptionId === selected.receptionId)) {
+      dispatch(emergencyReceptionActions.fetchEmergencyReceptionSuccess(pagedList[0]));
+    }
+  }, [pagedList, selected, dispatch]);
+
+  const resolvePatientName = React.useCallback(
+    (item?: EmergencyReception | null) => {
+      if (!item) return "-";
+
+      const withName = item as EmergencyReception & {
+        patientName?: string | null;
+        name?: string | null;
+        patient?: { name?: string | null } | null;
+      };
+      const directName =
+        withName.patientName ??
+        withName.name ??
+        withName.patient?.name ??
+        "";
+
+      if (typeof directName === "string" && directName.trim()) {
+        return directName.trim();
+      }
+
+      const mappedName = item.patientId ? patientNameById[item.patientId] : "";
+      if (mappedName?.trim()) return mappedName.trim();
+
+      return `환자 ${item.patientId ?? "-"}`;
+    },
+    [patientNameById]
+  );
+  const primaryPatientName = resolvePatientName(primary);
 
   return (
     <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
       <Card
         sx={{
-          borderRadius: 3,
-          border: "1px solid #dbe5f5",
-          boxShadow: "0 12px 24px rgba(23, 52, 97, 0.12)",
+          borderRadius: 3.5,
+          border: "1px solid rgba(123, 146, 183, 0.25)",
+          background:
+            "linear-gradient(135deg, rgba(255,255,255,0.98), rgba(243,248,255,0.95) 58%, rgba(235,244,255,0.95))",
+          boxShadow: "0 14px 26px rgba(23, 52, 97, 0.12)",
+          overflow: "visible",
         }}
       >
-        <CardContent sx={{ p: 2.5 }}>
+        <CardContent sx={{ p: { xs: 2, md: 2.5 }, overflow: "visible" }}>
           <Stack direction={{ xs: "column", md: "row" }} spacing={2} alignItems={{ md: "center" }}>
-            <Typography fontWeight={800} sx={{ color: "#2b5aa9", minWidth: 110 }}>
-              응급 접수 검색
-            </Typography>
-            <TextField
-              select
-              size="small"
-              value={searchType}
-              onChange={(e) => setSearchType(e.target.value as any)}
-              sx={{ width: { xs: "100%", md: 180 } }}
-            >
-              {SEARCH_OPTIONS.map((o) => (
-                <MenuItem key={o.value} value={o.value}>
-                  {o.label}
-                </MenuItem>
-              ))}
-            </TextField>
-            <TextField
-              size="small"
-              placeholder="검색어 입력"
-              value={keyword}
-              onChange={(e) => setKeyword(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && onSearch()}
-              sx={{ width: { xs: "100%", md: 360 } }}
-            />
+            <Stack spacing={0.35} sx={{ minWidth: 120 }}>
+              <Typography fontWeight={900} sx={{ color: "#1f4f95", letterSpacing: -0.1 }}>
+                {"환자 검색"}
+              </Typography>
+              <Typography sx={{ color: "#6f819f", fontSize: 12, fontWeight: 600 }}>
+                {"이름 조회 후 바로 응급 접수 등록"}
+              </Typography>
+            </Stack>
+            <Box sx={{ width: { xs: "100%", md: 380 }, position: "relative" }}>
+              <TextField
+                size="small"
+                placeholder={"환자 이름 입력"}
+                value={keyword}
+                onChange={(e) => {
+                  setKeyword(e.target.value);
+                  setPatientSearchResultCount(null);
+                }}
+                onKeyDown={(e) => e.key === "Enter" && onSearch()}
+                onFocus={() => {
+                  if (patientSuggestions.length > 0) {
+                    setOpenSuggestion(true);
+                  }
+                }}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <SearchIcon sx={{ fontSize: 19, color: "#7f93b5" }} />
+                    </InputAdornment>
+                  ),
+                }}
+                helperText={
+                  patientSearchResultCount === null
+                    ? " "
+                    : patientSearchResultCount === 0
+                    ? "일치 환자 없음"
+                    : `검색 결과 ${patientSearchResultCount}명`
+                }
+                FormHelperTextProps={{
+                  sx: {
+                    mt: 0.65,
+                    ml: 0.25,
+                    fontWeight: 700,
+                    fontSize: 12,
+                    color: patientSearchResultCount === 0 ? "#d32f2f" : "#6b7a96",
+                  },
+                }}
+                sx={{
+                  width: "100%",
+                  "& .MuiInputBase-root": {
+                    bgcolor: "rgba(255,255,255,0.9)",
+                    borderRadius: 2.25,
+                    boxShadow: "inset 0 1px 0 rgba(255,255,255,0.75)",
+                  },
+                  "& .MuiOutlinedInput-notchedOutline": {
+                    borderColor: "rgba(79, 111, 163, 0.28)",
+                  },
+                  "& .MuiInputBase-root:hover .MuiOutlinedInput-notchedOutline": {
+                    borderColor: "rgba(43, 90, 169, 0.48)",
+                  },
+                  "& .Mui-focused .MuiOutlinedInput-notchedOutline": {
+                    borderColor: "#2b5aa9",
+                    borderWidth: 2,
+                  },
+                }}
+              />
+              {openSuggestion && patientSuggestions.length > 0 && (
+                <Card
+                  sx={{
+                    position: "absolute",
+                    top: "calc(100% + 8px)",
+                    left: 0,
+                    right: 0,
+                    zIndex: 1400,
+                    borderRadius: 2,
+                    border: "1px solid rgba(90, 121, 174, 0.24)",
+                    boxShadow: "0 14px 28px rgba(23, 52, 97, 0.2)",
+                    maxHeight: 280,
+                    overflowY: "auto",
+                  }}
+                >
+                  <Stack spacing={0}>
+                    {patientSuggestions.map((patient) => (
+                      <Button
+                        key={patient.patientId}
+                        onClick={() => onPickPatientSuggestion(patient)}
+                        sx={{
+                          justifyContent: "flex-start",
+                          textTransform: "none",
+                          px: 1.7,
+                          py: 1.1,
+                          borderRadius: 0,
+                          color: "#1f2a44",
+                          borderBottom: "1px solid #edf2fb",
+                          "&:hover": {
+                            bgcolor: "rgba(43, 90, 169, 0.08)",
+                          },
+                        }}
+                      >
+                        <Box sx={{ textAlign: "left", width: "100%" }}>
+                          <Typography fontWeight={700} noWrap>
+                            {patient.name} · {patient.gender ?? "-"} · {patient.birthDate ?? "-"}
+                          </Typography>
+                          <Typography sx={{ color: "#7b8aa9", fontSize: 12 }} noWrap>
+                            환자ID {patient.patientId} · {patient.phone ?? "-"} · {patient.patientNo ?? "-"}
+                          </Typography>
+                        </Box>
+                      </Button>
+                    ))}
+                  </Stack>
+                </Card>
+              )}
+            </Box>
             <Stack direction="row" spacing={1} sx={{ flexWrap: "wrap" }}>
               <Button
                 variant="contained"
                 startIcon={<SearchIcon />}
                 onClick={onSearch}
                 disabled={loading}
-                sx={{ bgcolor: "#2b5aa9" }}
+                sx={{
+                  px: 2.1,
+                  borderRadius: 2,
+                  bgcolor: "#2b5aa9",
+                  boxShadow: "0 8px 18px rgba(43,90,169,0.28)",
+                  "&:hover": { bgcolor: "#244e95" },
+                }}
               >
                 검색
               </Button>
@@ -170,21 +507,23 @@ export default function EmergencyReceptionList({
                 startIcon={<RefreshIcon />}
                 onClick={onReset}
                 disabled={loading}
-                sx={{ color: "#2b5aa9" }}
+                sx={{
+                  px: 1.8,
+                  borderRadius: 2,
+                  color: "#2b5aa9",
+                  borderColor: "rgba(43,90,169,0.4)",
+                  bgcolor: "rgba(255,255,255,0.85)",
+                  "&:hover": {
+                    borderColor: "#2b5aa9",
+                    bgcolor: "rgba(43,90,169,0.07)",
+                  },
+                }}
               >
                 초기화
               </Button>
-              <Button
-                variant="contained"
-                component={Link}
-                href="/reception/emergency/create"
-                sx={{ bgcolor: "#1f7a3f" }}
-              >
-                신규 응급 접수
-              </Button>
             </Stack>
             <Box sx={{ flex: 1 }} />
-            <Chip label={`전체 ${list.length}`} color="primary" />
+            <Chip label={`전체 ${totalCount}`} color="primary" />
           </Stack>
         </CardContent>
       </Card>
@@ -224,7 +563,7 @@ export default function EmergencyReceptionList({
                 </Avatar>
                 <Box textAlign="center">
                   <Typography variant="h6" fontWeight={700}>
-                    {primary ? `환자 ${primary.patientId}` : "응급 접수 미선택"}
+                    {primary ? primaryPatientName : "응급 접수 미선택"}
                   </Typography>
                   <Typography sx={{ color: "#7b8aa9", fontSize: 13 }}>
                     {primary?.receptionNo ?? "-"}
@@ -242,6 +581,21 @@ export default function EmergencyReceptionList({
                 <Stack direction="row" justifyContent="space-between">
                   <Typography sx={{ color: "#7b8aa9", fontSize: 13 }}>상태</Typography>
                   <Typography fontWeight={600}>{statusLabel(primary?.status)}</Typography>
+                </Stack>
+                <Stack direction="row" justifyContent="space-between">
+                  <Typography sx={{ color: "#7b8aa9", fontSize: 13 }}>내원 시각</Typography>
+                  <Typography fontWeight={600}>{formatDateTime(primary?.arrivedAt)}</Typography>
+                </Stack>
+                <Stack direction="row" justifyContent="space-between">
+                  <Typography sx={{ color: "#7b8aa9", fontSize: 13 }}>주호소</Typography>
+                  <Typography
+                    fontWeight={600}
+                    sx={{ maxWidth: 160 }}
+                    noWrap
+                    title={primary?.chiefComplaint ?? "-"}
+                  >
+                    {summarizeOneLine(primary?.chiefComplaint)}
+                  </Typography>
                 </Stack>
               </Stack>
 
@@ -283,16 +637,18 @@ export default function EmergencyReceptionList({
               <Stack spacing={2}>
                 <Stack direction="row" justifyContent="space-between" alignItems="center">
                   <Typography fontWeight={800}>응급 접수 목록</Typography>
-                  <Chip label={`총 ${list.length}`} size="small" color="primary" />
+                  <Chip label={`총 ${totalCount}`} size="small" color="primary" />
                 </Stack>
 
                 <Stack spacing={1}>
-                  {list.map((p) => {
-                    const isSelected = selected?.receptionId === p.receptionId;
+                  {pagedList.map((item) => {
+                    const isSelected = selected?.receptionId === item.receptionId;
+                    const patientName = resolvePatientName(item);
+
                     return (
                       <Box
-                        key={p.receptionId}
-                        onClick={() => onSelect(p)}
+                        key={item.receptionId}
+                        onClick={() => onSelect(item)}
                         sx={{
                           display: "grid",
                           gridTemplateColumns: "48px minmax(0, 1fr)",
@@ -307,24 +663,56 @@ export default function EmergencyReceptionList({
                         }}
                       >
                         <Avatar sx={{ width: 40, height: 40, bgcolor: "#ffe4e4", color: "#b42318" }}>
-                          {`T${p.triageLevel}`}
+                          {`T${item.triageLevel}`}
                         </Avatar>
-                        <Box sx={{ minWidth: 0 }}>
-                          <Typography fontWeight={700} noWrap>
-                            {p.receptionNo}
-                          </Typography>
-                          <Typography sx={{ color: "#7b8aa9", fontSize: 12 }} noWrap>
-                            환자 {p.patientId} · {statusLabel(p.status)} · {p.chiefComplaint}
-                          </Typography>
+                        <Box
+                          sx={{
+                            minWidth: 0,
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "space-between",
+                            gap: 1,
+                          }}
+                        >
+                          <Box sx={{ minWidth: 0 }}>
+                            <Typography fontWeight={700} noWrap>
+                              {item.receptionNo}
+                            </Typography>
+                            <Typography sx={{ color: "#7b8aa9", fontSize: 12 }} noWrap>
+                              {patientName} · {statusLabel(item.status)} · {item.chiefComplaint ?? "-"}
+                            </Typography>
+                          </Box>
+                          <IconButton
+                            size="small"
+                            color="warning"
+                            disabled={loading || normalizeEmergencyStatus(item.status) === "CANCELED"}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onCancelEmergencyReceptionItem(item);
+                            }}
+                          >
+                            <BlockOutlinedIcon fontSize="small" />
+                          </IconButton>
                         </Box>
                       </Box>
                     );
                   })}
 
-                  {list.length === 0 && (
+                  {visibleList.length === 0 && (
                     <Typography color="#7b8aa9">조회된 응급 접수가 없습니다.</Typography>
                   )}
                 </Stack>
+                {visibleList.length > 0 && totalPages > 1 && (
+                  <Stack direction="row" justifyContent="center" sx={{ pt: 1 }}>
+                    <Pagination
+                      page={page}
+                      count={totalPages}
+                      onChange={(_, value) => setPage(value)}
+                      color="primary"
+                      size="small"
+                    />
+                  </Stack>
+                )}
               </Stack>
             </CardContent>
           </Card>

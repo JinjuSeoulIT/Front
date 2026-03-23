@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import * as React from "react";
 import Link from "next/link";
@@ -55,9 +55,9 @@ const legacyPathMap: Record<string, string> = {
 
   // reception legacy -> current routes
   "/receptions": "/reception/outpatient/list",
-  "/reservations": "/reception/appointment/list",
+  "/reservations": "/reception/reservation/list",
   "/emergency-receptions": "/reception/emergency/list",
-  "/inpatient-receptions": "/reception/admission/list",
+  "/inpatient-receptions": "/reception/inpatient/list",
   "/receptions/canceled": "/reception/dashboard",
   "/reception/edi-items": "/reception/dashboard",
 

@@ -7,8 +7,19 @@ export interface ApiResponse<T> {
   result: T;
 }
 
+/**
+ 결제 수단 타입 정의
+ */
+export type PaymentMethod = "CASH" | "CARD" | "TRANSFER";
+
+const baseURL =
+  typeof window !== "undefined" &&
+  window.location.hostname !== "localhost"
+    ? `http://${window.location.hostname}:8081`
+    : "http://localhost:8081";
+
 const api = axios.create({
-  baseURL: "",
+  baseURL,
 });
 
 applyAuthInterceptors(api);

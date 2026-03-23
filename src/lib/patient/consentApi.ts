@@ -178,7 +178,11 @@ export const updateConsentTypeApi = async (
 export const deactivateConsentTypeApi = async (
   code: string | number | undefined
 ): Promise<void> => {
-  const res = await api.delete<ApiResponse<void>>(`/api/consent-types/${code ?? ""}`);
+  const key = code != null && String(code).trim() !== "" ? String(code) : null;
+  if (!key) {
+    throw new Error("동의서 유형 코드가 없습니다.");
+  }
+  const res = await api.delete<ApiResponse<void>>(`/api/consent-types/${encodeURIComponent(key)}`);
   if (!res.data.success) {
     throw new Error(res.data.message || "Consent type deactivate failed");
   }

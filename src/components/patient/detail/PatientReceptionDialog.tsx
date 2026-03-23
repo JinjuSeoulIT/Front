@@ -10,6 +10,7 @@ import {
   MenuItem,
   Stack,
   TextField,
+  Typography,
 } from "@mui/material";
 import type { Department, ReceptionForm } from "./PatientDetailUtils";
 
@@ -25,6 +26,13 @@ type Props = {
 
 export default function PatientReceptionDialog(props: Props) {
   const { open, onClose, form, onFormChange, departments, saving, onSave } = props;
+  const todayDateLabel = React.useMemo(() => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, "0");
+    const day = String(now.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  }, []);
 
   const handleDeptChange = (nextDeptName: string) => {
     const nextDept = departments.find((d) => d.name === nextDeptName);
@@ -75,24 +83,24 @@ export default function PatientReceptionDialog(props: Props) {
             ))}
           </TextField>
           <TextField
-            select
+            InputProps={{ readOnly: true }}
             label="내원유형"
-            value={form.visitType}
-            onChange={(e) => onFormChange((prev) => ({ ...prev, visitType: e.target.value }))}
+            value="외래"
             fullWidth
-          >
-            <MenuItem value="OUTPATIENT">외래</MenuItem>
-            <MenuItem value="EMERGENCY">응급</MenuItem>
-            <MenuItem value="INPATIENT">입원</MenuItem>
-          </TextField>
+            helperText="접수 등록은 외래 접수만 지원합니다."
+          />
           <TextField
-            label="내원 일시(선택)"
-            type="datetime-local"
+            label="내원 시간(선택)"
+            type="time"
             value={form.arrivedAt}
             onChange={(e) => onFormChange((prev) => ({ ...prev, arrivedAt: e.target.value }))}
+            inputProps={{ step: 60 }}
             InputLabelProps={{ shrink: true }}
             fullWidth
           />
+          <Typography variant="caption" color="text.secondary" sx={{ mt: -1 }}>
+            적용 날짜: {todayDateLabel} (오늘)
+          </Typography>
           <TextField
             label="접수 메모(선택)"
             value={form.note}
