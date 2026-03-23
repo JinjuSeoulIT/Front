@@ -1,4 +1,4 @@
-import { call, put, takeLatest } from "redux-saga/effects";
+﻿import { call, put, takeLatest } from "redux-saga/effects";
 import type { PayloadAction } from "@reduxjs/toolkit";
 import { insuranceActions as actions } from "./insuranceSlice";
 import type {
@@ -6,7 +6,7 @@ import type {
   InsuranceCreateReq,
   InsuranceUpdateReq,
 } from "./insuranceTypes";
-import * as api from "../../lib/patient/insuranceApi";
+import * as api from "../../lib/insuranceApi";
 
 function* fetchInsuranceSaga(action: PayloadAction<{ patientId: number }>) {
   try {
