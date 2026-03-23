@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
@@ -8,7 +8,7 @@ import type { PatientItem } from "@/features/staff/staff.types";
 import MedicalQuickMenu from "./staffQuickMenu";
 import EmployeeCommonDashboard from "./staffDashboard";
 import MedicalSummaryCards from "./staffStateCards";
-import { receptionActions } from "@/features/Receptions/ReceptionSlice";
+import { receptionActions } from "@/features/Reception/ReceptionSlice";
 
 const MedicalMainDashboard = () => {
   const dispatch = useDispatch<AppDispatch>();
