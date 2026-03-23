@@ -95,12 +95,6 @@ export default function MainLayout({
     ? SIDEBAR_COLLAPSED_W
     : SIDEBAR_OPEN_W;
 
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = React.useState(false);
-  const [isSidebarHovered, setIsSidebarHovered] = React.useState(false);
-
-  const sidebarWidth = isSidebarCollapsed
-    ? SIDEBAR_COLLAPSED_W
-    : SIDEBAR_OPEN_W;
 
   return (
     <Box
