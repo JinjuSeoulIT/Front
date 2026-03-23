@@ -1,14 +1,8 @@
-"use client";
-
-import MainLayout from "@/components/layout/MainLayout";
-import RecordList from "@/components/record/RecordList";
+import RecordList from "@/components/medical_support/record/RecordList";
 
 
-const RecordPage = () => {
-  return (
-  
-      <RecordList />
-  );
+const RecordsPage = () => {
+  return <main><RecordList /></main>;
 };
 
-export default RecordPage;
+export default RecordsPage;

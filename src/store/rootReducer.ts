@@ -5,9 +5,14 @@ import emergencyReceptionsReducer from "@/features/EmergencyReception/EmergencyR
 import insuranceReducer from "@/features/insurance/insuranceSlice";
 import inpatientReceptionsReducer from "@/features/InpatientReception/InpatientReceptionSlice";
 import patientsReducer from "@/features/patients/patientSlice";
-import recordsReducer from "@/features/Record/recordSlice";
+import recordsReducer from "@/features/medical_support/record/recordSlice";
+import testexecutionsReducer from "@/features/medical_support/testExecution/testExecutionSlice";
 import receptionsReducer from "@/features/Reception/ReceptionSlice";
 import reservationsReducer from "@/features/Reservations/ReservationSlice";
+import employeeNurseReducer from "@/features/staff/nurse/nurseSlice"
+import employeedoctorReducer from "@/features/staff/doctor/doctorSlice"
+import employeeBasiclnfoReducer from "@/features/staff/Basiclnfo/BasiclnfoSlict"
+import receptionReducer from "@/features/staff/reception/receptionSlice"
 
 const rootReducer = combineReducers({
   consent: consentReducer,
@@ -17,8 +22,13 @@ const rootReducer = combineReducers({
   inpatientReceptions: inpatientReceptionsReducer,
   patients: patientsReducer,
   records: recordsReducer,
+  testexecutions: testexecutionsReducer,
   receptions: receptionsReducer,
   reservations: reservationsReducer,
+  nurse: employeeNurseReducer,
+  doctor :employeedoctorReducer,
+  staff: employeeBasiclnfoReducer,
+  reception: receptionReducer,
 });
 
 export type RootState = ReturnType<typeof rootReducer>;
