@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
@@ -13,8 +13,8 @@ import {
 } from "@mui/material";
 import { useDispatch, useSelector } from "react-redux";
 import type { RootState, AppDispatch } from "@/store/store";
-import { receptionActions } from "@/features/Receptions/ReceptionSlice";
-import type { Reception } from "@/features/Receptions/ReceptionTypes";
+import { receptionActions } from "@/features/Reception/ReceptionSlice";
+import type { Reception } from "@/features/Reception/ReceptionTypes";
 
 type Props = {
   title: string;

@@ -4,7 +4,7 @@ import type {
   EmergencyReception,
   EmergencyReceptionForm,
   EmergencyReceptionSearchPayload,
-} from "@/features/EmergencyReceptions/EmergencyReceptionTypes";
+} from "@/features/EmergencyReception/EmergencyReceptionTypes";
 
 const api = axios.create({
   baseURL: process.env.NEXT_PUBLIC_RECEPTION_API_BASE_URL ?? "http://192.168.1.55:8283",
@@ -57,12 +57,41 @@ export const updateEmergencyReceptionApi = async (
   receptionId: string,
   form: EmergencyReceptionForm
 ): Promise<void> => {
-  const res = await api.put<ApiResponse<void>>(
-    `/api/emergency-receptions/${receptionId}`,
-    form
-  );
-  if (!res.data.success) {
-    throw new Error(res.data.message || "Update failed");
+  try {
+    const res = await api.put<ApiResponse<void>>(
+      `/api/emergency-receptions/${receptionId}`,
+      form
+    );
+    if (!res.data.success) {
+      throw new Error(res.data.message || "Update failed");
+    }
+  } catch (err) {
+    const nextStatus = (form.status ?? "").trim().toUpperCase();
+    const isCancelStatus = nextStatus === "CANCELED" || nextStatus === "CANCELLED";
+
+    // Fallback to generic reception status API so cancel works even without emergency detail row.
+    if (isCancelStatus) {
+      try {
+        const fallback = await api.patch<ApiResponse<unknown> | unknown>(
+          `/api/receptions/${receptionId}/status`,
+          {
+            status: "CANCELLED",
+            reasonText: form.note?.trim() || undefined,
+          }
+        );
+        const maybeWrapped = fallback.data as ApiResponse<unknown> | undefined;
+        if (maybeWrapped && typeof maybeWrapped === "object" && "success" in maybeWrapped) {
+          if (!maybeWrapped.success) {
+            throw new Error(maybeWrapped.message || "Cancel failed");
+          }
+        }
+        return;
+      } catch (fallbackErr) {
+        throw new Error(toApiErrorMessage(fallbackErr, "Cancel failed"));
+      }
+    }
+
+    throw new Error(toApiErrorMessage(err, "Update failed"));
   }
 };
 

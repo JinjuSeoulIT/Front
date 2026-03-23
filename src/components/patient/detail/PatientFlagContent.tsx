@@ -25,13 +25,13 @@ import DeleteOutlineOutlinedIcon from "@mui/icons-material/DeleteOutlineOutlined
 import BlockOutlinedIcon from "@mui/icons-material/BlockOutlined";
 import CheckCircleOutlineOutlinedIcon from "@mui/icons-material/CheckCircleOutlineOutlined";
 
-import type { PatientFlag } from "@/lib/flagApi";
+import type { PatientFlag } from "@/lib/patient/flagApi";
 import {
   createPatientFlagApi,
   deletePatientFlagApi,
   fetchPatientFlagsApi,
   updatePatientFlagApi,
-} from "@/lib/flagApi";
+} from "@/lib/patient/flagApi";
 import { fetchCodesApi } from "@/lib/codeApi";
 
 type FlagFormState = {

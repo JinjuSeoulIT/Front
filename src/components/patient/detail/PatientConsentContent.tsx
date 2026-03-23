@@ -12,7 +12,7 @@ import {
   type ConsentLatest,
   type ConsentType,
   type ConsentWithdrawHistory,
-} from "@/lib/consentApi";
+} from "@/lib/patient/consentApi";
 
 import { useDispatch, useSelector } from "react-redux";
 import type { RootState, AppDispatch } from "@/store/store";
@@ -204,7 +204,7 @@ export default function PatientConsentContent({ patientId, onClose }: Props) {
           sortOrder: sortOrder ? Number(sortOrder) : undefined,
         });
       } else if (editingType) {
-        await updateConsentTypeApi(editingType.id, {
+        await updateConsentTypeApi(editingType.code, {
           code,
           name,
           sortOrder: sortOrder ? Number(sortOrder) : undefined,
@@ -221,10 +221,25 @@ export default function PatientConsentContent({ patientId, onClose }: Props) {
   const onDeactivateType = async (item: ConsentType) => {
     if (!confirm("해당 유형을 비활성 처리할까요?")) return;
     try {
-      await deactivateConsentTypeApi(item.id);
+      await deactivateConsentTypeApi(item.code);
       await loadConsentTypes();
     } catch (err) {
       setTypeError(err instanceof Error ? err.message : "동의서 유형 비활성 실패");
+    }
+  };
+
+  const onActivateType = async (item: ConsentType) => {
+    if (!confirm("해당 유형을 다시 활성화할까요?")) return;
+    try {
+      await updateConsentTypeApi(item.code, {
+        code: item.code,
+        name: item.name,
+        sortOrder: item.sortOrder,
+        isActive: true,
+      });
+      await loadConsentTypes();
+    } catch (err) {
+      setTypeError(err instanceof Error ? err.message : "동의서 유형 활성화 실패");
     }
   };
 
@@ -268,6 +283,7 @@ export default function PatientConsentContent({ patientId, onClose }: Props) {
         types={consentTypesAll}
         onEditType={onEditType}
         onDeactivateType={onDeactivateType}
+        onActivateType={onActivateType}
       />
     </>
   );

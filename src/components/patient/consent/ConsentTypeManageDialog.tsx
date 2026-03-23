@@ -21,8 +21,9 @@ import {
 } from "@mui/material";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import DeleteOutlineOutlinedIcon from "@mui/icons-material/DeleteOutlineOutlined";
+import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
 
-import type { ConsentType } from "@/lib/consentApi";
+import type { ConsentType } from "@/lib/patient/consentApi";
 import { consentTypeKey } from "./consentUtils";
 
 type TypeForm = { code: string; name: string; sortOrder: string };
@@ -42,6 +43,7 @@ type Props = {
   types: ConsentType[];
   onEditType: (t: ConsentType) => void;
   onDeactivateType: (t: ConsentType) => void;
+  onActivateType: (t: ConsentType) => void;
 };
 
 export default function ConsentTypeManageDialog(props: Props) {
@@ -57,6 +59,7 @@ export default function ConsentTypeManageDialog(props: Props) {
     types,
     onEditType,
     onDeactivateType,
+    onActivateType,
   } = props;
 
   return (
@@ -136,14 +139,25 @@ export default function ConsentTypeManageDialog(props: Props) {
                       <IconButton size="small" onClick={() => onEditType(t)}>
                         <EditOutlinedIcon fontSize="small" />
                       </IconButton>
-                      <IconButton
-                        size="small"
-                        color="warning"
-                        onClick={() => onDeactivateType(t)}
-                        disabled={!t.isActive}
-                      >
-                        <DeleteOutlineOutlinedIcon fontSize="small" />
-                      </IconButton>
+                      {t.isActive ? (
+                        <IconButton
+                          size="small"
+                          color="warning"
+                          onClick={() => onDeactivateType(t)}
+                          title="비활성화"
+                        >
+                          <DeleteOutlineOutlinedIcon fontSize="small" />
+                        </IconButton>
+                      ) : (
+                        <IconButton
+                          size="small"
+                          color="success"
+                          onClick={() => onActivateType(t)}
+                          title="활성화"
+                        >
+                          <CheckCircleOutlineIcon fontSize="small" />
+                        </IconButton>
+                      )}
                     </Stack>
                   </TableCell>
                 </TableRow>

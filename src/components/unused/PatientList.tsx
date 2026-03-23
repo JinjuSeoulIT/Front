@@ -65,9 +65,20 @@ function safe(v?: string | null) {
   return v && String(v).trim() ? v : "-";
 }
 
-function statusChipLabel(statusCode?: string | null) {
-  if (!statusCode) return "ACTIVE";
-  return statusCode;
+function patientStatusMeta(statusCode?: string | null) {
+  const code = (statusCode ?? "ACTIVE").trim().toUpperCase();
+  switch (code) {
+    case "ACTIVE":
+      return { label: "정상", color: "success" as const, variant: "filled" as const };
+    case "INACTIVE":
+      return { label: "비활성", color: "warning" as const, variant: "filled" as const };
+    case "TRANSFERRED":
+      return { label: "전원", color: "info" as const, variant: "filled" as const };
+    case "DECEASED":
+      return { label: "사망", color: "error" as const, variant: "filled" as const };
+    default:
+      return { label: code || "-", color: "default" as const, variant: "outlined" as const };
+  }
 }
 
 export default function PatientList() {
@@ -147,6 +158,7 @@ export default function PatientList() {
   };
 
   const primary = selected ?? list[0] ?? null;
+  const primaryStatusMeta = primary ? patientStatusMeta(primary.statusCode) : null;
 
   const totalCount = list.length;
   const vipCount = list.filter((p) => p.isVip).length;
@@ -336,6 +348,7 @@ export default function PatientList() {
                 <TableBody>
                   {list.map((p) => {
                     const isSelected = primary?.patientId === p.patientId;
+                    const statusMeta = patientStatusMeta(p.statusCode);
                     return (
                       <TableRow
                         key={p.patientId}
@@ -368,9 +381,9 @@ export default function PatientList() {
                         <TableCell>
                           <Chip
                             size="small"
-                            label={statusChipLabel(p.statusCode)}
-                            variant={p.statusCode === "ACTIVE" || !p.statusCode ? "filled" : "outlined"}
-                            color={p.statusCode === "INACTIVE" ? "warning" : "default"}
+                            label={statusMeta.label}
+                            variant={statusMeta.variant}
+                            color={statusMeta.color}
                           />
                         </TableCell>
                         <TableCell>
@@ -444,11 +457,12 @@ export default function PatientList() {
                 </Typography>
                 <Stack direction="row" spacing={0.5} sx={{ mt: 0.75, flexWrap: "wrap" }}>
                   {primary?.isVip && <Chip size="small" label="VIP" color="primary" />}
-                  {primary?.statusCode && (
+                  {primaryStatusMeta && (
                     <Chip
                       size="small"
-                      label={statusChipLabel(primary.statusCode)}
-                      variant="outlined"
+                      label={primaryStatusMeta.label}
+                      color={primaryStatusMeta.color}
+                      variant={primaryStatusMeta.variant}
                     />
                   )}
                   {primary?.isForeigner && (

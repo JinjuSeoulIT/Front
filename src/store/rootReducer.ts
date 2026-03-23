@@ -1,13 +1,12 @@
-﻿import { combineReducers } from "@reduxjs/toolkit";
+import { combineReducers } from "@reduxjs/toolkit";
 import consentReducer from "@/features/consent/consentSlice";
 import billingReducer from "@/features/billing/billingSlice";
-import emergencyReceptionsReducer from "@/features/EmergencyReceptions/EmergencyReceptionSlice";
+import emergencyReceptionsReducer from "@/features/EmergencyReception/EmergencyReceptionSlice";
 import insuranceReducer from "@/features/insurance/insuranceSlice";
-import inpatientReceptionsReducer from "@/features/InpatientReceptions/InpatientReceptionSlice";
+import inpatientReceptionsReducer from "@/features/InpatientReception/InpatientReceptionSlice";
 import patientsReducer from "@/features/patients/patientSlice";
-import recordsReducer from "@/features/medical_support/record/recordSlice";
-import testexecutionsReducer from "@/features/medical_support/testexecution/testexecutionSlice";
-import receptionsReducer from "@/features/Receptions/ReceptionSlice";
+import recordsReducer from "@/features/Record/recordSlice";
+import receptionsReducer from "@/features/Reception/ReceptionSlice";
 import reservationsReducer from "@/features/Reservations/ReservationSlice";
 
 const rootReducer = combineReducers({
@@ -18,7 +17,6 @@ const rootReducer = combineReducers({
   inpatientReceptions: inpatientReceptionsReducer,
   patients: patientsReducer,
   records: recordsReducer,
-  testexecutions: testexecutionsReducer,
   receptions: receptionsReducer,
   reservations: reservationsReducer,
 });

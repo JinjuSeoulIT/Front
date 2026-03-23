@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import * as React from "react";
 import {
@@ -18,10 +18,10 @@ import {
 } from "@mui/material";
 import LocalHospitalOutlinedIcon from "@mui/icons-material/LocalHospitalOutlined";
 import EditNoteRoundedIcon from "@mui/icons-material/EditNoteRounded";
-import type { ReceptionForm as ReceptionFormPayload } from "@/features/Receptions/ReceptionTypes";
-import { fetchReceptionsApi } from "@/lib/receptionsCrudApi";
-import { buildNextReceptionNumber } from "@/lib/receptionNumber";
-import { searchPatientsApi } from "@/lib/patientApi";
+import type { ReceptionForm as ReceptionFormPayload } from "@/features/Reception/ReceptionTypes";
+import { fetchReceptionsApi } from "@/lib/reception/receptionApi";
+import { buildNextReceptionNumber } from "@/lib/reception/receptionNumber";
+import { searchPatientsApi } from "@/lib/reception/patientApi";
 import type { Patient } from "@/features/patients/patientTypes";
 
 type ReceptionFormState = {
@@ -50,17 +50,17 @@ type ReceptionFormProps = {
 };
 
 const statusOptions = [
-  { value: "WAITING", label: "대기" },
-  { value: "CALLED", label: "호출" },
+  { value: "WAITING", label: "?��? },
+  { value: "CALLED", label: "?�출" },
   { value: "ON_HOLD", label: "보류" },
   { value: "CANCELED", label: "취소" },
 ];
 
 const departments = [
-  { id: 1, name: "내과", doctor: "송태민", doctorId: 1 },
-  { id: 2, name: "외과", doctor: "이현석", doctorId: 2 },
-  { id: 3, name: "정형외과", doctor: "성숙희", doctorId: 3 },
-  { id: 4, name: "신경외과", doctor: "최효정", doctorId: 4 },
+  { id: 1, name: "?�과", doctor: "?�태�?, doctorId: 1 },
+  { id: 2, name: "?�과", doctor: "?�현??, doctorId: 2 },
+  { id: 3, name: "?�형?�과", doctor: "?�숙??, doctorId: 3 },
+  { id: 4, name: "?�경?�과", doctor: "최효??, doctorId: 4 },
 ];
 
 const doctors = departments.map((d) => ({
@@ -180,7 +180,7 @@ export default function ReceptionForm({
           startSequence: 1,
         });
         setForm((prev) => ({ ...prev, receptionNo: fallback }));
-        setNumberError(err instanceof Error ? err.message : "자동 채번에 실패했습니다.");
+        setNumberError(err instanceof Error ? err.message : "?�동 채번???�패?�습?�다.");
       } finally {
         if (mounted) {
           setNumberLoading(false);
@@ -199,7 +199,7 @@ export default function ReceptionForm({
     if (!form.patientName.trim()) return;
     if (!form.departmentName.trim()) return;
     if (!isEditMode && !form.patientId) {
-      alert("등록된 환자 목록에서 환자를 선택해 주세요.");
+      alert("?�록???�자 목록?�서 ?�자�??�택??주세??");
       return;
     }
 
@@ -261,7 +261,7 @@ export default function ReceptionForm({
               {title}
             </Typography>
             <Typography color="text.secondary" fontWeight={700}>
-              환자 기본 정보와 상태를 확인하고 접수를 완료하세요.
+              ?�자 기본 ?�보?� ?�태�??�인?�고 ?�수�??�료?�세??
             </Typography>
           </Stack>
           <Box
@@ -274,10 +274,10 @@ export default function ReceptionForm({
             }}
           >
             <Typography sx={{ fontSize: 12, color: "#61708f", fontWeight: 700 }}>
-              처리 상태
+              처리 ?�태
             </Typography>
             <Typography sx={{ fontSize: 14, color: "#2b5aa9", fontWeight: 900 }}>
-              {isEditMode ? "접수 수정 진행" : "신규 접수 준비"}
+              {isEditMode ? "?�수 ?�정 진행" : "?�규 ?�수 준�?}
             </Typography>
           </Box>
         </Stack>
@@ -294,22 +294,22 @@ export default function ReceptionForm({
           }}
         >
           <TextField
-            label="접수번호"
+            label="?�수번호"
             value={form.receptionNo}
             required
             fullWidth
             InputProps={{ readOnly: true }}
             helperText={
               numberError
-                ? "자동 채번 조회에 실패해 기본 번호를 넣었습니다."
-                : "접수번호는 자동 생성됩니다."
+                ? "?�동 채번 조회???�패??기본 번호�??�었?�니??"
+                : "?�수번호???�동 ?�성?�니??"
             }
             sx={fieldSx}
           />
           <Stack direction={{ xs: "column", sm: "row" }} spacing={1}>
             <Box sx={{ position: "relative", width: "100%" }}>
               <TextField
-                label="환자 이름"
+                label="?�자 ?�름"
                 value={form.patientName}
                 onChange={(e) =>
                   setForm((prev) => ({
@@ -321,7 +321,7 @@ export default function ReceptionForm({
                 required
                 fullWidth
                 helperText={
-                  isEditMode ? undefined : "환자관리에 등록된 환자만 접수할 수 있습니다."
+                  isEditMode ? undefined : "?�자관리에 ?�록???�자�??�수?????�습?�다."
                 }
                 sx={fieldSx}
               />
@@ -367,7 +367,7 @@ export default function ReceptionForm({
             </Box>
             <TextField
               select
-              label="진료과"
+              label="진료�?
               value={form.departmentName}
               onChange={(e) => {
                 const name = e.target.value;
@@ -392,7 +392,7 @@ export default function ReceptionForm({
           <Stack direction={{ xs: "column", sm: "row" }} spacing={1}>
             <TextField
               select
-              label="의사 이름"
+              label="?�사 ?�름"
               value={form.doctorName}
               onChange={(e) => {
                 const name = e.target.value;
@@ -415,15 +415,15 @@ export default function ReceptionForm({
           </Stack>
           <Stack direction={{ xs: "column", sm: "row" }} spacing={1}>
             <TextField
-              label="내원 유형"
-              value="외래"
+              label="?�원 ?�형"
+              value="?�래"
               fullWidth
               InputProps={{ readOnly: true }}
               sx={fieldSx}
             />
             <TextField
               select
-              label="상태"
+              label="?�태"
               value={form.status}
               onChange={(e) => setForm((prev) => ({ ...prev, status: e.target.value }))}
               fullWidth
@@ -440,7 +440,7 @@ export default function ReceptionForm({
             {showScheduledAt ? (
               <TextField
                 type="datetime-local"
-                label="예약 시간"
+                label="?�약 ?�간"
                 InputLabelProps={{ shrink: true }}
                 value={form.scheduledAt}
                 onChange={(e) => setForm((prev) => ({ ...prev, scheduledAt: e.target.value }))}
@@ -450,7 +450,7 @@ export default function ReceptionForm({
             ) : null}
             <TextField
               type="datetime-local"
-              label="도착 시간"
+              label="?�착 ?�간"
               InputLabelProps={{ shrink: true }}
               value={form.arrivedAt}
               onChange={(e) => setForm((prev) => ({ ...prev, arrivedAt: e.target.value }))}
@@ -522,3 +522,4 @@ export default function ReceptionForm({
     </Paper>
   );
 }
+

@@ -14,8 +14,8 @@ import {
 import RefreshOutlinedIcon from "@mui/icons-material/RefreshOutlined";
 import EventOutlinedIcon from "@mui/icons-material/EventOutlined";
 
-import type { PatientInfoHistory } from "@/lib/infoHistoryApi";
-import { fetchPatientInfoHistoryApi } from "@/lib/infoHistoryApi";
+import type { PatientInfoHistory } from "@/lib/patient/infoHistoryApi";
+import { fetchPatientInfoHistoryApi } from "@/lib/patient/infoHistoryApi";
 
 function formatDate(value?: string | null) {
   if (!value) return "-";

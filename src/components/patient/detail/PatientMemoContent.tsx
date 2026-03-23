@@ -22,13 +22,13 @@ import {
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import DeleteOutlineOutlinedIcon from "@mui/icons-material/DeleteOutlineOutlined";
 
-import type { PatientMemo } from "@/lib/memoApi";
+import type { PatientMemo } from "@/lib/patient/memoApi";
 import {
   createPatientMemoApi,
   deletePatientMemoApi,
   fetchPatientMemosApi,
   updatePatientMemoApi,
-} from "@/lib/memoApi";
+} from "@/lib/patient/memoApi";
 
 type MemoFormState = { memo: string };
 
