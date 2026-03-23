@@ -11,6 +11,8 @@ import {
   MenuItem,
   Paper,
   Select,
+  IconButton,
+  Radio,
   Stack,
   Table,
   TableBody,
@@ -21,9 +23,13 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
+import KeyboardArrowDown from "@mui/icons-material/KeyboardArrowDown";
+import KeyboardArrowUp from "@mui/icons-material/KeyboardArrowUp";
 import {
   addDiagnosisApi,
   removeDiagnosisApi,
+  reorderDiagnosesApi,
+  setDiagnosisMainApi,
   addPrescriptionApi,
   removePrescriptionApi,
   createDoctorNoteApi,
@@ -32,6 +38,7 @@ import {
   type DiagnosisRes,
   type PrescriptionRes,
 } from "@/lib/clinicalRecordApi";
+import { searchMasterDiagnosesApi, type MasterDiagnosisItem } from "@/lib/diagnosisMasterApi";
 import {
   searchDrugsForChoseongMatch,
   searchDrugsForVisit,
@@ -42,6 +49,7 @@ const DRUG_SEARCH_MIN_CHARS = 2;
 const DRUG_SEARCH_DEBOUNCE_MS = 380;
 const DRUG_SEARCH_PAGE_SIZE = 25;
 const DRUG_SEARCH_CHOSEONG_DISPLAY_MAX = 80;
+const MASTER_DIAG_DEBOUNCE_MS = 280;
 
 type DrugSuggestOption = {
   key: string;
@@ -104,6 +112,81 @@ export function ClinicalSoapCard({
   const [drugOptions, setDrugOptions] = React.useState<DrugSuggestOption[]>([]);
   const [drugLoading, setDrugLoading] = React.useState(false);
   const [drugHint, setDrugHint] = React.useState<string | null>(null);
+  const [masterInput, setMasterInput] = React.useState("");
+  const [masterOptions, setMasterOptions] = React.useState<MasterDiagnosisItem[]>([]);
+  const [masterLoading, setMasterLoading] = React.useState(false);
+
+  const sortedDiagnoses = React.useMemo(
+    () =>
+      [...diagnoses].sort(
+        (a, b) =>
+          (a.sortOrder ?? a.diagnosisId) - (b.sortOrder ?? b.diagnosisId) ||
+          a.diagnosisId - b.diagnosisId
+      ),
+    [diagnoses]
+  );
+
+  const moveDiagnosis = React.useCallback(
+    async (fromIndex: number, dir: -1 | 1) => {
+      if (visitId == null) return;
+      const toIndex = fromIndex + dir;
+      if (toIndex < 0 || toIndex >= sortedDiagnoses.length) return;
+      const next = [...sortedDiagnoses];
+      const tmp = next[fromIndex]!;
+      next[fromIndex] = next[toIndex]!;
+      next[toIndex] = tmp;
+      try {
+        await reorderDiagnosesApi(visitId, next.map((d) => d.diagnosisId));
+        onDiagnosesReload();
+      } catch (e) {
+        window.alert(e instanceof Error ? e.message : "순서 변경 실패");
+      }
+    },
+    [visitId, sortedDiagnoses, onDiagnosesReload]
+  );
+
+  const tryAddDiagnosis = React.useCallback(
+    async (code: string, name: string): Promise<boolean> => {
+      if (visitId == null) {
+        window.alert("방문을 선택한 뒤 상병을 등록할 수 있습니다.");
+        return false;
+      }
+      const c = code.trim();
+      const n = name.trim();
+      if (!c && !n) return false;
+      const addAsMain =
+        diagnoses.length === 0 || !diagnoses.some((d) => d.mainYn === "Y");
+      try {
+        await addDiagnosisApi(visitId, {
+          dxCode: c || null,
+          dxName: n || null,
+          main: addAsMain,
+        });
+        onDiagnosesReload();
+        return true;
+      } catch (e) {
+        window.alert(e instanceof Error ? e.message : "등록 실패");
+        return false;
+      }
+    },
+    [visitId, diagnoses, onDiagnosesReload]
+  );
+
+  React.useEffect(() => {
+    const t = window.setTimeout(() => {
+      void (async () => {
+        setMasterLoading(true);
+        try {
+          setMasterOptions(await searchMasterDiagnosesApi(masterInput));
+        } catch {
+          setMasterOptions([]);
+        } finally {
+          setMasterLoading(false);
+        }
+      })();
+    }, MASTER_DIAG_DEBOUNCE_MS);
+    return () => window.clearTimeout(t);
+  }, [masterInput]);
 
   React.useEffect(() => {
     if (visitId == null) {
@@ -240,30 +323,107 @@ export function ClinicalSoapCard({
         <Typography sx={{ fontWeight: 700, fontSize: 13, color: "var(--muted)", mb: 0.5 }}>
           A 상병 (Assessment)
         </Typography>
+        <Autocomplete<MasterDiagnosisItem, false, false, false>
+          size="small"
+          value={null}
+          options={masterOptions}
+          loading={masterLoading}
+          filterOptions={(opts) => opts}
+          isOptionEqualToValue={(a, b) => a.code === b.code && a.name === b.name}
+          getOptionLabel={(o) => `${o.code} ${o.name}`}
+          inputValue={masterInput}
+          onInputChange={(_, v) => setMasterInput(v)}
+          onChange={(_, v) => {
+            if (!v) return;
+            void (async () => {
+              const ok = await tryAddDiagnosis(v.code, v.name);
+              if (ok) setMasterInput("");
+            })();
+          }}
+          blurOnSelect
+          renderInput={(params) => (
+            <TextField
+              {...params}
+              label="표준 상병 검색"
+              placeholder="선택 시 목록에 바로 등록 (마스터 API 연동 시 검색)"
+            />
+          )}
+          sx={{ mb: 1.25, maxWidth: 560, "& .MuiOutlinedInput-root": { bgcolor: "#fff" } }}
+        />
         <TableContainer component={Paper} variant="outlined" sx={{ borderRadius: 1, mb: 1 }}>
           <Table size="small">
             <TableHead>
               <TableRow>
-                <TableCell>주</TableCell>
+                <TableCell align="center" sx={{ width: 76, fontWeight: 700 }}>
+                  순서
+                </TableCell>
+                <TableCell align="center" sx={{ width: 72, fontWeight: 700 }}>
+                  주진단
+                </TableCell>
                 <TableCell>상병기호</TableCell>
                 <TableCell>상병명</TableCell>
-                <TableCell width={60}></TableCell>
+                <TableCell align="center" sx={{ minWidth: 72, fontWeight: 700 }}>
+                  작업
+                </TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
-              {diagnoses.length === 0 ? (
+              {sortedDiagnoses.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={4} sx={{ color: "var(--muted)", fontSize: 13 }}>
-                    등록된 상병이 없습니다. +추가로 검색하여 등록하세요.
+                  <TableCell colSpan={5} sx={{ color: "var(--muted)", fontSize: 13 }}>
+                    등록된 상병이 없습니다. 위에서 표준 항목을 선택하거나, 마스터에 없으면 아래 직접입력 후 추가하세요.
                   </TableCell>
                 </TableRow>
               ) : (
-                diagnoses.map((d) => (
+                sortedDiagnoses.map((d, index) => (
                   <TableRow key={d.diagnosisId}>
-                    <TableCell>{d.mainYn === "Y" ? "주" : "부"}</TableCell>
+                    <TableCell align="center" sx={{ py: 0.25 }}>
+                      <Stack direction="row" spacing={0} justifyContent="center" alignItems="center">
+                        <IconButton
+                          size="small"
+                          aria-label="위로"
+                          disabled={visitId == null || index === 0}
+                          onClick={() => void moveDiagnosis(index, -1)}
+                        >
+                          <KeyboardArrowUp fontSize="small" />
+                        </IconButton>
+                        <IconButton
+                          size="small"
+                          aria-label="아래로"
+                          disabled={visitId == null || index === sortedDiagnoses.length - 1}
+                          onClick={() => void moveDiagnosis(index, 1)}
+                        >
+                          <KeyboardArrowDown fontSize="small" />
+                        </IconButton>
+                      </Stack>
+                    </TableCell>
+                    <TableCell align="center">
+                      <Radio
+                        size="small"
+                        checked={d.mainYn === "Y"}
+                        disabled={visitId == null}
+                        name={visitId != null ? `soap-main-dx-${visitId}` : "soap-main-dx-none"}
+                        onChange={() => {
+                          if (d.mainYn === "Y" || visitId == null) return;
+                          void (async () => {
+                            try {
+                              await setDiagnosisMainApi(visitId, d.diagnosisId);
+                              onDiagnosesReload();
+                            } catch (e) {
+                              window.alert(
+                                e instanceof Error ? e.message : "주진단 변경 실패"
+                              );
+                            }
+                          })();
+                        }}
+                        inputProps={{
+                          "aria-label": `주진단 ${d.dxCode ?? d.diagnosisId}`,
+                        }}
+                      />
+                    </TableCell>
                     <TableCell>{d.dxCode ?? "-"}</TableCell>
                     <TableCell>{d.dxName ?? "-"}</TableCell>
-                    <TableCell>
+                    <TableCell align="center">
                       {visitId != null && (
                         <Button
                           size="small"
@@ -287,6 +447,9 @@ export function ClinicalSoapCard({
             </TableBody>
           </Table>
         </TableContainer>
+        <Typography sx={{ fontSize: 12, color: "var(--muted)", mb: 0.5 }}>
+          첫 상병은 주진단으로 들어가고, 이후 추가분은 부상병입니다. 주진단을 바꾸려면 위 표에서 라디오를 선택하세요.
+        </Typography>
         <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1 }} flexWrap="wrap">
           <Typography sx={{ fontSize: 12, color: "var(--muted)" }}>목록에 없으면 직접입력</Typography>
           <TextField
@@ -306,20 +469,15 @@ export function ClinicalSoapCard({
           <Button
             size="small"
             variant="outlined"
-            disabled={visitId == null}
+            disabled={
+              visitId == null ||
+              (!diagnosisCodeInput.trim() && !diagnosisNameInput.trim())
+            }
             onClick={async () => {
-              if (visitId == null || (!diagnosisCodeInput.trim() && !diagnosisNameInput.trim())) return;
-              try {
-                await addDiagnosisApi(visitId, {
-                  dxCode: diagnosisCodeInput.trim() || null,
-                  dxName: diagnosisNameInput.trim() || null,
-                  main: diagnoses.length === 0,
-                });
-                onDiagnosesReload();
+              const ok = await tryAddDiagnosis(diagnosisCodeInput, diagnosisNameInput);
+              if (ok) {
                 onDiagnosisCodeInputChange("");
                 onDiagnosisNameInputChange("");
-              } catch (e) {
-                window.alert(e instanceof Error ? e.message : "등록 실패");
               }
             }}
           >

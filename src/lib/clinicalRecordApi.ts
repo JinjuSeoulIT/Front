@@ -1,5 +1,4 @@
-const CLINICAL_API_BASE =
-  process.env.NEXT_PUBLIC_CLINICAL_API_BASE_URL ?? "http://192.168.1.70:8090";
+import { CLINICAL_API_BASE } from "./clinicalApiBase";
 
 type ApiEnvelope<T> = { success?: boolean; message?: string | null; data?: T; result?: T };
 
@@ -67,6 +66,7 @@ export type DiagnosisRes = {
   dxCode?: string | null;
   dxName?: string | null;
   mainYn?: string | null;
+  sortOrder?: number | null;
 };
 
 export async function fetchDiagnosesApi(clinicalId: number): Promise<DiagnosisRes[]> {
@@ -89,6 +89,24 @@ export async function addDiagnosisApi(clinicalId: number, payload: { dxCode?: st
 export async function removeDiagnosisApi(clinicalId: number, diagnosisId: number): Promise<void> {
   const res = await fetch(`${CLINICAL_API_BASE}/api/clinicals/${clinicalId}/diagnoses/${diagnosisId}`, { method: "DELETE" });
   if (!res.ok) throw new Error("진단 삭제 실패");
+}
+
+export async function setDiagnosisMainApi(clinicalId: number, diagnosisId: number): Promise<DiagnosisRes> {
+  const res = await fetch(
+    `${CLINICAL_API_BASE}/api/clinicals/${clinicalId}/diagnoses/${diagnosisId}/main`,
+    { method: "PATCH" }
+  );
+  if (!res.ok) throw new Error((await res.json().catch(() => ({})) as { message?: string })?.message ?? "주진단 변경 실패");
+  return parseJson<DiagnosisRes>(res);
+}
+
+export async function reorderDiagnosesApi(clinicalId: number, diagnosisIds: number[]): Promise<void> {
+  const res = await fetch(`${CLINICAL_API_BASE}/api/clinicals/${clinicalId}/diagnoses/order`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ diagnosisIds }),
+  });
+  if (!res.ok) throw new Error((await res.json().catch(() => ({})) as { message?: string })?.message ?? "순서 변경 실패");
 }
 
 export type PrescriptionRes = {
