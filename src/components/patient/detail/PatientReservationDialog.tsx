@@ -73,13 +73,6 @@ export default function PatientReservationDialog({
           </TextField>
 
           <TextField
-            label="예약 ID"
-            value={form.reservationId}
-            onChange={(e) => onFormChange((prev) => ({ ...prev, reservationId: e.target.value }))}
-            fullWidth
-          />
-
-          <TextField
             label="예약 일시"
             type="datetime-local"
             value={form.scheduledAt}
@@ -89,25 +82,9 @@ export default function PatientReservationDialog({
           />
 
           <TextField
-            label="내원 일시(선택)"
-            type="datetime-local"
-            value={form.arrivalAt}
-            onChange={(e) => onFormChange((prev) => ({ ...prev, arrivalAt: e.target.value }))}
-            InputLabelProps={{ shrink: true }}
-            fullWidth
-          />
-
-          <TextField
-            label="예약 메모"
+            label="메모(선택)"
             value={form.note}
             onChange={(e) => onFormChange((prev) => ({ ...prev, note: e.target.value }))}
-            fullWidth
-          />
-
-          <TextField
-            label="접수 메모(선택)"
-            value={form.memo}
-            onChange={(e) => onFormChange((prev) => ({ ...prev, memo: e.target.value }))}
             fullWidth
           />
         </Stack>

@@ -3,11 +3,12 @@
 import * as React from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import MainLayout from "@/components/layout/MainLayout";
-import EmergencyReceptionForm from "@/components/EmergencyReceptionForm";
+
 import { useDispatch, useSelector } from "react-redux";
 import type { RootState, AppDispatch } from "@/store/store";
-import { emergencyReceptionActions } from "@/features/EmergencyReceptions/EmergencyReceptionSlice";
-import type { EmergencyReceptionForm as EmergencyReceptionFormPayload } from "@/features/EmergencyReceptions/EmergencyReceptionTypes";
+import { emergencyReceptionActions } from "@/features/EmergencyReception/EmergencyReceptionSlice";
+import type { EmergencyReceptionForm as EmergencyReceptionFormPayload } from "@/features/EmergencyReception/EmergencyReceptionTypes";
+import EmergencyReceptionForm from "@/components/reception/EmergencyReceptionForm";
 
 export default function NewEmergencyReceptionPage() {
   const router = useRouter();
@@ -16,6 +17,7 @@ export default function NewEmergencyReceptionPage() {
   const { loading, error } = useSelector((s: RootState) => s.emergencyReceptions);
   const [submitted, setSubmitted] = React.useState(false);
   const patientIdParam = (searchParams.get("patientId") ?? "").trim();
+  const patientNameParam = (searchParams.get("patientName") ?? "").trim();
 
   const onSubmit = (form: EmergencyReceptionFormPayload) => {
     dispatch(emergencyReceptionActions.createEmergencyReceptionRequest(form));
@@ -25,7 +27,7 @@ export default function NewEmergencyReceptionPage() {
   React.useEffect(() => {
     if (!submitted || loading) return;
     if (!error) {
-      router.push("/emergency-receptions");
+      router.push("/reception/emergency/list");
       return;
     }
     setSubmitted(false);
@@ -39,12 +41,14 @@ export default function NewEmergencyReceptionPage() {
         initial={{
           receptionNo: "",
           patientId: patientIdParam,
+          patientName: patientNameParam,
           departmentId: "",
           doctorId: "",
           scheduledAt: "",
           arrivedAt: "",
           status: "WAITING",
           note: "",
+          triageNote: "",
           triageLevel: "",
           chiefComplaint: "",
           vitalTemp: "",
@@ -54,13 +58,12 @@ export default function NewEmergencyReceptionPage() {
           vitalRr: "",
           vitalSpo2: "",
           arrivalMode: "WALK_IN",
-          triageNote: "",
         }}
         loading={loading}
         error={error}
         mode="create"
         onSubmit={onSubmit}
-        onCancel={() => router.push("/emergency-receptions")}
+        onCancel={() => router.push("/reception/emergency/list")}
       />
     </MainLayout>
   );

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import {
   AppBar,
@@ -8,26 +8,30 @@ import {
   IconButton,
   Stack,
   Badge,
+  Button,
 } from "@mui/material";
 import MedicalServicesOutlinedIcon from "@mui/icons-material/MedicalServicesOutlined";
 import NotificationsNoneOutlinedIcon from "@mui/icons-material/NotificationsNoneOutlined";
 import PersonOutlineOutlinedIcon from "@mui/icons-material/PersonOutlineOutlined";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-
-const ROLE_LINKS = [
-  { key: "doctor", label: "의사", href: "/doctor" },
-  { key: "nurse", label: "간호", href: "/nurse" },
-  { key: "reception", label: "접수", href: "/reception" },
-  { key: "billing", label: "수납", href: "/billing" },
-  { key: "patients", label: "환자", href: "/patient/list" },
-  { key: "staff", label: "스탭", href: "/staff" },
-  { key: "admin", label: "관리자", href: "/admin" },
-];
+import { useRouter } from "next/navigation";
+import { logoutApi } from "@/lib/auth/authApi";
+import { clearSession } from "@/lib/auth/session";
 
 export default function Navbar() {
-  const pathname = usePathname();
-  const activeRole = ROLE_LINKS.find((role) => pathname.startsWith(role.href));
+  const router = useRouter();
+
+  const handleLogout = async () => {
+    try {
+      await logoutApi();
+    } catch {
+      // 서버 로그아웃 실패 시에도 로컬 세션은 정리
+    } finally {
+      clearSession();
+      router.push("/login");
+      router.refresh();
+    }
+  };
 
   return (
     <AppBar
@@ -42,7 +46,11 @@ export default function Navbar() {
         zIndex: 1200,
       }}
     >
-      <Toolbar sx={{ minHeight: { xs: 64, md: 76 } }}>
+      <Toolbar
+        sx={{
+          minHeight: { xs: 64, md: 76 },
+        }}
+      >
         <Stack
           direction="row"
           spacing={1.5}
@@ -64,6 +72,7 @@ export default function Navbar() {
           >
             <MedicalServicesOutlinedIcon sx={{ color: "#fff" }} />
           </Box>
+
           <Box>
             <Typography
               variant="h6"
@@ -85,6 +94,7 @@ export default function Navbar() {
               <NotificationsNoneOutlinedIcon />
             </Badge>
           </IconButton>
+
           <Stack direction="row" spacing={1} alignItems="center">
             <PersonOutlineOutlinedIcon sx={{ color: "#dbe8ff" }} />
             <Typography sx={{ color: "#e8f1ff", fontSize: 14, fontWeight: 600 }}>
@@ -94,6 +104,23 @@ export default function Navbar() {
               운영팀
             </Typography>
           </Stack>
+
+          <Button
+            onClick={handleLogout}
+            variant="outlined"
+            sx={{
+              color: "#e8f1ff",
+              borderColor: "rgba(232, 241, 255, 0.45)",
+              fontWeight: 700,
+              minWidth: 88,
+              "&:hover": {
+                borderColor: "#e8f1ff",
+                backgroundColor: "rgba(255,255,255,0.08)",
+              },
+            }}
+          >
+            로그아웃
+          </Button>
         </Stack>
       </Toolbar>
     </AppBar>

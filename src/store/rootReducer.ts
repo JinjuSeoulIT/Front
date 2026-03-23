@@ -1,35 +1,34 @@
- 
+import { combineReducers } from "@reduxjs/toolkit";
 import consentReducer from "@/features/consent/consentSlice";
-import emergencyReceptionsReducer from "@/features/EmergencyReceptions/EmergencyReceptionSlice";
+import billingReducer from "@/features/billing/billingSlice";
+import emergencyReceptionsReducer from "@/features/EmergencyReception/EmergencyReceptionSlice";
 import insuranceReducer from "@/features/insurance/insuranceSlice";
-import inpatientReceptionsReducer from "@/features/InpatientReceptions/InpatientReceptionSlice";
+import inpatientReceptionsReducer from "@/features/InpatientReception/InpatientReceptionSlice";
 import patientsReducer from "@/features/patients/patientSlice";
-import recordReducer from "@/features/Record/recordSlice";
-import receptionsReducer from "@/features/Receptions/ReceptionSlice";
+import recordsReducer from "@/features/medical_support/record/recordSlice";
+import testexecutionsReducer from "@/features/medical_support/testExecution/testExecutionSlice";
+import receptionsReducer from "@/features/Reception/ReceptionSlice";
 import reservationsReducer from "@/features/Reservations/ReservationSlice";
-import employeeNurseReducer from "@/features/employee/nurse/nurseSlice"
-import employeedoctorReducer from "@/features/employee/doctor/doctorSlice"
-import employeeBasiclnfoReducer from "@/features/employee/Staff/BasiclnfoSlict"
-
-import { combineReducers } from "redux";
+import employeeNurseReducer from "@/features/staff/nurse/nurseSlice"
+import employeedoctorReducer from "@/features/staff/doctor/doctorSlice"
+import employeeBasiclnfoReducer from "@/features/staff/Basiclnfo/BasiclnfoSlict"
+import receptionReducer from "@/features/staff/reception/receptionSlice"
 
 const rootReducer = combineReducers({
   consent: consentReducer,
+  billing: billingReducer,
   emergencyReceptions: emergencyReceptionsReducer,
   insurance: insuranceReducer,
   inpatientReceptions: inpatientReceptionsReducer,
   patients: patientsReducer,
-  
-  records: recordReducer,
+  records: recordsReducer,
+  testexecutions: testexecutionsReducer,
   receptions: receptionsReducer,
   reservations: reservationsReducer,
-  
-  
-  
   nurse: employeeNurseReducer,
   doctor :employeedoctorReducer,
   staff: employeeBasiclnfoReducer,
-
+  reception: receptionReducer,
 });
 
 export type RootState = ReturnType<typeof rootReducer>;

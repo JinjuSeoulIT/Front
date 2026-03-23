@@ -16,15 +16,15 @@ import {
   TableCell,
   TableContainer,
   TableHead,
+  Pagination,
   TableRow,
   Tooltip,
   Typography,
-  Pagination,
 } from "@mui/material";
 import OpenInNewIcon from "@mui/icons-material/OpenInNew";
 import BlockOutlinedIcon from "@mui/icons-material/BlockOutlined";
 import type { Patient } from "@/features/patients/patientTypes";
-import { resolvePhotoUrl, sexLabel, safe, statusChipLabel } from "./PatientListUtils";
+import { patientStatusMeta, resolvePhotoUrl, sexLabel, safe } from "./PatientListUtils";
 
 type Props = {
   list: Patient[];
@@ -34,8 +34,6 @@ type Props = {
   onNavigateToDetail: (patientId: number) => void;
 };
 
-const ROWS_PER_PAGE = 10;
-
 export default function PatientTable({
   list,
   selected,
@@ -43,29 +41,23 @@ export default function PatientTable({
   onDeactivate,
   onNavigateToDetail,
 }: Props) {
-  const [page, setPage] = React.useState(1); // 1-based for Pagination
-
   const primary = selected ?? list[0] ?? null;
+  const ROWS_PER_PAGE = 10;
+  const [page, setPage] = React.useState(1);
 
-  const paginatedList = React.useMemo(() => {
+  React.useEffect(() => {
+    const maxPage = Math.max(1, Math.ceil(list.length / ROWS_PER_PAGE));
+    if (page > maxPage) {
+      setPage(maxPage);
+    }
+  }, [list.length, page]);
+
+  const pagedList = React.useMemo(() => {
     const start = (page - 1) * ROWS_PER_PAGE;
     return list.slice(start, start + ROWS_PER_PAGE);
   }, [list, page]);
 
-  const emptyRowCount = Math.max(0, ROWS_PER_PAGE - paginatedList.length);
-
-  const pageCount = Math.max(1, Math.ceil(list.length / ROWS_PER_PAGE));
-
-  React.useEffect(() => {
-    setPage((prev) => {
-      const next = Math.min(prev, pageCount);
-      return next < 1 ? 1 : next;
-    });
-  }, [pageCount]);
-
-  const handleChangePage = (_: React.ChangeEvent<unknown>, newPage: number) => {
-    setPage(newPage);
-  };
+  const totalPages = Math.max(1, Math.ceil(list.length / ROWS_PER_PAGE));
 
   return (
     <Card variant="outlined" sx={{ borderRadius: 2 }}>
@@ -82,7 +74,7 @@ export default function PatientTable({
 
         <Divider />
 
-        <TableContainer sx={{ maxHeight: { xs: 420, lg: 560 } }}>
+        <TableContainer sx={{ maxHeight: { xs: 420, lg: 640 } }}>
           <Table stickyHeader size="small" aria-label="patient list">
             <TableHead>
               <TableRow>
@@ -98,8 +90,9 @@ export default function PatientTable({
               </TableRow>
             </TableHead>
             <TableBody>
-              {paginatedList.map((p) => {
+              {pagedList.map((p) => {
                 const isSelected = primary?.patientId === p.patientId;
+                const statusMeta = patientStatusMeta(p.statusCode);
                 return (
                   <TableRow
                     key={p.patientId}
@@ -113,7 +106,10 @@ export default function PatientTable({
                     onDoubleClick={() => onNavigateToDetail(p.patientId)}
                   >
                     <TableCell>
-                      <Avatar src={resolvePhotoUrl(p.photoUrl) || undefined} sx={{ width: 28, height: 28 }}>
+                      <Avatar
+                        src={resolvePhotoUrl(p.photoUrl) || undefined}
+                        sx={{ width: 28, height: 28 }}
+                      >
                         {p.name?.slice(0, 1) ?? "?"}
                       </Avatar>
                     </TableCell>
@@ -125,9 +121,9 @@ export default function PatientTable({
                     <TableCell>
                       <Chip
                         size="small"
-                        label={statusChipLabel(p.statusCode)}
-                        variant={p.statusCode === "ACTIVE" || !p.statusCode ? "filled" : "outlined"}
-                        color={p.statusCode === "INACTIVE" ? "warning" : "default"}
+                        label={statusMeta.label}
+                        variant={statusMeta.variant}
+                        color={statusMeta.color}
                       />
                     </TableCell>
                     <TableCell>
@@ -166,7 +162,7 @@ export default function PatientTable({
                 );
               })}
 
-              {paginatedList.length === 0 && (
+              {list.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={9}>
                     <Typography sx={{ color: "text.secondary" }}>
@@ -175,32 +171,16 @@ export default function PatientTable({
                   </TableCell>
                 </TableRow>
               )}
-
-              {paginatedList.length > 0 &&
-                Array.from({ length: emptyRowCount }).map((_, idx) => (
-                  <TableRow key={`empty-${idx}`} sx={{ "& td": { borderBottom: "none", height: 40 } }}>
-                    <TableCell colSpan={9} />
-                  </TableRow>
-                ))}
             </TableBody>
           </Table>
         </TableContainer>
-
-        <Box
-          sx={{
-            borderTop: "1px solid",
-            borderColor: "divider",
-            display: "flex",
-            justifyContent: "center",
-            py: 1,
-          }}
-        >
+        <Box sx={{ display: "flex", justifyContent: "center", p: 2 }}>
           <Pagination
-            count={pageCount}
+            count={totalPages}
             page={page}
-            onChange={handleChangePage}
+            onChange={(_, value) => setPage(value)}
             shape="rounded"
-            size="small"
+            color="primary"
             siblingCount={4}
             boundaryCount={1}
           />

@@ -1,8 +1,8 @@
-﻿import { call, put, takeLatest } from "redux-saga/effects";
+import { call, put, takeLatest } from "redux-saga/effects";
 import type { PayloadAction } from "@reduxjs/toolkit";
 import { consentActions as actions } from "./consentSlice";
 import type { Consent, ConsentCreateReq, ConsentUpdateReq } from "./consentTypes";
-import * as api from "../../lib/consentApi";
+import * as api from "../../lib/patient/consentApi";
 
 function* fetchConsentSaga(action: PayloadAction<{ patientId: number }>) {
   try {

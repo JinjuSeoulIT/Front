@@ -19,7 +19,7 @@ import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import DeleteOutlineOutlinedIcon from "@mui/icons-material/DeleteOutlineOutlined";
 
 import type { Consent } from "@/features/consent/consentTypes";
-import type { ConsentLatest, ConsentWithdrawHistory } from "@/lib/consentApi";
+import type { ConsentLatest, ConsentWithdrawHistory } from "@/lib/patient/consentApi";
 import { formatDateTime } from "./consentUtils";
 
 type Props = {

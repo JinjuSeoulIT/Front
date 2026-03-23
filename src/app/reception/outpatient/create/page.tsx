@@ -1,13 +1,14 @@
-﻿"use client";
+"use client";
 
 import * as React from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import MainLayout from "@/components/layout/MainLayout";
-import ReceptionForm from "@/components/ReceptionForm";
+
 import { useDispatch, useSelector } from "react-redux";
 import type { RootState, AppDispatch } from "@/store/store";
-import { receptionActions } from "@/features/Receptions/ReceptionSlice";
-import type { ReceptionForm as ReceptionFormPayload } from "@/features/Receptions/ReceptionTypes";
+import { receptionActions } from "@/features/Reception/ReceptionSlice";
+import type { ReceptionForm as ReceptionFormPayload } from "@/features/Reception/ReceptionTypes";
+import ReceptionForm from "@/components/reception/ReceptionForm";
 
 export default function NewReceptionPage() {
   const router = useRouter();
@@ -21,7 +22,7 @@ export default function NewReceptionPage() {
 
   const onSubmit = (form: ReceptionFormPayload) => {
     dispatch(receptionActions.createReceptionRequest(form));
-    router.push("/receptions");
+    router.push("/reception/outpatient/list");
   };
 
   return (
@@ -33,8 +34,8 @@ export default function NewReceptionPage() {
           receptionNo: "",
           patientId,
           patientName,
-          departmentName: "",
-          doctorName: "",
+          departmentId: "",
+          doctorId: "",
           visitType: "OUTPATIENT",
           scheduledAt: "",
           arrivedAt: "",
@@ -46,7 +47,7 @@ export default function NewReceptionPage() {
         mode="create"
         showScheduledAt={false}
         onSubmit={onSubmit}
-        onCancel={() => router.push("/receptions")}
+        onCancel={() => router.push("/reception/outpatient/list")}
       />
     </MainLayout>
   );

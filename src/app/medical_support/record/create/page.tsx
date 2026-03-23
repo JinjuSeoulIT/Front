@@ -1,14 +1,8 @@
-import MainLayout from "@/components/layout/MainLayout";
-import RecordCreate from "@/components/record/RecordCreate";
+import RecordCreate from "@/components/medical_support/record/RecordCreate";
 
- 
 
 const RecordCreatePage = () => {
-  return (
-    <MainLayout showSidebar={false}>
-      <RecordCreate />
-    </MainLayout>
-  );
+  return <main><RecordCreate/></main>;
 };
 
 export default RecordCreatePage;
