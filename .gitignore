@@ -29,6 +29,13 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
+dev_*.log
+
+# local artifacts
+*.zip
+billing_response.txt
+opt.value
+_tmp_*/
 
 # env files (can opt-in for committing if needed)
 .env*

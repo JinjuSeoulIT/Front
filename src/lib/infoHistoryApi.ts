@@ -12,7 +12,7 @@ export type PatientInfoHistory = {
 };
 
 const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_PATIENTS_API_BASE_URL ?? "http://192.168.1.60:8081",
+  baseURL: process.env.NEXT_PUBLIC_PATIENTS_API_BASE_URL ?? "http://192.168.1.60:8181",
 });
 
 export const fetchPatientInfoHistoryApi = async (
@@ -27,3 +27,4 @@ export const fetchPatientInfoHistoryApi = async (
   }
   return res.data.result;
 };
+
