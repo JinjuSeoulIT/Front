@@ -501,7 +501,6 @@ export default function ClinicalPage() {
         if (!prev) return prev;
         return { ...prev, status: "IN_PROGRESS" };
       });
-      window.alert("진료가 시작되었습니다.");
     } catch (err) {
       const message =
         err instanceof Error
