@@ -13,7 +13,7 @@ import {
 } from "@mui/material";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch } from "@/store/store";
 import type { RootState } from "@/store/rootReducer";
@@ -67,12 +67,10 @@ function StatusChip({ status }: { status?: string | null }) {
 }
 
 export default function RecordDetail() {
-  const params: any = useParams();
+  const params = useParams<{ recordId?: string | string[] }>();
   const dispatch = useDispatch<AppDispatch>();
 
-  const [pendingStatusAction, setPendingStatusAction] = useState<
-    "ACTIVE" | "INACTIVE" | null
-  >(null);
+  const pendingStatusActionRef = useRef<"ACTIVE" | "INACTIVE" | null>(null);
 
   const recordId: string | undefined =
     typeof params?.recordId === "string"
@@ -93,24 +91,24 @@ export default function RecordDetail() {
   useEffect(() => {
     if (!statusToggleSuccess) return;
 
-    if (pendingStatusAction === "INACTIVE") {
+    if (pendingStatusActionRef.current === "INACTIVE") {
       alert("간호 기록이 비활성화되었습니다.");
-    } else if (pendingStatusAction === "ACTIVE") {
+    } else if (pendingStatusActionRef.current === "ACTIVE") {
       alert("간호 기록이 활성화되었습니다.");
     }
 
-    setPendingStatusAction(null);
+    pendingStatusActionRef.current = null;
     dispatch(RecActions.resetStatusToggleSuccess());
 
     if (recordId) {
       dispatch(RecActions.fetchRecordRequest(recordId));
     }
-  }, [dispatch, statusToggleSuccess, pendingStatusAction, recordId]);
+  }, [dispatch, statusToggleSuccess, recordId]);
 
   useEffect(() => {
     if (!error) return;
     if (!record?.recordId) return;
-    if (!pendingStatusAction) return;
+    if (!pendingStatusActionRef.current) return;
 
     if (error === "Network Error") {
       alert("서버에 연결할 수 없습니다.\n잠시 후 다시 시도해주세요.");
@@ -118,8 +116,8 @@ export default function RecordDetail() {
       alert("상태 변경에 실패했습니다.\n다시 시도해주세요.");
     }
 
-    setPendingStatusAction(null);
-  }, [error, record, pendingStatusAction]);
+    pendingStatusActionRef.current = null;
+  }, [error, record]);
 
   const handleToggleStatus = () => {
     if (!recordId || !record?.recordId) return;
@@ -132,7 +130,7 @@ export default function RecordDetail() {
 
     if (!window.confirm(confirmMessage)) return;
 
-    setPendingStatusAction(nextStatus);
+    pendingStatusActionRef.current = nextStatus;
 
     dispatch(
       RecActions.toggleRecordStatusRequest({

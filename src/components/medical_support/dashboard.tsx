@@ -19,10 +19,10 @@ const Dashboard = () => {
     tone:"linear-gradient(135deg, rgba(23, 162, 142, 0.22), rgba(23, 162, 142, 0))",
   },
     {
-    key: "testexecution",
+    key: "testExecution",
     label: "검사 수행",
     desc: "검사 수행 관리",
-    path:"/medical_support/testexecution/list",
+    path:"/medical_support/testExecution/list",
     tone:"linear-gradient(135deg, rgba(23, 162, 142, 0.22), rgba(23, 162, 142, 0))",
   },
   {

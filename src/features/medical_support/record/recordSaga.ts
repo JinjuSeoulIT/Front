@@ -6,13 +6,21 @@ import { RecActions as actions } from "./recordSlice";
 import * as api from "../../../lib/medical_support/recordApi";
 import type { RecordFormType } from "@/features/medical_support/record/recordTypes";
 
+const getErrorMessage = (err: unknown, fallback: string) => {
+  if (err instanceof Error && err.message) {
+    return err.message;
+  }
+
+  return fallback;
+};
+
 function* fetchRecordsSaga(): SagaIterator {
   try {
     const records: RecordFormType[] = yield call(api.fetchRecordsApi);
     yield put(actions.fetchRecordsSuccess(records));
-  } catch (err: any) {
+  } catch (err: unknown) {
     yield put(
-      actions.fetchRecordsFailure(err.message ?? "Failed to fetch records")
+      actions.fetchRecordsFailure(getErrorMessage(err, "Failed to fetch records"))
     );
   }
 }
@@ -24,9 +32,9 @@ function* fetchRecordSaga(action: PayloadAction<string>): SagaIterator {
       action.payload
     );
     yield put(actions.fetchRecordSuccess(record));
-  } catch (err: any) {
+  } catch (err: unknown) {
     yield put(
-      actions.fetchRecordFailure(err.message ?? "Failed to fetch record")
+      actions.fetchRecordFailure(getErrorMessage(err, "Failed to fetch record"))
     );
   }
 }
@@ -38,9 +46,9 @@ function* createRecordSaga(
     yield call(api.createRecordApi, action.payload);
     yield put(actions.createRecordSuccess());
     yield put(actions.fetchRecordsRequest());
-  } catch (err: any) {
+  } catch (err: unknown) {
     yield put(
-      actions.createRecordFailure(err.message ?? "Failed to create record")
+      actions.createRecordFailure(getErrorMessage(err, "Failed to create record"))
     );
   }
 }
@@ -54,9 +62,9 @@ function* updateRecordSaga(
     yield put(actions.updateRecordSuccess());
     yield put(actions.fetchRecordsRequest());
     yield put(actions.fetchRecordRequest(recordId));
-  } catch (err: any) {
+  } catch (err: unknown) {
     yield put(
-      actions.updateRecordFailure(err.message ?? "Failed to update record")
+      actions.updateRecordFailure(getErrorMessage(err, "Failed to update record"))
     );
   }
 }
@@ -77,10 +85,10 @@ function* toggleRecordStatusSaga(
 
     yield put(actions.toggleRecordStatusSuccess(updatedRecord));
     yield put(actions.fetchRecordsRequest());
-  } catch (err: any) {
+  } catch (err: unknown) {
     yield put(
       actions.toggleRecordStatusFailure(
-        err.message ?? "Failed to toggle record status"
+        getErrorMessage(err, "Failed to toggle record status")
       )
     );
   }
@@ -102,9 +110,9 @@ function* searchRecordsSaga(
 
     yield put(actions.searchRecordsSuccess(records));
 
-  } catch (err: any) {
+  } catch (err: unknown) {
     yield put(
-      actions.searchRecordsFailure(err.message ?? "Failed to search records")
+      actions.searchRecordsFailure(getErrorMessage(err, "Failed to search records"))
     );
   }
 }

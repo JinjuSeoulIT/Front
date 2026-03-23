@@ -1,6 +1,6 @@
 import axios from "axios";
 import type { ApiResponse } from "@/features/patients/patientTypes";
-import type { TestExecution } from "@/features/medical_support/testexecution/testexecutionType";
+import type { TestExecution } from "@/features/medical_support/testExecution/testExecutionType";
 
 const api = axios.create({
   baseURL:

@@ -26,7 +26,7 @@ import RefreshIcon from "@mui/icons-material/Refresh";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useDispatch, useSelector } from "react-redux";
-import { TestExecutionActions } from "@/features/medical_support/testexecution/testexecutionSlice";
+import { TestExecutionActions } from "@/features/medical_support/testExecution/testExecutionSlice";
 import type { RootState } from "@/store/rootReducer";
 import type { AppDispatch } from "@/store/store";
 
@@ -238,7 +238,7 @@ export default function TestExecutionList() {
               </Button>
               <Button
                 component={Link}
-                href="/medical_support/testexecution/create"
+                href="/medical_support/testExecution/create"
                 variant="contained"
                 size="small"
                 startIcon={<AddIcon />}
@@ -331,7 +331,7 @@ export default function TestExecutionList() {
                         }}
                         onClick={() =>
                           router.push(
-                            `/medical_support/testexecution/detail/${item.testExecutionId}`
+                            `/medical_support/testExecution/detail/${item.testExecutionId}`
                           )
                         }
                       >
