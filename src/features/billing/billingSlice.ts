@@ -1,6 +1,13 @@
-import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
-import type { BillSummary, BillDetail, Payment, BillingStats } from "@/lib/billingApi";
+import { createSlice, PayloadAction } from "@reduxjs/toolkit";
+import {
+  BillSummary,
+  BillDetail,
+  Payment,
+  BillingStats,
+  PaymentMethod,
+} from "@/lib/billing/billingApi";
 
+// 상태 필터 payload 타입
 interface FetchBillsByPatientPayload {
   patientId: number;
   status?: string;
@@ -28,63 +35,132 @@ const billingSlice = createSlice({
   name: "billing",
   initialState,
   reducers: {
-    fetchBillsByPatientRequest(state, _action: PayloadAction<FetchBillsByPatientPayload>) {
+
+    // Saga 요청 트리거 액션
+    fetchBillsByPatientRequest(
+      state,
+      action: PayloadAction<FetchBillsByPatientPayload>
+    ) {
       state.loading = true;
       state.error = null;
     },
-    fetchBillingDetailRequest(state, _action: PayloadAction<number>) {
+    
+    fetchBillingDetailRequest(
+      state,
+      action: PayloadAction<number>
+    ) {
       state.loading = true;
       state.error = null;
     },
+
+    fetchOutstandingBillsRequest(state) {
+      state.loading = true;
+      state.error = null;
+    },
+
     createPaymentRequest(
       state,
-      _action: PayloadAction<{ billId: number; amount: number; patientId: number }>
+      action: PayloadAction<{
+        billId: number;
+        amount: number;
+        patientId: number;
+        method: PaymentMethod;
+      }>
     ) {
       state.loading = true;
       state.error = null;
     },
+
+    confirmBillRequest(
+      state,
+      action: PayloadAction<number>
+    ) {
+      state.loading = true;
+      state.error = null;
+    },
+
     cancelPaymentRequest(
       state,
-      _action: PayloadAction<{ paymentId: number; billId: number; patientId: number }>
+      action: PayloadAction<{
+        paymentId: number;
+        billId: number;
+        patientId: number;
+      }>
     ) {
       state.loading = true;
       state.error = null;
     },
+
+    // 환불 요청
     refundPaymentRequest(
       state,
-      _action: PayloadAction<{ paymentId: number; amount: number; billId: number; patientId: number }>
+      action: PayloadAction<{
+        paymentId: number;
+        amount: number;
+        billId: number;
+        patientId: number;
+      }>
     ) {
       state.loading = true;
       state.error = null;
     },
+
     fetchBillingStatsRequest(state) {
       state.loading = true;
       state.error = null;
     },
-    fetchPaymentsByBillRequest(state, _action: PayloadAction<number>) {
+
+    fetchPaymentsByBillRequest(
+      state,
+      action: PayloadAction<number>
+    ) {
       state.loading = true;
       state.error = null;
     },
-    fetchBillsRequest(state, _action: PayloadAction<string | null>) {
+
+    fetchBillsRequest(
+      state,
+      action: PayloadAction<string | null>
+    ) {
       state.loading = true;
       state.error = null;
     },
+
+    // 공통 상태 변경
     setLoading(state, action: PayloadAction<boolean>) {
       state.loading = action.payload;
     },
+
     setError(state, action: PayloadAction<string | null>) {
       state.error = action.payload;
     },
-    setBillingList(state, action: PayloadAction<BillSummary[]>) {
+
+    // 데이터 저장
+    setBillingList(
+      state,
+      action: PayloadAction<BillSummary[]>
+    ) {
       state.billingList = action.payload;
     },
-    setBillingDetail(state, action: PayloadAction<BillDetail | null>) {
+
+    setBillingDetail(
+      state,
+      action: PayloadAction<BillDetail | null>
+    ) {
       state.billingDetail = action.payload;
     },
-    setBillingStats(state, action: PayloadAction<BillingStats | null>) {
+
+    setBillingStats(
+      state,
+      action: PayloadAction<BillingStats | null>
+    ) {
       state.billingStats = action.payload;
     },
-    setPayments(state, action: PayloadAction<Payment[]>) {
+
+    setPayments(
+      state,
+      action: PayloadAction<Payment[]>
+    ) {
       state.payments = action.payload;
     },
   },
@@ -93,17 +169,19 @@ const billingSlice = createSlice({
 export const {
   fetchBillsByPatientRequest,
   fetchBillingDetailRequest,
+  fetchOutstandingBillsRequest,
   createPaymentRequest,
+  confirmBillRequest,
   cancelPaymentRequest,
-  refundPaymentRequest,
+  refundPaymentRequest, 
   fetchBillingStatsRequest,
   fetchPaymentsByBillRequest,
   fetchBillsRequest,
+  setBillingStats,
   setLoading,
   setError,
   setBillingList,
   setBillingDetail,
-  setBillingStats,
   setPayments,
 } = billingSlice.actions;
 
