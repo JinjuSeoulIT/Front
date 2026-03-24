@@ -5,6 +5,7 @@ const DEFAULT_PATIENTS_API_BASE_URL = "http://192.168.1.60:8181";
 const DEFAULT_RECEPTION_API_BASE_URL = "http://192.168.1.55:8283";
 const DEFAULT_BILLING_API_BASE_URL = "http://192.168.1.68:8081";
 
+
 const resolveBaseUrl = (envValue: string | undefined, fallback: string) => {
   const value = (envValue ?? "").trim();
   return value || fallback;
