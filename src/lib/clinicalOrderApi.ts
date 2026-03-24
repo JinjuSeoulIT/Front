@@ -1,5 +1,4 @@
-const CLINICAL_API_BASE =
-  process.env.NEXT_PUBLIC_CLINICAL_API_BASE_URL ?? "http://192.168.1.70:8090";
+import { CLINICAL_API_BASE } from "./clinicalApiBase";
 
 export type LabOrderType = "BLOOD" | "IMAGING" | "PROCEDURE";
 
