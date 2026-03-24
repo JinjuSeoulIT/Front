@@ -43,7 +43,7 @@ const BasicInfoDetail = ({ staffId }:staffIdNumber) => {
             onClick={() => router.push(`/staff/Basiclnfo/${staffId}/edit`)}>수정</Button>
 
             <Button variant="contained" 
-            onClick={() => router.push(`/staff/Basiclnfo/${staffId}/board`)}>직업 등록</Button>
+            onClick={() => router.push(`/staff/Basiclnfo/board`)}>직업 등록</Button>
         </Stack>
         </Stack>
 

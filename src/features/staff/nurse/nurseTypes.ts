@@ -32,6 +32,17 @@ export type NurseIdNumber = {
 
 export type NurseCreateRequest = {
   staffId: string;
+  deptId: string;
+  name: string;
+  phone: string;
+  email: string;
+  birthDate: string;
+  genderCode: string;
+  zipCode: string;
+  address1: string;
+  address2: string;
+  status: string;
+
   licenseNo: string;
   nurseType?: string | null;
   shiftType: string;
@@ -43,6 +54,17 @@ export type NurseCreateRequest = {
 
 export const initialNurseCreateForm: NurseCreateRequest = {
   staffId: "",
+  deptId: "",
+  name: "",
+  phone: "",
+  email: "",
+  birthDate: "",
+  genderCode: "",
+  zipCode: "",
+  address1: "",
+  address2: "",
+  status: "ACTIVE",
+
   licenseNo: "",
   nurseType: "NURSE",
   shiftType: "",
