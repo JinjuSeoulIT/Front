@@ -22,6 +22,10 @@ type StaffState = {
   loading: boolean;
   error: string | null;
   SuccessEnd : boolean;
+
+
+  doctorBasiclnfoCreate: staffCreateRequest | null;
+
 };
 
 const initialState: StaffState = {
@@ -37,7 +41,11 @@ const initialState: StaffState = {
 
   loading: false,
   error: null,
-  SuccessEnd : false
+  SuccessEnd : false,
+
+ 
+  doctorBasiclnfoCreate: null,
+
 };
 
 const StaffSlice = createSlice({
@@ -147,6 +155,16 @@ const StaffSlice = createSlice({
       state.deleteSuccess = false;
       state.SuccessEnd = false;
     },
+ 
+    //의사 리두서 임시저장용
+    doctorBasiclnfoDraft(state, action: PayloadAction<staffCreateRequest>) {
+    state.doctorBasiclnfoCreate = action.payload;
+},
+    clearDoctorBasicDraft(state) {
+    state.doctorBasiclnfoCreate = null;
+},
+
+
   },
 });
 
@@ -176,6 +194,10 @@ export const {
   deleteStaffFailure,
 
   resetSuccessEnd,
+
+  doctorBasiclnfoDraft,
+  clearDoctorBasicDraft,
+
 } = StaffSlice.actions;
 
 export default StaffSlice.reducer;

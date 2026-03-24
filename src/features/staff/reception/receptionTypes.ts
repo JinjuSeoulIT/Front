@@ -21,6 +21,17 @@ export type ReceptionIdNumber = {
 
 export type ReceptionCreateRequest = {
   staffId: string;
+  deptId: string;
+  name: string;
+  phone: string;
+  email: string;
+  birthDate: string;
+  genderCode: string;
+  zipCode: string;
+  address1: string;
+  address2: string;
+  status: string;
+
   jobTypeCd: string;
   deskNo: string;
   shiftType: string;
@@ -34,6 +45,17 @@ export type ReceptionCreateRequest = {
 
 export const initialReceptionCreateForm: ReceptionCreateRequest = {
   staffId: "",
+  deptId: "",
+  name: "",
+  phone: "",
+  email: "",
+  birthDate: "",
+  genderCode: "",
+  zipCode: "",
+  address1: "",
+  address2: "",
+  status: "ACTIVE",
+
   jobTypeCd: "",
   deskNo: "",
   shiftType: "",

@@ -24,13 +24,30 @@ import {
   searchStaffListRequest,
   StafflistRequest,
 } from "@/features/staff/Basiclnfo/BasiclnfoSlict";
-import { SearchStaffPayload, staffResponse, staffSearchType } from "@/features/staff/Basiclnfo/BasiclnfoType";
+import {staffResponse, staffSearchType } from "@/features/staff/Basiclnfo/BasiclnfoType";
 import BasicInfoDelete from "./BasiclnfoDelete";
 import StatusBadge from "../BasiclnfoStatus";
 
 import NurseFont from "../../nurseDashboard/NurseFont";
 import DoctorFont from "../../doctorDashboard/DoctorFont";
 import ReceptionFont from "../../receptionDashboard/ReceptionFont";
+
+
+// const BasicInfoDetail = ({ staffId }:staffIdNumber) => {
+//   const dispatch = useDispatch();
+//   const router = useRouter();
+//   const { StaffDetail, loading, error } = useSelector((state: RootState) => state.staff);
+
+//   useEffect(() => {
+//     if (staffId) {
+//       dispatch(DetailStaffRequest(staffId));
+//       dispatch(resetSuccessEnd());
+//     }
+//   }, [dispatch, staffId]);
+
+
+
+
 
 
 const BasicInfoList = () => {
@@ -53,7 +70,7 @@ const BasicInfoList = () => {
 
 
 
-  //분기점
+  //분기점 디테일
 const handleDetail = (staff: staffResponse) => {
 
   //의사 디테일로
@@ -152,9 +169,14 @@ const handleDetail = (staff: staffResponse) => {
           <Stack direction="row" spacing={1}>
           <Button variant="outlined" onClick={() => router.push("/staff")}> 직원 홈 </Button>
 
-          <Button variant="contained"onClick={() => router.push("/staff/Basiclnfo/create")}> + 직원등록 </Button>
+
+          <Button variant="contained"onClick={() => router.push("/staff/Basiclnfo/create")}> + 부서등록 </Button>
+
+
+          <Button variant="contained"onClick={() => router.push(`/staff/Basiclnfo/board`)}> + 직원등록 </Button>
           </Stack>
           </Stack>
+
 
 
 
@@ -284,6 +306,7 @@ const handleDetail = (staff: staffResponse) => {
                 </Paper>
 
 
+        
         <BasicInfoDelete
         //삭제 [모달창 형식]
         open=   {!!staffDelete}  //!! =👉 강제로 boolean으로 변환 (처음 모달 닫기용 펄스) 값 들어오면 창뜸 
