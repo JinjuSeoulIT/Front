@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import * as React from "react";
 import Link from "next/link";
@@ -22,7 +22,7 @@ import {
 } from "@mui/material";
 import type { PatientForm as PatientFormPayload } from "@/features/patients/patientTypes";
 import type { Patient } from "@/features/patients/patientTypes";
-import { searchPatientsApi } from "@/lib/patientApi";
+import { searchPatientsApi } from "@/lib/reception/patientApi";
 
 type PatientFormState = {
   name: string;
@@ -121,7 +121,7 @@ export default function PatientForm({
     if (typeof window === "undefined") return;
     const daum = (window as DaumWindow).daum;
     if (!daum || !daum.Postcode) {
-      alert("주소 검색 스크립트를 불러오는 중입니다. 잠시 후 다시 시도하세요.");
+      alert("�ּ� �˻� ��ũ��Ʈ�� �ҷ����� ���Դϴ�. ��� �� �ٽ� �õ��ϼ���.");
       return;
     }
     new daum.Postcode({
@@ -194,7 +194,7 @@ export default function PatientForm({
     const phone = form.phone.trim();
     const birthDate = form.birthDate.trim();
     if (!name && !phone && !birthDate) {
-      alert("이름/연락처/생년월일 중 하나는 입력해 주세요.");
+      alert("�̸�/����ó/������� �� �ϳ��� �Է��� �ּ���.");
       return;
     }
     try {
@@ -234,14 +234,14 @@ export default function PatientForm({
             {title}
           </Typography>
           <Typography color="text.secondary" fontWeight={600}>
-            환자 기본 정보를 정확히 입력해 주세요.
+            ȯ�� �⺻ ������ ��Ȯ�� �Է��� �ּ���.
           </Typography>
         </Stack>
         <Divider />
 
         <Stack spacing={2}>
           <TextField
-            label="환자명"
+            label="ȯ�ڸ�"
             value={form.name}
             onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
             required
@@ -249,7 +249,7 @@ export default function PatientForm({
             sx={{ "& .MuiInputBase-root": { bgcolor: "#f4f7fd" } }}
           />
           <TextField
-            label="이메일"
+            label="�̸���"
             value={form.email}
             onChange={(e) => setForm((prev) => ({ ...prev, email: e.target.value }))}
             fullWidth
@@ -257,7 +257,7 @@ export default function PatientForm({
           />
           <TextField
             select
-            label="성별"
+            label="����"
             value={form.gender}
             onChange={(e) =>
               setForm((prev) => ({ ...prev, gender: e.target.value }))
@@ -265,13 +265,13 @@ export default function PatientForm({
             fullWidth
             sx={{ "& .MuiInputBase-root": { bgcolor: "#f4f7fd" } }}
           >
-            <MenuItem value="">선택 안함</MenuItem>
-            <MenuItem value="M">남</MenuItem>
-            <MenuItem value="F">여</MenuItem>
+            <MenuItem value="">���� ����</MenuItem>
+            <MenuItem value="M">��</MenuItem>
+            <MenuItem value="F">��</MenuItem>
           </TextField>
           <TextField
             type="date"
-            label="생년월일"
+            label="�������"
             InputLabelProps={{ shrink: true }}
             value={form.birthDate}
             onChange={(e) =>
@@ -281,7 +281,7 @@ export default function PatientForm({
             sx={{ "& .MuiInputBase-root": { bgcolor: "#f4f7fd" } }}
           />
           <TextField
-            label="연락처"
+            label="����ó"
             value={form.phone}
             onChange={(e) =>
               setForm((prev) => ({ ...prev, phone: e.target.value }))
@@ -296,12 +296,12 @@ export default function PatientForm({
               disabled={duplicateLoading}
               sx={{ width: "fit-content", color: "#2b5aa9" }}
             >
-              {duplicateLoading ? <CircularProgress size={18} /> : "중복 확인"}
+              {duplicateLoading ? <CircularProgress size={18} /> : "�ߺ� Ȯ��"}
             </Button>
           )}
           <Stack direction={{ xs: "column", sm: "row" }} spacing={1}>
             <TextField
-              label="주소"
+              label="�ּ�"
               value={form.address}
               onChange={(e) =>
                 setForm((prev) => ({ ...prev, address: e.target.value }))
@@ -314,11 +314,11 @@ export default function PatientForm({
               onClick={handleAddressSearch}
               sx={{ minWidth: 120, color: "#2b5aa9" }}
             >
-              주소 검색
+              �ּ� �˻�
             </Button>
           </Stack>
           <TextField
-            label="상세주소"
+            label="���ּ�"
             value={form.addressDetail}
             onChange={(e) =>
               setForm((prev) => ({ ...prev, addressDetail: e.target.value }))
@@ -328,9 +328,9 @@ export default function PatientForm({
           />
 
           <Divider />
-          <Typography fontWeight={800}>보호자 정보</Typography>
+          <Typography fontWeight={800}>��ȣ�� ����</Typography>
           <TextField
-            label="보호자 이름"
+            label="��ȣ�� �̸�"
             value={form.guardianName}
             onChange={(e) =>
               setForm((prev) => ({ ...prev, guardianName: e.target.value }))
@@ -339,7 +339,7 @@ export default function PatientForm({
             sx={{ "& .MuiInputBase-root": { bgcolor: "#f4f7fd" } }}
           />
           <TextField
-            label="보호자 연락처"
+            label="��ȣ�� ����ó"
             value={form.guardianPhone}
             onChange={(e) =>
               setForm((prev) => ({ ...prev, guardianPhone: e.target.value }))
@@ -348,7 +348,7 @@ export default function PatientForm({
             sx={{ "& .MuiInputBase-root": { bgcolor: "#f4f7fd" } }}
           />
           <TextField
-            label="관계"
+            label="����"
             value={form.guardianRelation}
             onChange={(e) =>
               setForm((prev) => ({ ...prev, guardianRelation: e.target.value }))
@@ -361,7 +361,7 @@ export default function PatientForm({
           <Stack direction={{ xs: "column", sm: "row" }} spacing={1}>
             <TextField
               select
-              label="내/외국인"
+              label="��/�ܱ���"
               value={form.isForeigner ? "Y" : "N"}
               onChange={(e) =>
                 setForm((prev) => ({ ...prev, isForeigner: e.target.value === "Y" }))
@@ -369,12 +369,12 @@ export default function PatientForm({
               fullWidth
               sx={{ "& .MuiInputBase-root": { bgcolor: "#f4f7fd" } }}
             >
-              <MenuItem value="N">내국인</MenuItem>
-              <MenuItem value="Y">외국인</MenuItem>
+              <MenuItem value="N">������</MenuItem>
+              <MenuItem value="Y">�ܱ���</MenuItem>
             </TextField>
             <TextField
               select
-              label="연락 우선순위"
+              label="���� �켱����"
               value={form.contactPriority}
               onChange={(e) =>
                 setForm((prev) => ({ ...prev, contactPriority: e.target.value }))
@@ -382,13 +382,13 @@ export default function PatientForm({
               fullWidth
               sx={{ "& .MuiInputBase-root": { bgcolor: "#f4f7fd" } }}
             >
-              <MenuItem value="PATIENT">본인</MenuItem>
-              <MenuItem value="GUARDIAN">보호자</MenuItem>
+              <MenuItem value="PATIENT">����</MenuItem>
+              <MenuItem value="GUARDIAN">��ȣ��</MenuItem>
             </TextField>
           </Stack>
 
           <TextField
-            label="알레르기/주의사항"
+            label="�˷�����/���ǻ���"
             value={form.note}
             onChange={(e) => setForm((prev) => ({ ...prev, note: e.target.value }))}
             fullWidth
@@ -400,7 +400,7 @@ export default function PatientForm({
           {showPhotoField && (
             <Stack direction="row" spacing={1} alignItems="center">
               <Button variant="outlined" component="label">
-                환자 사진
+                ȯ�� ����
                 <input
                   type="file"
                   accept="image/*"
@@ -414,7 +414,7 @@ export default function PatientForm({
                 />
               </Button>
               <Typography variant="body2" color="text.secondary">
-                {form.photoFile?.name ?? "파일 없음"}
+                {form.photoFile?.name ?? "���� ����"}
               </Typography>
             </Stack>
           )}
@@ -428,7 +428,7 @@ export default function PatientForm({
 
         <Stack direction={{ xs: "column", sm: "row" }} spacing={1.25}>
           <Button variant="outlined" onClick={onCancel} disabled={loading}>
-            취소
+            ���
           </Button>
           {onDelete && (
             <Button
@@ -437,7 +437,7 @@ export default function PatientForm({
               onClick={onDelete}
               disabled={loading}
             >
-              비활성
+              ��Ȱ��
             </Button>
           )}
           <Button
@@ -456,7 +456,7 @@ export default function PatientForm({
                 onClick={onOpenPostSubmitMenu}
                 disabled={loading || !form.name.trim()}
               >
-                등록 후 접수
+                ��� �� ����
               </Button>
               <Menu
                 anchorEl={postSubmitAnchorEl}
@@ -494,20 +494,20 @@ export default function PatientForm({
         maxWidth="sm"
         PaperProps={{ sx: { borderRadius: 3 } }}
       >
-        <DialogTitle>중복 후보</DialogTitle>
+        <DialogTitle>�ߺ� �ĺ�</DialogTitle>
         <DialogContent>
           {duplicateList.length === 0 ? (
-            <Typography color="text.secondary">중복 후보가 없습니다.</Typography>
+            <Typography color="text.secondary">�ߺ� �ĺ��� �����ϴ�.</Typography>
           ) : (
             <List>
               {duplicateList.map((p) => (
                 <ListItem key={p.patientId} divider>
                   <ListItemText
-                    primary={`${p.name} · ${p.patientNo ?? p.patientId}`}
-                    secondary={`${p.birthDate ?? "-"} · ${p.phone ?? "-"}`}
+                    primary={`${p.name} �� ${p.patientNo ?? p.patientId}`}
+                    secondary={`${p.birthDate ?? "-"} �� ${p.phone ?? "-"}`}
                   />
                   <Button component={Link} href={`/patients/${p.patientId}`}>
-                    상세
+                    ��
                   </Button>
                 </ListItem>
               ))}
@@ -515,9 +515,10 @@ export default function PatientForm({
           )}
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setDuplicateOpen(false)}>계속 등록</Button>
+          <Button onClick={() => setDuplicateOpen(false)}>��� ���</Button>
         </DialogActions>
       </Dialog>
     </Paper>
   );
 }
+

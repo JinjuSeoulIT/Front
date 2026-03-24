@@ -14,8 +14,8 @@ import {
   Stack,
   Typography,
 } from "@mui/material";
-import type { TestExecution } from "@/features/medical_support/testexecution/testexecutionType";
-import { fetchTestExecutionApi } from "@/lib/medical_support/testexecutionApi";
+import type { TestExecution } from "@/features/medical_support/testExecution/testExecutionType";
+import { fetchTestExecutionApi } from "@/lib/medical_support/testExecutionApi";
 
 const formatDateTime = (value?: string | null) => {
   if (!value) return "-";
@@ -170,12 +170,12 @@ export default function TestExecutionDetail() {
             </Box>
 
             <Stack direction="row" spacing={1}>
-              <Link href={`/medical_support/testexecution/edit/${item.testExecutionId}`}>
+              <Link href={`/medical_support/testExecution/edit/${item.testExecutionId}`}>
                 <Button variant="contained" size="small">
                   수정
                 </Button>
               </Link>
-              <Link href="/medical_support/testexecution/list">
+              <Link href="/medical_support/testExecution/list">
                 <Button variant="outlined" size="small">
                   목록으로
                 </Button>

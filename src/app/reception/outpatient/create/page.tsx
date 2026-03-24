@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import * as React from "react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -6,8 +6,8 @@ import MainLayout from "@/components/layout/MainLayout";
 
 import { useDispatch, useSelector } from "react-redux";
 import type { RootState, AppDispatch } from "@/store/store";
-import { receptionActions } from "@/features/Receptions/ReceptionSlice";
-import type { ReceptionForm as ReceptionFormPayload } from "@/features/Receptions/ReceptionTypes";
+import { receptionActions } from "@/features/Reception/ReceptionSlice";
+import type { ReceptionForm as ReceptionFormPayload } from "@/features/Reception/ReceptionTypes";
 import ReceptionForm from "@/components/reception/ReceptionForm";
 
 export default function NewReceptionPage() {
@@ -34,8 +34,8 @@ export default function NewReceptionPage() {
           receptionNo: "",
           patientId,
           patientName,
-          departmentName: "",
-          doctorName: "",
+          departmentId: "",
+          doctorId: "",
           visitType: "OUTPATIENT",
           scheduledAt: "",
           arrivedAt: "",

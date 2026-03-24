@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import * as React from "react";
 import Link from "next/link";
@@ -31,8 +31,9 @@ import PersonAddIcon from "@mui/icons-material/PersonAdd";
 import PolicyIcon from "@mui/icons-material/Policy";
 import TaskAltIcon from "@mui/icons-material/TaskAlt";
 
-import { fetchMenusApi } from "@/lib/menuApi";
+
 import type { MenuNode } from "@/types/menu";
+import { fetchMenusApi } from "@/lib/admin/menuApi";
 
 const iconMap: Record<string, React.ReactNode> = {
   Home: <HomeRoundedIcon fontSize="small" />,
@@ -55,9 +56,9 @@ const legacyPathMap: Record<string, string> = {
 
   // reception legacy -> current routes
   "/receptions": "/reception/outpatient/list",
-  "/reservations": "/reception/appointment/list",
+  "/reservations": "/reception/reservation/list",
   "/emergency-receptions": "/reception/emergency/list",
-  "/inpatient-receptions": "/reception/admission/list",
+  "/inpatient-receptions": "/reception/inpatient/list",
   "/receptions/canceled": "/reception/dashboard",
   "/reception/edi-items": "/reception/dashboard",
 

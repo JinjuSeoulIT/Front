@@ -19,10 +19,10 @@ const Dashboard = () => {
     tone:"linear-gradient(135deg, rgba(23, 162, 142, 0.22), rgba(23, 162, 142, 0))",
   },
     {
-    key: "testexecution",
+    key: "testExecution",
     label: "검사 수행",
     desc: "검사 수행 관리",
-    path:"/medical_support/testexecution/list",
+    path:"/medical_support/testExecution/list",
     tone:"linear-gradient(135deg, rgba(23, 162, 142, 0.22), rgba(23, 162, 142, 0))",
   },
   {
@@ -32,13 +32,48 @@ const Dashboard = () => {
     path:"/medical_support/imaging",
     tone:"linear-gradient(135deg, rgba(23, 162, 142, 0.22), rgba(23, 162, 142, 0))",
   },
-  {
-    key: "specimen",
-    label: "검체",
-    desc: "검체 관리",
-    path:"/medical_support/specimen/list",
-    tone:"linear-gradient(135deg, rgba(23, 162, 142, 0.22), rgba(23, 162, 142, 0))",
-  }
+  // {
+  //   key: "specimen",
+  //   label: "검체 검사",
+  //   desc: "검체 검사 관리",
+  //   path:"/medical_support/specimen/list",
+  //   tone:"linear-gradient(135deg, rgba(23, 162, 142, 0.22), rgba(23, 162, 142, 0))",
+  // },
+  //   {
+  //   key: "pathology",
+  //   label: "병리 검사",
+  //   desc: "병리 검사 관리",
+  //   path:"/medical_support/specimen/list",
+  //   tone:"linear-gradient(135deg, rgba(23, 162, 142, 0.22), rgba(23, 162, 142, 0))",
+  // },
+  //   {
+  //   key: "medicationrecord",
+  //   label: "투약 기록",
+  //   desc: "투약 기록 관리",
+  //   path:"/medical_support/specimen/list",
+  //   tone:"linear-gradient(135deg, rgba(23, 162, 142, 0.22), rgba(23, 162, 142, 0))",
+  // },
+  //   {
+  //   key: "TreatmentResult",
+  //   label: "처치 결과",
+  //   desc: "처치 결과 관리",
+  //   path:"/medical_support/specimen/list",
+  //   tone:"linear-gradient(135deg, rgba(23, 162, 142, 0.22), rgba(23, 162, 142, 0))",
+  // },
+  //   {
+  //   key: "endoscopy",
+  //   label: "내시경 검사",
+  //   desc: "내시경 검사 관리",
+  //   path:"/medical_support/specimen/list",
+  //   tone:"linear-gradient(135deg, rgba(23, 162, 142, 0.22), rgba(23, 162, 142, 0))",
+  // },
+  //   {
+  //   key: "physiological",
+  //   label: "생리 기능 검사",
+  //   desc: "생리 기능 검사 관리",
+  //   path:"/medical_support/specimen/list",
+  //   tone:"linear-gradient(135deg, rgba(23, 162, 142, 0.22), rgba(23, 162, 142, 0))",
+  // },
 ]
 
     const router = useRouter();
@@ -86,14 +121,6 @@ const Dashboard = () => {
             </Card>
           ))}
         </Box>
-
-
-
-
-
-
-
-
 
 
     );

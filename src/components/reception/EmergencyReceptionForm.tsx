@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import * as React from "react";
 import {
@@ -16,15 +16,12 @@ import {
 import { useRouter } from "next/navigation";
 import EmergencyOutlinedIcon from "@mui/icons-material/EmergencyOutlined";
 import EditNoteRoundedIcon from "@mui/icons-material/EditNoteRounded";
-import type { EmergencyReceptionForm as EmergencyReceptionFormPayload } from "@/features/EmergencyReceptions/EmergencyReceptionTypes";
+import type { EmergencyReceptionForm as EmergencyReceptionFormPayload } from "@/features/EmergencyReception/EmergencyReceptionTypes";
 import type {
-  DepartmentOption,
-  DoctorOption,
   PatientOption,
 } from "@/features/Reservations/ReservationTypes";
-import { fetchEmergencyReceptionsApi } from "@/lib/reception/emergencyReceptionApi";
-import { fetchPatientsApi } from "@/lib/admin/masterDataApi";
-import { buildNextReceptionNumber } from "@/lib/reception/receptionNumber";
+import { fetchPatientsApi } from "@/lib/masterDataApi";
+import EmergencyReceptionStatusTimeline from "@/components/reception/EmergencyReceptionStatusTimeline";
 
 type EmergencyReceptionFormState = {
   receptionNo: string;
@@ -51,6 +48,7 @@ type EmergencyReceptionFormState = {
 type EmergencyReceptionFormProps = {
   title: string;
   initial: EmergencyReceptionFormState;
+  receptionId?: string;
   loading: boolean;
   error?: string | null;
   submitLabel: string;
@@ -59,9 +57,39 @@ type EmergencyReceptionFormProps = {
   onCancel: () => void;
 };
 
+function isSameFormState(a: EmergencyReceptionFormState, b: EmergencyReceptionFormState) {
+  return (
+    a.receptionNo === b.receptionNo &&
+    a.patientId === b.patientId &&
+    a.departmentId === b.departmentId &&
+    a.patientName === b.patientName &&
+    a.doctorId === b.doctorId &&
+    a.scheduledAt === b.scheduledAt &&
+    a.arrivedAt === b.arrivedAt &&
+    a.status === b.status &&
+    a.note === b.note &&
+    a.triageLevel === b.triageLevel &&
+    a.chiefComplaint === b.chiefComplaint &&
+    a.vitalTemp === b.vitalTemp &&
+    a.vitalBpSystolic === b.vitalBpSystolic &&
+    a.vitalBpDiastolic === b.vitalBpDiastolic &&
+    a.vitalHr === b.vitalHr &&
+    a.vitalRr === b.vitalRr &&
+    a.vitalSpo2 === b.vitalSpo2 &&
+    a.arrivalMode === b.arrivalMode &&
+    a.triageNote === b.triageNote
+  );
+}
+
 const statusOptions = [
+  { value: "REGISTERED", label: "접수 완료" },
   { value: "WAITING", label: "대기" },
   { value: "CALLED", label: "호출" },
+  { value: "TRIAGE", label: "트리아지 진행" },
+  { value: "IN_PROGRESS", label: "진료중" },
+  { value: "OBSERVATION", label: "관찰중" },
+  { value: "COMPLETED", label: "진료 완료" },
+  { value: "TRANSFERRED", label: "전원" },
   { value: "ON_HOLD", label: "보류" },
   { value: "CANCELED", label: "취소" },
 ];
@@ -73,23 +101,20 @@ const arrivalModes = [
   { value: "OTHER", label: "기타" },
 ];
 
-const departmentOptions: DepartmentOption[] = [
-  { departmentId: 1, departmentName: "내과" },
-  { departmentId: 2, departmentName: "외과" },
-  { departmentId: 3, departmentName: "정형외과" },
-  { departmentId: 4, departmentName: "신경외과" },
-];
-
-const doctorOptions: DoctorOption[] = [
-  { doctorId: 1, doctorName: "송태민", departmentId: 1 },
-  { doctorId: 2, doctorName: "이현석", departmentId: 2 },
-  { doctorId: 3, doctorName: "성숙희", departmentId: 3 },
-  { doctorId: 4, doctorName: "최효정", departmentId: 4 },
-];
+const EMERGENCY_DEPARTMENT_ID = 5;
+const EMERGENCY_DEPARTMENT_NAME = "응급의학과";
 
 const statusLabelToCode: Record<string, string> = {
+  "접수 완료": "REGISTERED",
+  "응급 접수 완료": "REGISTERED",
   대기: "WAITING",
   호출: "CALLED",
+  "트리아지 진행": "TRIAGE",
+  진료중: "IN_PROGRESS",
+  관찰중: "OBSERVATION",
+  "진료 완료": "COMPLETED",
+  완료: "COMPLETED",
+  전원: "TRANSFERRED",
   보류: "ON_HOLD",
   취소: "CANCELED",
 };
@@ -99,6 +124,29 @@ const arrivalLabelToCode: Record<string, string> = {
   구급차: "AMBULANCE",
   전원: "TRANSFER",
   기타: "OTHER",
+};
+
+const STATUS_POLICY_HIDDEN = new Set(["WAITING", "CALLED", "PAYMENT_WAIT", "INACTIVE"]);
+const STATUS_REASON_REQUIRED = new Set(["CANCELED", "TRANSFERRED", "ON_HOLD"]);
+
+const STATUS_TRANSITIONS: Record<string, string[]> = {
+  REGISTERED: ["TRIAGE", "IN_PROGRESS", "OBSERVATION", "ON_HOLD", "TRANSFERRED", "CANCELED"],
+  WAITING: ["REGISTERED", "TRIAGE", "IN_PROGRESS", "OBSERVATION", "ON_HOLD", "TRANSFERRED", "CANCELED"],
+  CALLED: ["TRIAGE", "IN_PROGRESS", "OBSERVATION", "ON_HOLD", "TRANSFERRED", "CANCELED"],
+  TRIAGE: ["IN_PROGRESS", "OBSERVATION", "ON_HOLD", "TRANSFERRED", "CANCELED"],
+  IN_PROGRESS: ["OBSERVATION", "COMPLETED", "ON_HOLD", "TRANSFERRED", "CANCELED"],
+  OBSERVATION: ["IN_PROGRESS", "COMPLETED", "ON_HOLD", "TRANSFERRED", "CANCELED"],
+  ON_HOLD: ["TRIAGE", "IN_PROGRESS", "OBSERVATION", "COMPLETED", "TRANSFERRED", "CANCELED"],
+  COMPLETED: [],
+  TRANSFERRED: [],
+  CANCELED: [],
+  PAYMENT_WAIT: ["COMPLETED"],
+  INACTIVE: [],
+};
+
+const STATUS_FALLBACK_LABEL: Record<string, string> = {
+  PAYMENT_WAIT: "수납대기",
+  INACTIVE: "비활성",
 };
 
 function toOptionalNumber(value: string) {
@@ -124,9 +172,39 @@ function toOptionalDateTime(value: string) {
   return trimmed;
 }
 
+function getPatientDisplayName(
+  patient?: (Partial<PatientOption> & { name?: string | null }) | null
+) {
+  const rawName =
+    (typeof patient?.patientName === "string" ? patient.patientName : "") ||
+    (typeof patient?.name === "string" ? patient.name : "");
+  const trimmed = rawName.trim();
+  if (trimmed) return trimmed;
+
+  const id = patient?.patientId;
+  if (typeof id === "number") return `환자 ${id}`;
+  return "";
+}
+
+function statusLabelByCode(code?: string | null) {
+  const safe = (code ?? "").trim();
+  if (!safe) return "-";
+  const matched = statusOptions.find((opt) => opt.value === safe);
+  if (matched) return matched.label;
+  return STATUS_FALLBACK_LABEL[safe] ?? safe;
+}
+
+function isStatusTransitionAllowed(fromStatus: string, toStatus: string) {
+  if (!fromStatus || fromStatus === toStatus) return true;
+  const allowed = STATUS_TRANSITIONS[fromStatus];
+  if (!allowed) return true;
+  return allowed.includes(toStatus);
+}
+
 export default function EmergencyReceptionForm({
   title,
   initial,
+  receptionId,
   loading,
   error,
   submitLabel,
@@ -159,16 +237,35 @@ export default function EmergencyReceptionForm({
   const [patients, setPatients] = React.useState<PatientOption[]>([]);
   const [patientKeyword, setPatientKeyword] = React.useState("");
   const [listError, setListError] = React.useState<string | null>(null);
-  const [numberLoading, setNumberLoading] = React.useState(false);
-  const [numberError, setNumberError] = React.useState<string | null>(null);
   const [submitError, setSubmitError] = React.useState<string | null>(null);
+  const isPatientFixed = !isEditMode && initial.patientId.trim().length > 0;
+  const initialStatusCode = React.useMemo(
+    () => statusLabelToCode[initial.status] ?? initial.status ?? "REGISTERED",
+    [initial.status]
+  );
+  const reasonRequired = isEditMode && STATUS_REASON_REQUIRED.has(form.status);
+
+  const editStatusOptions = React.useMemo(() => {
+    const base = statusOptions.filter((opt) => !STATUS_POLICY_HIDDEN.has(opt.value));
+    if (!form.status) return base;
+    if (base.some((opt) => opt.value === form.status)) return base;
+    return [{ value: form.status, label: statusLabelByCode(form.status) }, ...base];
+  }, [form.status]);
+
+  const statusTransitionHint = React.useMemo(() => {
+    const allowed = STATUS_TRANSITIONS[initialStatusCode] ?? [];
+    if (allowed.length === 0) return "현재 상태에서는 다른 상태로 변경할 수 없습니다.";
+    return allowed.map((status) => statusLabelByCode(status)).join(", ");
+  }, [initialStatusCode]);
 
   React.useEffect(() => {
-    setForm({
+    const nextForm: EmergencyReceptionFormState = {
       ...initial,
+      departmentId: String(EMERGENCY_DEPARTMENT_ID),
       status: statusLabelToCode[initial.status] ?? initial.status,
       arrivalMode: arrivalLabelToCode[initial.arrivalMode] ?? initial.arrivalMode,
-    });
+    };
+    setForm((prev) => (isSameFormState(prev, nextForm) ? prev : nextForm));
   }, [initial]);
 
   React.useEffect(() => {
@@ -176,6 +273,14 @@ export default function EmergencyReceptionForm({
       setForm((prev) => ({ ...prev, status: "WAITING" }));
     }
   }, [form.status, isEditMode]);
+
+  React.useEffect(() => {
+    if (!isEditMode) return;
+    const initialPatientId = initial.patientId.trim();
+    if (!initialPatientId) return;
+    if (form.patientId.trim()) return;
+    setForm((prev) => ({ ...prev, patientId: initialPatientId }));
+  }, [isEditMode, initial.patientId, form.patientId]);
 
   React.useEffect(() => {
     if (!form.note.trim() && form.triageNote.trim()) {
@@ -204,73 +309,12 @@ export default function EmergencyReceptionForm({
   }, []);
 
   React.useEffect(() => {
-    if (initial.receptionNo.trim()) return;
-    let mounted = true;
-
-    const generate = async () => {
-      try {
-        setNumberLoading(true);
-        setNumberError(null);
-        const list = await fetchEmergencyReceptionsApi();
-        const next = buildNextReceptionNumber({
-          existingNumbers: list.map((item) => item.receptionNo),
-          startSequence: 101,
-        });
-        if (!mounted) return;
-        setForm((prev) => ({ ...prev, receptionNo: next }));
-      } catch (err) {
-        if (!mounted) return;
-        const fallback = buildNextReceptionNumber({
-          existingNumbers: [],
-          startSequence: 101,
-        });
-        setForm((prev) => ({ ...prev, receptionNo: fallback }));
-        setNumberError(err instanceof Error ? err.message : "자동 채번에 실패했습니다.");
-      } finally {
-        if (mounted) {
-          setNumberLoading(false);
-        }
-      }
-    };
-
-    generate();
-    return () => {
-      mounted = false;
-    };
-  }, [initial.receptionNo]);
-
-  React.useEffect(() => {
     setSubmitError(null);
   }, [form]);
 
-  const getDoctorsByDepartment = (departmentId: string) => {
-    const deptId = Number(departmentId);
-    if (Number.isNaN(deptId)) return doctorOptions;
-    return doctorOptions.filter((d) => (d.departmentId ?? null) === deptId);
-  };
-
-  const handleDepartmentChange = (value: string) => {
-    const candidates = getDoctorsByDepartment(value);
-    const autoDoctor = candidates[0];
-    setForm((prev) => ({
-      ...prev,
-      departmentId: value,
-      doctorId: autoDoctor ? String(autoDoctor.doctorId) : "",
-    }));
-  };
-
-  const handleDoctorChange = (value: string) => {
-    const selected = doctorOptions.find((d) => String(d.doctorId) === value);
-    setForm((prev) => ({
-      ...prev,
-      doctorId: value,
-      departmentId: selected?.departmentId ? String(selected.departmentId) : prev.departmentId,
-    }));
-  };
-
   const handleSubmit = () => {
-    if (!form.receptionNo.trim()) return;
-    const patientId = toOptionalNumber(form.patientId);
+    const effectivePatientId = form.patientId.trim() || (isEditMode ? initial.patientId.trim() : "");
+    const patientId = toOptionalNumber(effectivePatientId);
     const departmentId = toOptionalNumber(form.departmentId);
     const triageLevel = toOptionalNumber(form.triageLevel);
 
@@ -281,6 +325,18 @@ export default function EmergencyReceptionForm({
     }
     if (triageLevel < 1 || triageLevel > 5) {
       setSubmitError("중증도는 1~5 사이로 입력해주세요.");
+      return;
+    }
+
+    if (isEditMode && !isStatusTransitionAllowed(initialStatusCode, form.status)) {
+      setSubmitError(
+        `현재 상태(${statusLabelByCode(initialStatusCode)})에서 ${statusLabelByCode(form.status)}(으)로는 변경할 수 없습니다.`
+      );
+      return;
+    }
+
+    if (reasonRequired && !form.note.trim()) {
+      setSubmitError("보류/전원/취소 상태로 변경하려면 사유(메모)를 입력해주세요.");
       return;
     }
 
@@ -310,7 +366,7 @@ export default function EmergencyReceptionForm({
       return;
     }
 
-    if (form.status === "CALLED") {
+    if (form.status === "TRIAGE") {
       const missingVitals = [
         vitalTemp,
         vitalBpSystolic,
@@ -320,19 +376,19 @@ export default function EmergencyReceptionForm({
         vitalSpo2,
       ].some((value) => value === undefined);
       if (missingVitals) {
-        setSubmitError("호출 상태로 저장하려면 바이탈(체온/혈압/심박수/호흡수/SpO2)을 모두 입력해주세요.");
+        setSubmitError("트리아지 진행 상태로 저장하려면 바이탈(체온/혈압/심박수/호흡수/SpO2)을 모두 입력해주세요.");
         return;
       }
     }
 
     onSubmit({
-      receptionNo: form.receptionNo.trim(),
+      receptionNo: isEditMode ? form.receptionNo.trim() : "",
       patientId,
       departmentId,
-      doctorId: toOptionalNumber(form.doctorId) ?? null,
+      doctorId: null,
       scheduledAt: toOptionalDateTime(form.scheduledAt),
       arrivedAt: toOptionalDateTime(form.arrivedAt),
-      status: (form.status || "WAITING") as EmergencyReceptionFormPayload["status"],
+      status: (isEditMode ? form.status || "WAITING" : "WAITING") as EmergencyReceptionFormPayload["status"],
       note: toOptionalString(form.note) ?? null,
       triageLevel,
       chiefComplaint: form.chiefComplaint.trim(),
@@ -353,21 +409,35 @@ export default function EmergencyReceptionForm({
   );
 
   React.useEffect(() => {
-    if (!selectedPatient) return;
-    if (patientKeyword.trim()) return;
-    setPatientKeyword(selectedPatient.patientName ?? "");
-  }, [selectedPatient, patientKeyword]);
+    if (selectedPatient) {
+      const resolvedName = getPatientDisplayName(selectedPatient);
+      if (isEditMode) {
+        if (patientKeyword !== resolvedName) {
+          setPatientKeyword(resolvedName);
+        }
+        return;
+      }
+      if (!patientKeyword.trim()) {
+        setPatientKeyword(resolvedName);
+      }
+      return;
+    }
+
+    if (!patientKeyword.trim() && initial.patientName.trim()) {
+      setPatientKeyword(initial.patientName.trim());
+    }
+  }, [selectedPatient, patientKeyword, initial.patientName, isEditMode]);
 
   const exactMatchedPatient = React.useMemo(() => {
     const keyword = patientKeyword.trim().toLowerCase();
     if (!keyword) return null;
-    return patients.find((p) => p.patientName.trim().toLowerCase() === keyword) ?? null;
+    return patients.find((p) => getPatientDisplayName(p).toLowerCase() === keyword) ?? null;
   }, [patients, patientKeyword]);
 
   const hasMatchingPatient = React.useMemo(() => {
     const keyword = patientKeyword.trim().toLowerCase();
     if (!keyword) return true;
-    return patients.some((p) => p.patientName.toLowerCase().includes(keyword));
+    return patients.some((p) => getPatientDisplayName(p).toLowerCase().includes(keyword));
   }, [patients, patientKeyword]);
 
   React.useEffect(() => {
@@ -451,11 +521,7 @@ export default function EmergencyReceptionForm({
             required
             fullWidth
             InputProps={{ readOnly: true }}
-            helperText={
-              numberError
-                ? "자동 채번 조회에 실패해 기본 번호를 사용합니다."
-                : "접수번호는 자동 생성됩니다."
-            }
+            helperText="접수번호는 서버에서 자동 생성됩니다."
             sx={fieldSx}
           />
           <Stack direction={{ xs: "column", sm: "row" }} spacing={1}>
@@ -464,32 +530,51 @@ export default function EmergencyReceptionForm({
                 options={patients}
                 value={selectedPatient}
                 inputValue={patientKeyword}
+                disableClearable={isEditMode || isPatientFixed}
+                readOnly={isEditMode || isPatientFixed}
+                open={isEditMode ? false : undefined}
+                popupIcon={isEditMode ? null : undefined}
                 onInputChange={(_, value, reason) => {
-                  setPatientKeyword(value);
+                  if (isEditMode || isPatientFixed) return;
                   if (reason === "input") {
+                    setPatientKeyword(value);
+                    setForm((prev) => ({ ...prev, patientId: "" }));
+                    return;
+                  }
+                  if (reason === "clear") {
+                    setPatientKeyword("");
                     setForm((prev) => ({ ...prev, patientId: "" }));
                   }
                 }}
                 onChange={(_, value) => {
+                  if (isEditMode || isPatientFixed) {
+                    setPatientKeyword(getPatientDisplayName(selectedPatient));
+                    return;
+                  }
                   setForm((prev) => ({
                     ...prev,
                     patientId: value ? String(value.patientId) : "",
                   }));
-                  setPatientKeyword(value?.patientName ?? "");
+                  setPatientKeyword(getPatientDisplayName(value));
                 }}
-                getOptionLabel={(option) => option.patientName}
+                getOptionLabel={(option) => getPatientDisplayName(option)}
                 isOptionEqualToValue={(option, value) => option.patientId === value.patientId}
+                renderOption={(props, option) => (
+                  <li {...props} key={option.patientId}>
+                    {getPatientDisplayName(option)}
+                  </li>
+                )}
                 noOptionsText="검색 결과가 없습니다"
                 renderInput={(params) => (
                   <TextField {...params} label="환자 이름" required fullWidth sx={fieldSx} />
                 )}
               />
-              {patientKeyword.trim() && !form.patientId && hasMatchingPatient && (
+              {!isEditMode && patientKeyword.trim() && !form.patientId && hasMatchingPatient && (
                 <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700 }}>
                   환자명을 선택하거나 정확히 입력해주세요.
                 </Typography>
               )}
-              {patientKeyword.trim() && !hasMatchingPatient && (
+              {!isEditMode && patientKeyword.trim() && !hasMatchingPatient && (
                 <Button
                   variant="outlined"
                   size="small"
@@ -513,38 +598,17 @@ export default function EmergencyReceptionForm({
             </Stack>
             <Box sx={{ flex: { xs: 1, sm: 1 } }}>
               <TextField
-                select
                 label="진료과"
-                value={form.departmentId}
-                onChange={(e) => handleDepartmentChange(e.target.value)}
+                value={EMERGENCY_DEPARTMENT_NAME}
                 required
                 fullWidth
+                InputProps={{ readOnly: true }}
                 sx={fieldSx}
-              >
-                {departmentOptions.map((d) => (
-                  <MenuItem key={d.departmentId} value={String(d.departmentId)}>
-                    {d.departmentName}
-                  </MenuItem>
-                ))}
-              </TextField>
+              />
             </Box>
           </Stack>
-          <Stack direction={{ xs: "column", sm: "row" }} spacing={1}>
-            <TextField
-              select
-              label="의사 이름"
-              value={form.doctorId}
-              onChange={(e) => handleDoctorChange(e.target.value)}
-              fullWidth
-              sx={fieldSx}
-            >
-              {getDoctorsByDepartment(form.departmentId).map((d) => (
-                <MenuItem key={d.doctorId} value={String(d.doctorId)}>
-                  {d.doctorName}
-                </MenuItem>
-              ))}
-            </TextField>
-            {isEditMode ? (
+          {isEditMode && (
+            <Stack direction={{ xs: "column", sm: "row" }} spacing={1}>
               <TextField
                 select
                 label="상태"
@@ -553,22 +617,33 @@ export default function EmergencyReceptionForm({
                 fullWidth
                 sx={fieldSx}
               >
-                {statusOptions.map((opt) => (
-                  <MenuItem key={opt.value} value={opt.value}>
+                {editStatusOptions.map((opt) => (
+                  <MenuItem
+                    key={opt.value}
+                    value={opt.value}
+                    disabled={!isStatusTransitionAllowed(initialStatusCode, opt.value)}
+                  >
                     {opt.label}
                   </MenuItem>
                 ))}
               </TextField>
-            ) : (
-              <TextField
-                label="상태"
-                value="대기"
-                fullWidth
-                InputProps={{ readOnly: true }}
-                sx={fieldSx}
-              />
-            )}
-          </Stack>
+            </Stack>
+          )}
+          {isEditMode && (
+            <Stack spacing={0.25}>
+              <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700 }}>
+                가능한 상태 변경: {statusTransitionHint}
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                수납대기(PAYMENT_WAIT), 비활성(INACTIVE)은 응급접수 수정 화면에서 직접 변경하지 않습니다.
+              </Typography>
+            </Stack>
+          )}
+          {!isEditMode && (
+            <Typography variant="body2" sx={{ color: "#9a3412", fontWeight: 700 }}>
+              등록 시 상태는 자동으로 &apos;대기&apos;로 시작됩니다.
+            </Typography>
+          )}
 
           <TextField
             type="datetime-local"
@@ -602,21 +677,21 @@ export default function EmergencyReceptionForm({
           </Stack>
           <Stack direction={{ xs: "column", sm: "row" }} spacing={1}>
             <TextField
-              label="체온"
+              label="체온(℃)"
               value={form.vitalTemp}
               onChange={(e) => setForm((prev) => ({ ...prev, vitalTemp: e.target.value }))}
               fullWidth
               sx={fieldSx}
             />
             <TextField
-              label="수축기혈압"
+              label="수축기혈압(mmHg)"
               value={form.vitalBpSystolic}
               onChange={(e) => setForm((prev) => ({ ...prev, vitalBpSystolic: e.target.value }))}
               fullWidth
               sx={fieldSx}
             />
             <TextField
-              label="이완기혈압"
+              label="이완기혈압(mmHg)"
               value={form.vitalBpDiastolic}
               onChange={(e) => setForm((prev) => ({ ...prev, vitalBpDiastolic: e.target.value }))}
               fullWidth
@@ -625,21 +700,21 @@ export default function EmergencyReceptionForm({
           </Stack>
           <Stack direction={{ xs: "column", sm: "row" }} spacing={1}>
             <TextField
-              label="심박수"
+              label="심박수(bpm)"
               value={form.vitalHr}
               onChange={(e) => setForm((prev) => ({ ...prev, vitalHr: e.target.value }))}
               fullWidth
               sx={fieldSx}
             />
             <TextField
-              label="호흡수"
+              label="호흡수(회/분)"
               value={form.vitalRr}
               onChange={(e) => setForm((prev) => ({ ...prev, vitalRr: e.target.value }))}
               fullWidth
               sx={fieldSx}
             />
             <TextField
-              label="SpO2(동맥혈산소포화도)"
+              label="SpO2(동맥혈산소포화도)(%)"
               value={form.vitalSpo2}
               onChange={(e) => setForm((prev) => ({ ...prev, vitalSpo2: e.target.value }))}
               fullWidth
@@ -669,8 +744,20 @@ export default function EmergencyReceptionForm({
             fullWidth
             multiline
             minRows={3}
+            required={reasonRequired}
+            helperText={
+              reasonRequired
+                ? "보류/전원/취소 상태로 변경하려면 사유(메모)를 입력해야 합니다."
+                : undefined
+            }
             sx={fieldSx}
           />
+          {isEditMode && receptionId && (
+            <>
+              <Divider />
+              <EmergencyReceptionStatusTimeline receptionId={receptionId} />
+            </>
+          )}
         </Stack>
 
         {listError && (
@@ -710,13 +797,12 @@ export default function EmergencyReceptionForm({
             onClick={handleSubmit}
             disabled={
               loading ||
-              numberLoading ||
-              !form.receptionNo.trim() ||
-              !form.patientId.trim() ||
+              !(form.patientId.trim() || (isEditMode ? initial.patientId.trim() : "")) ||
               !form.departmentId.trim() ||
               !form.arrivedAt.trim() ||
               !form.triageLevel.trim() ||
-              !form.chiefComplaint.trim()
+              !form.chiefComplaint.trim() ||
+              (reasonRequired && !form.note.trim())
             }
             sx={{
               bgcolor: accent,

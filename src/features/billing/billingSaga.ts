@@ -12,7 +12,7 @@ import {
   type BillDetail,
   type Payment,
   type BillingStats,
-} from "@/lib/billingApi";
+} from "@/lib/billing/billingApi";
 import {
   fetchBillsByPatientRequest,
   fetchBillingDetailRequest,

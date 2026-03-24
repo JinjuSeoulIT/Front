@@ -1,4 +1,4 @@
-import TestExecutionDetail from "@/components/medical_support/testexecution/TestExecutionDetail";
+import TestExecutionDetail from "@/components/medical_support/testExecution/TestExecutionDetail";
 
 const TestExecutionDetailPage = () => {
   return (

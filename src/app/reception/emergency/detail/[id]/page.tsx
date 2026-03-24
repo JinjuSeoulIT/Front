@@ -5,13 +5,14 @@ import { useParams, useRouter } from "next/navigation";
 import MainLayout from "@/components/layout/MainLayout";
 import { useDispatch, useSelector } from "react-redux";
 import type { RootState, AppDispatch } from "@/store/store";
-import { emergencyReceptionActions } from "@/features/EmergencyReceptions/EmergencyReceptionSlice";
+import { emergencyReceptionActions } from "@/features/EmergencyReception/EmergencyReceptionSlice";
 import type {
   EmergencyReception,
   EmergencyReceptionForm,
   ReceptionStatus,
-} from "@/features/EmergencyReceptions/EmergencyReceptionTypes";
-import { fetchPatientApi } from "@/lib/patientApi";
+} from "@/features/EmergencyReception/EmergencyReceptionTypes";
+import { fetchPatientApi } from "@/lib/reception/patientApi";
+import ReceptionExtensionsPanel from "@/components/reception/ReceptionExtensionsPanel";
 import { Box, Button, Card, CardContent, Divider, Stack, Typography } from "@mui/material";
 
 const statusLabel = (value?: ReceptionStatus | string | null) => {
@@ -149,7 +150,10 @@ export default function EmergencyReceptionDetailPage() {
                 <Row label="접수번호" value={p.receptionNo} />
                 <Row label="환자 이름" value={patientName} />
                 <Row label="상태" value={statusLabel(p.status)} />
-                <Row label="중증도" value={String(p.triageLevel)} />
+                <Row
+                  label="중증도"
+                  value={p.triageLevel == null ? "-" : String(p.triageLevel)}
+                />
                 <Row label="주호소" value={p.chiefComplaint ?? "-"} />
                 <Row label="메모" value={p.note ?? "-"} />
               </Stack>
@@ -170,29 +174,17 @@ export default function EmergencyReceptionDetailPage() {
               </Button>
               <Button
                 variant="outlined"
-                color="success"
-                disabled={!p}
-                onClick={() => onChangeStatus("REGISTERED")}
-              >
-                완료
-              </Button>
-              <Button
-                variant="outlined"
-                color="warning"
-                disabled={!p}
-                onClick={() => onChangeStatus("INACTIVE")}
-              >
-                비활성
-              </Button>
-              <Button
-                variant="outlined"
                 color="error"
-                disabled={!p}
+                disabled={!p || p.status === "CANCELED"}
                 onClick={() => onChangeStatus("CANCELED")}
               >
                 취소
               </Button>
             </Stack>
+
+            <Divider sx={{ my: 1 }} />
+
+            <ReceptionExtensionsPanel scope="reception" entityId={receptionId} />
           </Stack>
         </CardContent>
       </Card>

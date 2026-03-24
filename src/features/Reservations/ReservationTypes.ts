@@ -54,8 +54,14 @@ export type DoctorOption = {
   departmentId?: number | null;
 };
 
+export type ReservationSearchType =
+  | "reservationNo"
+  | "patientName"
+  | "patientId"
+  | "status";
+
 export type ReservationSearchPayload = {
-  type: "reservationNo" | "patientId" | "status";
+  type: ReservationSearchType;
   keyword: string;
 };
 

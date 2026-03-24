@@ -1,7 +1,7 @@
 "use client";
 
 import MainLayout from "@/components/layout/MainLayout";
-import Dashboard from "@/components/medical_support/Dashboard";
+import Dashboard from "@/components/medical_support/dashboard";
 import { Typography } from "@mui/material";
 
 const NursePage = () => {

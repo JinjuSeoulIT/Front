@@ -1,5 +1,5 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
-import type { TestExecution } from "@/features/medical_support/testexecution/testexecutionType";
+import type { TestExecution } from "@/features/medical_support/testExecution/testExecutionType";
 
 type TestExecutionState = {
   list: TestExecution[];
@@ -27,7 +27,7 @@ const testexecutionSlice = createSlice({
       state.loading = true;
       state.error = null;
       state.createSuccess = false;
-      state.updateSuccess = false;
+    
     },
     fetchTestExecutionsSuccess: (
       state,

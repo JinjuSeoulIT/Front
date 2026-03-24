@@ -20,8 +20,31 @@ export function safe(v?: string | null): string {
 }
 
 export function statusChipLabel(statusCode?: string | null): string {
-  if (!statusCode) return "ACTIVE";
-  return statusCode;
+  return patientStatusMeta(statusCode).label;
+}
+
+export function patientStatusMeta(statusCode?: string | null): {
+  label: string;
+  color: "default" | "primary" | "secondary" | "error" | "info" | "success" | "warning";
+  variant: "filled" | "outlined";
+} {
+  const code = (statusCode ?? "ACTIVE").trim().toUpperCase();
+  switch (code) {
+    case "ACTIVE":
+      return { label: "정상", color: "success", variant: "filled" };
+    case "INACTIVE":
+      return { label: "비활성", color: "warning", variant: "filled" };
+    case "TRANSFERRED":
+      return { label: "전원", color: "info", variant: "filled" };
+    case "DECEASED":
+      return { label: "사망", color: "error", variant: "filled" };
+    case "OUTPATIENT":
+      return { label: "외래", color: "default", variant: "outlined" };
+    case "INPATIENT":
+      return { label: "입원", color: "default", variant: "outlined" };
+    default:
+      return { label: code || "-", color: "default", variant: "outlined" };
+  }
 }
 
 export function formatAddress(p?: Patient | null): string {

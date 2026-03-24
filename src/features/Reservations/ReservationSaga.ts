@@ -6,7 +6,7 @@ import type {
   ReservationForm,
   ReservationSearchPayload,
 } from "./ReservationTypes";
-import * as api from "../../lib/reservationAdminApi";
+import * as api from "../../lib/reception/reservationAdminApi";
 
 function* fetchReservationsSaga() {
   try {

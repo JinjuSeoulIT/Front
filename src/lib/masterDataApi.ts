@@ -19,7 +19,16 @@ export const fetchPatientsApi = async (): Promise<PatientOption[]> => {
   if (!res.data.success) {
     throw new Error(res.data.message || "Fetch patients failed");
   }
-  return res.data.result ?? [];
+  const list = (res.data.result ?? []) as Array<
+    PatientOption & { name?: string | null; patientNo?: string | null }
+  >;
+
+  return list
+    .map((item) => ({
+      patientId: Number(item.patientId),
+      patientName: (item.patientName ?? item.name ?? "").trim(),
+    }))
+    .filter((item) => Number.isFinite(item.patientId));
 };
 
 export const fetchDepartmentsApi = async (): Promise<DepartmentOption[]> => {

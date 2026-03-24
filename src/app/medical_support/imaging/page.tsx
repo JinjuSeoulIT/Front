@@ -1,21 +1,27 @@
 "use client";
 
 import * as React from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useDispatch, useSelector } from "react-redux";
 import MainLayout from "@/components/layout/MainLayout";
 import {
+  Alert,
   Box,
   Button,
   Card,
   CardContent,
   Chip,
-  FormControl,
-  InputLabel,
-  MenuItem,
-  Select,
+  CircularProgress,
+  Paper,
   Stack,
-  Tab,
-  Tabs,
-  TextField,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TablePagination,
+  TableRow,
   Typography,
 } from "@mui/material";
 import ScienceOutlinedIcon from "@mui/icons-material/ScienceOutlined";
@@ -23,198 +29,154 @@ import FactCheckOutlinedIcon from "@mui/icons-material/FactCheckOutlined";
 import HelpOutlineOutlinedIcon from "@mui/icons-material/HelpOutlineOutlined";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import AddIcon from "@mui/icons-material/Add";
-import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
-import SearchOutlinedIcon from "@mui/icons-material/SearchOutlined";
-import RestartAltOutlinedIcon from "@mui/icons-material/RestartAltOutlined";
-import {
-  ImagingExam,
-  ImagingExamCreatePayload,
-  createImagingExamApi,
-  deleteImagingExamApi,
-  fetchImagingExamsApi,
-  searchImagingExamsApi,
-  updateImagingExamApi,
-} from "@/lib/imagingExamApi";
+import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
+import { TestExecutionActions } from "@/features/medical_support/testExecution/testExecutionSlice";
+import type { TestExecution } from "@/features/medical_support/testExecution/testExecutionType";
+import type { RootState, AppDispatch } from "@/store/store";
 
-type SearchBy = "visitId" | "imagingType";
+const DONE_STATUSES = ["COMPLETED"];
+const ACTIVE_STATUSES = ["IN_PROGRESS"];
 
-const emptyForm: ImagingExamCreatePayload = {
-  visitId: "",
-  imagingType: "",
-  examStatusYn: "Y",
-  examAt: "",
+const formatDateTime = (value?: string | null) => {
+  if (!value) return "-";
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+
+  return new Intl.DateTimeFormat("ko-KR", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+  }).format(date);
 };
 
-const safe = (value?: string | null) => {
-  const v = value?.trim();
-  return v ? v : "-";
+const normalizeStatus = (value?: string | null) =>
+  value?.trim().toUpperCase() ?? "";
+
+const safeValue = (value?: string | number | null) => {
+  if (value === null || value === undefined) return "-";
+  const text = String(value).trim();
+  return text ? text : "-";
 };
 
-const normalize = (value?: string | null) => {
-  const v = value?.trim();
-  return v ? v : null;
+const getStatusColor = (
+  status?: string | null
+): "default" | "info" | "success" => {
+  const normalized = normalizeStatus(status);
+
+  if (DONE_STATUSES.includes(normalized)) return "success";
+  if (ACTIVE_STATUSES.includes(normalized)) return "info";
+
+  return "default";
 };
 
-const normalizeDateTime = (value?: string | null) => {
-  const v = value?.trim();
-  if (!v) return null;
-  return v.length === 16 ? `${v}:00` : v;
-};
+const getStatusSx = (status?: string | null) => {
+  const normalized = normalizeStatus(status);
 
-const toDateTimeInputValue = (value?: string | null) => {
-  const v = value?.trim();
-  if (!v) return "";
-  return v.replace(" ", "T").slice(0, 16);
-};
+  if (normalized === "WAITING") {
+    return {
+      backgroundColor: "#616161",
+      color: "#ffffff",
+      fontWeight: 600,
+    };
+  }
 
-const statusLabel = (value?: string | null) => {
-  const v = value?.trim().toUpperCase();
-  return v === "N" ? "비활성" : "활성";
-};
+  if (normalized === "CANCELLED") {
+    return {
+      backgroundColor: "#eeeeee",
+      color: "#757575",
+      fontWeight: 500,
+    };
+  }
 
-const isInactive = (value?: string | null) => {
-  const v = value?.trim().toUpperCase();
-  return v === "N";
+  return {
+    fontWeight: 600,
+  };
 };
 
 export default function NurseImagingPage() {
-  const [items, setItems] = React.useState<ImagingExam[]>([]);
+  const dispatch = useDispatch<AppDispatch>();
+  const router = useRouter();
+
+  const [page, setPage] = React.useState(0);
+  const [rowsPerPage, setRowsPerPage] = React.useState(10);
   const [selectedId, setSelectedId] = React.useState<string | null>(null);
-  const [form, setForm] = React.useState<ImagingExamCreatePayload>(emptyForm);
-  const [loading, setLoading] = React.useState(false);
-  const [saving, setSaving] = React.useState(false);
-  const [error, setError] = React.useState<string | null>(null);
-  const [tab, setTab] = React.useState<"ACTIVE" | "INACTIVE" | "ALL">("ACTIVE");
 
-  const [searchBy, setSearchBy] = React.useState<SearchBy>("visitId");
-  const [keyword, setKeyword] = React.useState("");
-  const [searchMode, setSearchMode] = React.useState(false);
-
-  const selected = React.useMemo(
-    () => items.find((i) => i.imagingExamId === selectedId) ?? null,
-    [items, selectedId]
+  const { list: items, loading, error } = useSelector(
+    (state: RootState) => state.testexecutions
   );
 
-  const filtered = React.useMemo(() => {
-    return items.filter((i) => {
-      if (tab === "ACTIVE" && isInactive(i.examStatusYn)) return false;
-      if (tab === "INACTIVE" && !isInactive(i.examStatusYn)) return false;
-      return true;
-    });
-  }, [items, tab]);
-
-  const totalCount = items.length;
-  const inactiveCount = items.filter((i) => isInactive(i.examStatusYn)).length;
-  const activeCount = totalCount - inactiveCount;
-
-  const load = React.useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const data = await fetchImagingExamsApi();
-      setItems(data);
-      if (selectedId && !data.find((i) => i.imagingExamId === selectedId)) {
-        setSelectedId(null);
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "불러오기 실패");
-    } finally {
-      setLoading(false);
-    }
-  }, [selectedId]);
-
   React.useEffect(() => {
-    load();
-  }, [load]);
+    dispatch(TestExecutionActions.fetchTestExecutionsRequest());
+  }, [dispatch]);
 
-  React.useEffect(() => {
-    if (!selected) {
-      setForm(emptyForm);
-      return;
-    }
-    setForm({
-      visitId: selected.visitId ?? "",
-      imagingType: selected.imagingType ?? "",
-      examStatusYn: selected.examStatusYn ?? "Y",
-      examAt: toDateTimeInputValue(selected.examAt),
-    });
-  }, [selected]);
+  const imagingItems = React.useMemo(
+    () =>
+      items.filter(
+        (item) => normalizeStatus(item.executionType) === "IMAGING"
+      ),
+    [items]
+  );
 
-  const handleSearch = async () => {
-    const value = keyword.trim();
-    if (!value) {
-      setError("검색어를 입력하세요.");
-      return;
-    }
-    setLoading(true);
-    setError(null);
-    try {
-      const data = await searchImagingExamsApi(searchBy, value);
-      setItems(data);
-      setSearchMode(true);
-      if (selectedId && !data.find((i) => i.imagingExamId === selectedId)) {
-        setSelectedId(null);
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "검색 실패");
-    } finally {
-      setLoading(false);
-    }
+  const completedCount = React.useMemo(
+    () =>
+      imagingItems.filter((item) =>
+        DONE_STATUSES.includes(normalizeStatus(item.progressStatus))
+      ).length,
+    [imagingItems]
+  );
+
+  const inProgressCount = React.useMemo(
+    () =>
+      imagingItems.filter((item) =>
+        ACTIVE_STATUSES.includes(normalizeStatus(item.progressStatus))
+      ).length,
+    [imagingItems]
+  );
+
+  const maxPage = Math.max(0, Math.ceil(imagingItems.length / rowsPerPage) - 1);
+  const currentPage = Math.min(page, maxPage);
+
+  const paginatedItems = React.useMemo(
+    () =>
+      imagingItems.slice(
+        currentPage * rowsPerPage,
+        currentPage * rowsPerPage + rowsPerPage
+      ),
+    [currentPage, imagingItems, rowsPerPage]
+  );
+
+  const selected = React.useMemo(
+    () =>
+      imagingItems.find(
+        (item) => String(item.testExecutionId) === String(selectedId)
+      ) ?? null,
+    [imagingItems, selectedId]
+  );
+
+  const activeSelected =
+    selected ?? paginatedItems[0] ?? imagingItems[0] ?? null;
+
+  const handleChangePage = (_event: unknown, newPage: number) => {
+    setPage(newPage);
   };
 
-  const handleSearchReset = async () => {
-    setKeyword("");
-    setSearchMode(false);
-    await load();
+  const handleChangeRowsPerPage = (
+    event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
+    setRowsPerPage(Number(event.target.value));
+    setPage(0);
   };
 
-  const handleSave = async () => {
-    setSaving(true);
-    setError(null);
-    try {
-      const payload: ImagingExamCreatePayload = {
-        visitId: normalize(form.visitId),
-        imagingType: normalize(form.imagingType),
-        examStatusYn: normalize(form.examStatusYn) ?? "Y",
-        examAt: normalizeDateTime(form.examAt),
-      };
-
-      if (selected) {
-        await updateImagingExamApi(selected.imagingExamId, payload);
-      } else {
-        await createImagingExamApi(payload);
-      }
-
-      await load();
-      setSearchMode(false);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "저장 실패");
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleDelete = async (id: string) => {
-    if (!confirm("영상검사를 비활성 처리할까요?")) return;
-    setSaving(true);
-    setError(null);
-    try {
-      await deleteImagingExamApi(id);
-      if (selectedId === id) {
-        setSelectedId(null);
-      }
-      await load();
-      setSearchMode(false);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "삭제 실패");
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleNew = () => {
-    setSelectedId(null);
-    setForm(emptyForm);
+  const handleSelect = (item: TestExecution) => {
+    setSelectedId(String(item.testExecutionId));
   };
 
   return (
@@ -230,25 +192,37 @@ export default function NurseImagingPage() {
           }}
         >
           <CardContent sx={{ p: 3 }}>
-            <Stack direction={{ xs: "column", md: "row" }} spacing={2} alignItems="center">
+            <Stack
+              direction={{ xs: "column", md: "row" }}
+              spacing={2}
+              alignItems="center"
+            >
               <Stack spacing={0.5} sx={{ flexGrow: 1 }}>
                 <Typography sx={{ fontSize: 22, fontWeight: 900 }}>
-                  영상검사 워크스테이션
+                  영상 검사 워크스테이션
                 </Typography>
                 <Typography sx={{ color: "var(--muted)" }}>
-                  영상검사 CRUD와 검색 점검을 위한 간호 화면입니다.
+                  검사 수행 목록 중 영상 검사 항목만 조회하고 상세를 확인하는 화면입니다.
                 </Typography>
               </Stack>
+
               <Stack direction="row" spacing={1}>
                 <Button
                   variant="outlined"
                   startIcon={<RefreshIcon />}
-                  onClick={load}
+                  onClick={() =>
+                    dispatch(TestExecutionActions.fetchTestExecutionsRequest())
+                  }
                   disabled={loading}
                 >
                   새로고침
                 </Button>
-                <Button variant="contained" startIcon={<AddIcon />} onClick={handleNew}>
+                <Button
+                  component={Link}
+                  href="/medical_support/testExecution/create"
+                  variant="contained"
+                  startIcon={<AddIcon />}
+                >
                   신규 작성
                 </Button>
               </Stack>
@@ -257,10 +231,17 @@ export default function NurseImagingPage() {
         </Card>
 
         <Stack direction="row" spacing={1} sx={{ flexWrap: "wrap" }}>
-          <Chip label={`전체 ${totalCount}`} color="primary" />
-          <Chip label={`활성 ${activeCount}`} variant="outlined" />
-          <Chip label={`비활성 ${inactiveCount}`} variant="outlined" />
-          {searchMode && <Chip label="검색 결과" color="secondary" />}
+          <Chip label={`총 ${imagingItems.length}건`} color="primary" />
+          <Chip
+            label={`진행 중 ${inProgressCount}건`}
+            color="info"
+            variant="outlined"
+          />
+          <Chip
+            label={`완료 ${completedCount}건`}
+            color="success"
+            variant="outlined"
+          />
           {loading && <Chip label="불러오는 중" variant="outlined" />}
           {error && <Chip label={`오류: ${error}`} color="error" />}
         </Stack>
@@ -269,214 +250,208 @@ export default function NurseImagingPage() {
           sx={{
             display: "grid",
             gap: 2,
-            gridTemplateColumns: { xs: "1fr", lg: "1.2fr 2.2fr 1.2fr" },
+            gridTemplateColumns: { xs: "1fr", lg: "2.2fr 1.2fr" },
             alignItems: "stretch",
           }}
         >
           <Card sx={{ borderRadius: 3, border: "1px solid var(--line)" }}>
             <CardContent sx={{ p: 2.5 }}>
-              <Stack direction="row" spacing={1} alignItems="center" justifyContent="space-between">
+              <Stack
+                direction="row"
+                spacing={1}
+                alignItems="center"
+                justifyContent="space-between"
+              >
                 <Stack direction="row" spacing={1} alignItems="center">
                   <ScienceOutlinedIcon sx={{ color: "var(--brand)" }} />
-                  <Typography fontWeight={800}>영상검사 리스트</Typography>
+                  <Typography fontWeight={800}>영상 검사 목록</Typography>
                 </Stack>
-                <Chip label={`표시 ${filtered.length}`} size="small" />
+                <Chip label={`표시 ${imagingItems.length}`} size="small" />
               </Stack>
 
-              <Tabs
-                value={searchBy}
-                onChange={(_, v) => setSearchBy(v as SearchBy)}
-                sx={{ mt: 1 }}
-              >
-                <Tab label="진료ID" value="visitId" />
-                <Tab label="영상종류" value="imagingType" />
-              </Tabs>
+              {loading && (
+                <Box sx={{ display: "flex", justifyContent: "center", py: 5 }}>
+                  <CircularProgress size={28} />
+                </Box>
+              )}
 
-              <Stack direction={{ xs: "column", sm: "row" }} spacing={1} sx={{ mt: 1.5 }}>
-                <TextField
-                  size="small"
-                  placeholder={searchBy === "visitId" ? "진료ID 입력" : "영상종류 입력"}
-                  value={keyword}
-                  onChange={(e) => setKeyword(e.target.value)}
-                  fullWidth
-                />
-                <Button
-                  variant="contained"
-                  startIcon={<SearchOutlinedIcon />}
-                  onClick={handleSearch}
+              {error && (
+                <Alert severity="error" sx={{ mt: 2 }}>
+                  {error}
+                </Alert>
+              )}
+
+              {!loading && !error && (
+                <Paper
+                  elevation={0}
+                  sx={{
+                    mt: 2,
+                    borderRadius: 2,
+                    border: "1px solid var(--line)",
+                    overflow: "hidden",
+                  }}
                 >
-                  검색
-                </Button>
-                <Button
-                  variant="outlined"
-                  startIcon={<RestartAltOutlinedIcon />}
-                  onClick={handleSearchReset}
-                >
-                  초기화
-                </Button>
-              </Stack>
+                  <TableContainer>
+                    <Table size="small" stickyHeader>
+                      <TableHead>
+                        <TableRow>
+                          <TableCell align="center">번호</TableCell>
+                          <TableCell align="center">검사수행 ID</TableCell>
+                          <TableCell align="center">오더항목 ID</TableCell>
+                          <TableCell align="center">검사유형</TableCell>
+                          <TableCell align="center">진행상태</TableCell>
+                          <TableCell align="center">시작일시</TableCell>
+                          <TableCell align="center">완료일시</TableCell>
+                        </TableRow>
+                      </TableHead>
 
-              <Tabs
-                value={tab}
-                onChange={(_, v) => setTab(v as "ACTIVE" | "INACTIVE" | "ALL")}
-                sx={{ mt: 1 }}
-              >
-                <Tab label="활성" value="ACTIVE" />
-                <Tab label="비활성" value="INACTIVE" />
-                <Tab label="전체" value="ALL" />
-              </Tabs>
+                      <TableBody>
+                        {paginatedItems.length === 0 && (
+                          <TableRow>
+                            <TableCell colSpan={7} align="center" sx={{ py: 5 }}>
+                              영상 검사 데이터가 없습니다.
+                            </TableCell>
+                          </TableRow>
+                        )}
 
-              <Stack spacing={1.25} sx={{ mt: 2 }}>
-                {filtered.map((row) => (
-                  <Box
-                    key={row.imagingExamId}
-                    onClick={() => setSelectedId(row.imagingExamId)}
-                    sx={{
-                      p: 1.5,
-                      borderRadius: 2,
-                      border: "1px solid var(--line)",
-                      bgcolor:
-                        selected?.imagingExamId === row.imagingExamId
-                          ? "rgba(11, 91, 143, 0.12)"
-                          : "rgba(255,255,255,0.7)",
-                      cursor: "pointer",
-                    }}
-                  >
-                    <Stack direction="row" justifyContent="space-between">
-                      <Typography fontWeight={700}>{row.imagingExamId}</Typography>
-                      <Chip label={statusLabel(row.examStatusYn)} size="small" />
-                    </Stack>
-                    <Typography sx={{ color: "var(--muted)", fontSize: 12, mt: 0.25 }}>
-                      진료 {safe(row.visitId)} · 종류 {safe(row.imagingType)}
-                    </Typography>
-                    <Typography sx={{ color: "var(--muted)", fontSize: 12, mt: 0.25 }}>
-                      검사일시 {safe(row.examAt)}
-                    </Typography>
-                  </Box>
-                ))}
-                {!filtered.length && (
-                  <Typography color="text.secondary">표시할 영상검사가 없습니다.</Typography>
-                )}
-              </Stack>
+                        {paginatedItems.map((item, index) => (
+                          <TableRow
+                            key={String(item.testExecutionId)}
+                            hover
+                            onClick={() => handleSelect(item)}
+                            sx={{
+                              cursor: "pointer",
+                              "& td": { py: 1.25, whiteSpace: "nowrap" },
+                              "&:hover": { backgroundColor: "#f9fbff" },
+                              backgroundColor:
+                                String(activeSelected?.testExecutionId) ===
+                                String(item.testExecutionId)
+                                  ? "rgba(11, 91, 143, 0.08)"
+                                  : "transparent",
+                            }}
+                          >
+                            <TableCell align="center">
+                              {currentPage * rowsPerPage + index + 1}
+                            </TableCell>
+                            <TableCell align="center">
+                              {safeValue(item.testExecutionId)}
+                            </TableCell>
+                            <TableCell align="center">
+                              {safeValue(item.orderItemId)}
+                            </TableCell>
+                            <TableCell align="center">
+                              {safeValue(item.executionType)}
+                            </TableCell>
+                            <TableCell align="center">
+                              <Chip
+                                label={safeValue(item.progressStatus)}
+                                color={getStatusColor(item.progressStatus)}
+                                size="small"
+                                sx={getStatusSx(item.progressStatus)}
+                              />
+                            </TableCell>
+                            <TableCell align="center">
+                              {formatDateTime(item.startedAt)}
+                            </TableCell>
+                            <TableCell align="center">
+                              {formatDateTime(item.completedAt)}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
+
+                  <TablePagination
+                    component="div"
+                    count={imagingItems.length}
+                    page={currentPage}
+                    onPageChange={handleChangePage}
+                    rowsPerPage={rowsPerPage}
+                    onRowsPerPageChange={handleChangeRowsPerPage}
+                    rowsPerPageOptions={[10, 20, 50]}
+                    labelRowsPerPage="페이지당 행 수"
+                    labelDisplayedRows={({ from, to, count }) =>
+                      `${from}-${to} / 총 ${count}`
+                    }
+                  />
+                </Paper>
+              )}
             </CardContent>
           </Card>
 
           <Stack spacing={2}>
             <Card sx={{ borderRadius: 3, border: "1px solid var(--line)" }}>
               <CardContent sx={{ p: 2.5 }}>
-                <Stack direction="row" spacing={1} alignItems="center" justifyContent="space-between">
+                <Stack
+                  direction="row"
+                  spacing={1}
+                  alignItems="center"
+                  justifyContent="space-between"
+                >
                   <Stack direction="row" spacing={1} alignItems="center">
                     <ScienceOutlinedIcon sx={{ color: "var(--brand-strong)" }} />
-                    <Typography fontWeight={800}>선택 영상검사</Typography>
+                    <Typography fontWeight={800}>선택 검사 수행</Typography>
                   </Stack>
-                  {selected && (
+
+                  {activeSelected && (
                     <Stack direction="row" spacing={1}>
-                      <Chip label={statusLabel(selected.examStatusYn)} size="small" />
-                      {!isInactive(selected.examStatusYn) && (
-                        <Button
-                          variant="outlined"
-                          color="warning"
-                          size="small"
-                          startIcon={<DeleteOutlineIcon />}
-                          onClick={() => handleDelete(selected.imagingExamId)}
-                          disabled={saving}
-                        >
-                          비활성
-                        </Button>
-                      )}
+                      <Chip
+                        label={safeValue(activeSelected.progressStatus)}
+                        size="small"
+                        color={getStatusColor(activeSelected.progressStatus)}
+                        sx={getStatusSx(activeSelected.progressStatus)}
+                      />
+                      <Button
+                        component={Link}
+                        href={`/medical_support/testExecution/edit/${activeSelected.testExecutionId}`}
+                        variant="outlined"
+                        size="small"
+                        startIcon={<EditOutlinedIcon />}
+                      >
+                        수정
+                      </Button>
                     </Stack>
                   )}
                 </Stack>
 
                 <Box sx={{ mt: 2, p: 2, borderRadius: 2, bgcolor: "rgba(255,255,255,0.7)" }}>
-                  <Row label="영상검사 ID" value={safe(selected?.imagingExamId)} />
-                  <Row label="진료 ID" value={safe(selected?.visitId)} />
-                  <Row label="검사종류" value={safe(selected?.imagingType)} />
-                  <Row label="상태" value={statusLabel(selected?.examStatusYn)} />
-                  <Row label="검사일시" value={safe(selected?.examAt)} />
-                  <Row label="생성일시" value={safe(selected?.createdAt)} />
-                  <Row label="수정일시" value={safe(selected?.updatedAt)} />
+                  <Row
+                    label="검사수행 ID"
+                    value={safeValue(activeSelected?.testExecutionId)}
+                  />
+                  <Row
+                    label="오더항목 ID"
+                    value={safeValue(activeSelected?.orderItemId)}
+                  />
+                  <Row
+                    label="검사유형"
+                    value={safeValue(activeSelected?.executionType)}
+                  />
+                  <Row
+                    label="진행상태"
+                    value={safeValue(activeSelected?.progressStatus)}
+                  />
+                  <Row
+                    label="시작일시"
+                    value={formatDateTime(activeSelected?.startedAt)}
+                  />
+                  <Row
+                    label="완료일시"
+                    value={formatDateTime(activeSelected?.completedAt)}
+                  />
+                  <Row
+                    label="수행자 ID"
+                    value={safeValue(activeSelected?.performerId)}
+                  />
+                  <Row
+                    label="수정일시"
+                    value={formatDateTime(activeSelected?.updatedAt)}
+                  />
                 </Box>
               </CardContent>
             </Card>
 
-            <Card sx={{ borderRadius: 3, border: "1px solid var(--line)" }}>
-              <CardContent sx={{ p: 2.5 }}>
-                <Stack direction="row" spacing={1} alignItems="center">
-                  <ScienceOutlinedIcon sx={{ color: "var(--brand)" }} />
-                  <Typography fontWeight={800}>영상검사 등록 / 수정</Typography>
-                </Stack>
-                <Box sx={{ maxWidth: 560, width: "100%", mt: 2 }}>
-                  <Stack spacing={1.5}>
-                    <TextField
-                      label="진료 ID"
-                      value={form.visitId ?? ""}
-                      onChange={(e) =>
-                        setForm((prev) => ({ ...prev, visitId: e.target.value }))
-                      }
-                      size="small"
-                    />
-                    <TextField
-                      label="영상종류"
-                      value={form.imagingType ?? ""}
-                      onChange={(e) =>
-                        setForm((prev) => ({ ...prev, imagingType: e.target.value }))
-                      }
-                      size="small"
-                    />
-                    <FormControl size="small">
-                      <InputLabel id="exam-status-label">상태</InputLabel>
-                      <Select
-                        labelId="exam-status-label"
-                        label="상태"
-                        value={form.examStatusYn ?? "Y"}
-                        onChange={(e) =>
-                          setForm((prev) => ({
-                            ...prev,
-                            examStatusYn: String(e.target.value),
-                          }))
-                        }
-                      >
-                        <MenuItem value="Y">Y</MenuItem>
-                        <MenuItem value="N">N</MenuItem>
-                      </Select>
-                    </FormControl>
-                    <TextField
-                      label="검사일시"
-                      type="datetime-local"
-                      value={form.examAt ?? ""}
-                      onChange={(e) =>
-                        setForm((prev) => ({ ...prev, examAt: e.target.value }))
-                      }
-                      size="small"
-                      InputLabelProps={{ shrink: true }}
-                    />
-
-                    <Stack direction="row" spacing={1} sx={{ pt: 1 }}>
-                      <Button
-                        variant="contained"
-                        onClick={handleSave}
-                        disabled={saving}
-                        fullWidth
-                      >
-                        {selected ? "수정" : "등록"}
-                      </Button>
-                      <Button
-                        variant="outlined"
-                        onClick={handleNew}
-                        disabled={saving}
-                        fullWidth
-                      >
-                        초기화
-                      </Button>
-                    </Stack>
-                  </Stack>
-                </Box>
-              </CardContent>
-            </Card>
-          </Stack>
-
-          <Stack spacing={2}>
             <Card sx={{ borderRadius: 3, border: "1px solid var(--line)" }}>
               <CardContent sx={{ p: 2.5 }}>
                 <Stack direction="row" spacing={1} alignItems="center">
@@ -484,9 +459,9 @@ export default function NurseImagingPage() {
                   <Typography fontWeight={800}>상태 요약</Typography>
                 </Stack>
                 <Stack spacing={1.25} sx={{ mt: 2 }}>
-                  <SummaryRow label="활성 항목" value={activeCount} />
-                  <SummaryRow label="비활성 항목" value={inactiveCount} />
-                  <SummaryRow label="전체 항목" value={totalCount} />
+                  <SummaryRow label="전체 항목" value={imagingItems.length} />
+                  <SummaryRow label="진행 중 항목" value={inProgressCount} />
+                  <SummaryRow label="완료 항목" value={completedCount} />
                 </Stack>
               </CardContent>
             </Card>
@@ -499,10 +474,10 @@ export default function NurseImagingPage() {
                 </Stack>
                 <Stack spacing={1} sx={{ mt: 2 }}>
                   {[
-                    "조회: 기본 목록은 전체 조회 API 호출",
-                    "검색: 탭(진료ID/영상종류) 선택 후 검색",
-                    "수정: 리스트 선택 후 값 변경",
-                    "삭제: 비활성 처리(N)로 동작",
+                    "좌측 목록: 검사유형이 IMAGING인 항목만 조회",
+                    "행 클릭: 우측 선택 검사 수행 정보 갱신",
+                    "수정 버튼: 검사 수행 수정 화면으로 이동",
+                    "신규 작성: 검사 수행 등록 화면으로 이동",
                   ].map((text) => (
                     <Box
                       key={text}
@@ -531,7 +506,9 @@ export default function NurseImagingPage() {
 function Row({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <Stack direction="row" justifyContent="space-between" spacing={2}>
-      <Typography sx={{ color: "text.secondary", fontSize: 13 }}>{label}</Typography>
+      <Typography sx={{ color: "text.secondary", fontSize: 13 }}>
+        {label}
+      </Typography>
       <Typography sx={{ fontWeight: 700, fontSize: 13, textAlign: "right" }}>
         {value}
       </Typography>

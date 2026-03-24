@@ -68,7 +68,8 @@ const recordSlice = createSlice({
     },
 
     // ===== 단건 조회 =====
-    fetchRecordRequest: (state, _action: PayloadAction<string>) => {
+    fetchRecordRequest: (state, action: PayloadAction<string>) => {
+      void action;
       state.loading = true;
       state.error = null;
       state.selected = initialRecord;
@@ -83,7 +84,8 @@ const recordSlice = createSlice({
     },
 
     // ===== 생성 =====
-createRecordRequest: (state, _action: PayloadAction<RecordFormType>) => {
+createRecordRequest: (state, action: PayloadAction<RecordFormType>) => {
+  void action;
   state.loading = true;
   state.error = null;
   state.createSuccess = false;
@@ -103,8 +105,9 @@ resetCreateSuccess: (state) => {
     // ===== 수정 =====
     updateRecordRequest: (
       state,
-      _action: PayloadAction<{ recordId: string; form: RecordFormType }>
+      action: PayloadAction<{ recordId: string; form: RecordFormType }>
     ) => {
+      void action;
       state.loading = true;
       state.error = null;
       state.updateSuccess = false;
@@ -125,11 +128,12 @@ resetCreateSuccess: (state) => {
     // ===== 상태 변경 =====
     toggleRecordStatusRequest: (
       state,
-      _action: PayloadAction<{
+      action: PayloadAction<{
         recordId: string;
         status: "ACTIVE" | "INACTIVE";
       }>
     ) => {
+      void action;
       state.loading = true;
       state.error = null;
       state.statusToggleSuccess = false;
@@ -158,13 +162,14 @@ resetCreateSuccess: (state) => {
     // ===== 검색 =====
   searchRecordsRequest: (
   state,
-  _action: PayloadAction<{
+  action: PayloadAction<{
     searchType: string;
     searchValue?: string;
     startDate?: string;
     endDate?: string;
   }>
 ) => {
+  void action;
   state.loading = true;
   state.error = null;
 },

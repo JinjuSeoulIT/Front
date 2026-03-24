@@ -1,5 +1,5 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
-import type { BillSummary, BillDetail, Payment, BillingStats } from "@/lib/billingApi";
+import type { BillSummary, BillDetail, Payment, BillingStats } from "@/lib/billing/billingApi";
 
 interface FetchBillsByPatientPayload {
   patientId: number;
