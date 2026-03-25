@@ -15,7 +15,7 @@ const baseURL =
   typeof window !== "undefined" &&
   window.location.hostname !== "localhost"
     ? `http://${window.location.hostname}:8081`
-    : "http://localhost:8081";
+    : "http://192.168.1.68:8081";
 
 const api = axios.create({
   baseURL,
