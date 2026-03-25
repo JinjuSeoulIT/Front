@@ -1,6 +1,14 @@
 import { CLINICAL_API_BASE } from "./clinicalApiBase";
 
-export type LabOrderType = "BLOOD" | "IMAGING" | "PROCEDURE";
+export type LabOrderType =
+  | "BLOOD"
+  | "IMAGING"
+  | "PATHOLOGY"
+  | "SPECIMEN"
+  | "ENDOSCOPY"
+  | "PHYSIOLOGY"
+  | "PROCEDURE"
+  | "MEDICATION";
 
 export type ClinicalOrder = {
   id: number;
@@ -38,22 +46,40 @@ async function parseJson<T>(res: Response): Promise<T> {
   return body as T;
 };
 
-type OrderItemRaw = { itemName?: string | null; itemCode?: string | null };
+type OrderItemRaw = {
+  orderItemId?: number;
+  itemName?: string | null;
+  itemCode?: string | null;
+};
 type OrderRaw = {
   orderId: number;
-  clinicalId: number;
+  visitId?: number;
+  clinicalId?: number;
   orderType?: string | null;
   orderStatus?: string | null;
   items?: OrderItemRaw[] | null;
 };
 
+const KNOWN_ORDER_TYPES: LabOrderType[] = [
+  "BLOOD",
+  "IMAGING",
+  "PATHOLOGY",
+  "SPECIMEN",
+  "ENDOSCOPY",
+  "PHYSIOLOGY",
+  "PROCEDURE",
+  "MEDICATION",
+];
+
 function mapOrderToClinical(o: OrderRaw): ClinicalOrder {
-  const orderType = (o.orderType ?? "BLOOD") as LabOrderType;
+  const raw = (o.orderType ?? "SPECIMEN") as string;
+  const orderType = (KNOWN_ORDER_TYPES.includes(raw as LabOrderType) ? raw : "SPECIMEN") as LabOrderType;
+  const visitId = o.visitId ?? o.clinicalId ?? 0;
   const orderName = o.items?.[0]?.itemName ?? o.items?.[0]?.itemCode ?? orderType;
   return {
     id: o.orderId,
-    clinicalId: o.clinicalId,
-    orderType: orderType === "BLOOD" || orderType === "IMAGING" || orderType === "PROCEDURE" ? orderType : "BLOOD",
+    clinicalId: visitId,
+    orderType,
     orderName: orderName || orderType,
     status: o.orderStatus ?? null,
   };
@@ -62,7 +88,7 @@ export async function fetchClinicalOrdersApi(
   clinicalId: number
 ): Promise<ClinicalOrder[]> {
   const res = await fetch(
-    `${CLINICAL_API_BASE}/api/clinicals/${clinicalId}/orders`,
+    `${CLINICAL_API_BASE}/api/visits/${clinicalId}/orders`,
     { cache: "no-store" }
   );
   if (!res.ok) {
@@ -78,12 +104,13 @@ export async function createClinicalOrderApi(
   clinicalId: number,
   payload: ClinicalOrderCreatePayload
 ): Promise<ClinicalOrder> {
+  const itemCode = (payload.orderCode ?? payload.orderName ?? payload.orderType).trim();
   const body = {
     orderType: payload.orderType,
-    items: [{ itemCode: payload.orderCode ?? payload.orderType, itemName: payload.orderName }],
+    items: [{ itemCode }],
   };
   const res = await fetch(
-    `${CLINICAL_API_BASE}/api/clinicals/${clinicalId}/orders`,
+    `${CLINICAL_API_BASE}/api/visits/${clinicalId}/orders`,
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -103,11 +130,11 @@ export async function updateClinicalOrderStatusApi(
   status: OrderStatus
 ): Promise<ClinicalOrder> {
   const res = await fetch(
-    `${CLINICAL_API_BASE}/api/clinicals/${clinicalId}/orders/${orderId}/status`,
+    `${CLINICAL_API_BASE}/api/visits/${clinicalId}/orders/${orderId}/status`,
     {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status }),
+      body: JSON.stringify({ orderStatus: status }),
     }
   );
   if (!res.ok) {

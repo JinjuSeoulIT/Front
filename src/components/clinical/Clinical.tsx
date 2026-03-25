@@ -25,7 +25,7 @@ import {
   fetchPastHistoryApi,
   type PastHistoryItem,
 } from "@/lib/clinicalPastHistoryApi";
-import type { ClinicalRes, ClinicalTab } from "./types";
+import type { ClinicalRes } from "./types";
 import {
   fetchClinicalApi,
   fetchReceptionQueueApi,
@@ -61,7 +61,6 @@ export default function ClinicalPage() {
   const [receptionLoading, setReceptionLoading] = React.useState(false);
   const [selectedReception, setSelectedReception] = React.useState<ReceptionQueueItem | null>(null);
   const [query, setQuery] = React.useState("");
-  const [tab, setTab] = React.useState<ClinicalTab>("ALL");
   const [leftPage, setLeftPage] = React.useState(1);
   const [selectedPatientId, setSelectedPatientId] = React.useState<number | null>(null);
   const [errorMessage, setErrorMessage] = React.useState<string | null>(null);
@@ -323,16 +322,13 @@ export default function ClinicalPage() {
         (r) => (r.departmentName ?? "").includes(department)
       );
     }
-    if (tab === "WAIT") {
-      return filtered.filter(
-        (r) =>
-          r.status === "WAITING" ||
-          r.status === "CALLED" ||
-          r.status === "IN_PROGRESS"
-      );
-    }
-    return filtered;
-  }, [receptions, query, tab, department]);
+    return filtered.filter(
+      (r) =>
+        r.status === "WAITING" ||
+        r.status === "CALLED" ||
+        r.status === "IN_PROGRESS"
+    );
+  }, [receptions, query, department]);
 
   const selectedPatient = React.useMemo((): Patient | null => {
     if (!selectedReception) return null;
@@ -477,7 +473,7 @@ export default function ClinicalPage() {
 
   React.useEffect(() => {
     setLeftPage(1);
-  }, [query, tab]);
+  }, [query]);
 
   React.useEffect(() => {
     if (leftPage > totalLeftPages) setLeftPage(totalLeftPages);
@@ -630,8 +626,6 @@ export default function ClinicalPage() {
             onDepartmentChange={setDepartment}
             query={query}
             onQueryChange={setQuery}
-            tab={tab}
-            onTabChange={setTab}
             paginatedLeftList={paginatedLeftList}
             listForLeft={listForLeft}
             leftPage={leftPage}

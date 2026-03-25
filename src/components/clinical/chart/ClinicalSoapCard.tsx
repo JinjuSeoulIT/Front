@@ -345,7 +345,7 @@ export function ClinicalSoapCard({
             <TextField
               {...params}
               label="표준 상병 검색"
-              placeholder="선택 시 목록에 바로 등록 (마스터 API 연동 시 검색)"
+              placeholder="질병명 입력 후 목록에서 선택하면 상병이 등록됩니다"
             />
           )}
           sx={{ mb: 1.25, maxWidth: 560, "& .MuiOutlinedInput-root": { bgcolor: "#fff" } }}

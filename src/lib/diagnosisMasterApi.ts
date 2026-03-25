@@ -15,11 +15,12 @@ export type MasterDiagnosisItem = {
 };
 
 export async function searchMasterDiagnosesApi(query: string): Promise<MasterDiagnosisItem[]> {
+  const trimmed = query.trim();
+  if (!trimmed) return [];
   const q = new URLSearchParams();
-  if (query.trim()) q.set("query", query.trim());
-  const qs = q.toString();
+  q.set("query", trimmed);
   const res = await fetch(
-    `${CLINICAL_API_BASE}/api/master-diagnoses${qs ? `?${qs}` : ""}`,
+    `${CLINICAL_API_BASE}/api/master-diagnoses?${q.toString()}`,
     { cache: "no-store" }
   );
   if (!res.ok) throw new Error("표준 상병 검색 실패");
