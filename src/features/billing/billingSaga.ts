@@ -18,7 +18,7 @@ import {
   Payment,
   BillingStats,
   fetchOutstandingBillsApi,
-} from "@/lib/billingApi";
+} from "@/lib/billing/billingApi";
 
 import {
   fetchBillsByPatientRequest,

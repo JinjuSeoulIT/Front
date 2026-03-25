@@ -5,7 +5,7 @@ import {
   Payment,
   BillingStats,
   PaymentMethod,
-} from "@/lib/billingApi";
+} from "@/lib/billing/billingApi";
 
 // 상태 필터 payload 타입
 interface FetchBillsByPatientPayload {
