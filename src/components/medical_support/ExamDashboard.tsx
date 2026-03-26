@@ -3,45 +3,45 @@
 import { useRouter } from "next/navigation";
 import { Box, Card, CardContent, Typography } from "@mui/material";
 
-const Dashboard = () => {
+const ExamDashboard = () => {
   const menu = [
     {
-      key: "record",
-      label: "간호 기록",
-      desc: "간호 기록 관리",
-      path: "/medical_support/record/list",
+      key: "imaging",
+      label: "영상 검사",
+      desc: "영상 검사 관리",
+      path: "/medical_support/imaging",
       tone:
         "linear-gradient(135deg, rgba(23, 162, 142, 0.22), rgba(23, 162, 142, 0))",
     },
     {
-      key: "testexecution",
-      label: "검사 수행",
-      desc: "검사 수행 관리",
-      path: "/medical_support/testExecution/list",
+      key: "specimen",
+      label: "검체 검사",
+      desc: "검체 검사 관리",
+      path: "/medical_support/specimen",
       tone:
         "linear-gradient(135deg, rgba(23, 162, 142, 0.22), rgba(23, 162, 142, 0))",
     },
     {
-      key: "exam",
-      label: "검사",
-      desc: "검사 항목 관리",
-      path: "/medical_support/exam",
+      key: "pathology",
+      label: "병리 검사",
+      desc: "병리 검사 관리",
+      path: "/medical_support/pathology",
       tone:
         "linear-gradient(135deg, rgba(23, 162, 142, 0.22), rgba(23, 162, 142, 0))",
     },
     {
-      key: "medicationrecord",
-      label: "투약 기록",
-      desc: "투약 기록 관리",
-      path: "/medical_support/medicationRecord",
+      key: "endoscopy",
+      label: "내시경 검사",
+      desc: "내시경 검사 관리",
+      path: "/medical_support/endoscopy",
       tone:
         "linear-gradient(135deg, rgba(23, 162, 142, 0.22), rgba(23, 162, 142, 0))",
     },
     {
-      key: "treatmentresult",
-      label: "처치 결과",
-      desc: "처치 결과 관리",
-      path: "/medical_support/treatmentResult",
+      key: "physiological",
+      label: "생리 기능 검사",
+      desc: "생리 기능 검사 관리",
+      path: "/medical_support/physiological",
       tone:
         "linear-gradient(135deg, rgba(23, 162, 142, 0.22), rgba(23, 162, 142, 0))",
     },
@@ -79,15 +79,13 @@ const Dashboard = () => {
               boxShadow: "var(--shadow-2)",
             },
           }}
-          onClick={() => {
-            router.push(m.path);
-          }}
+          onClick={() => router.push(m.path)}
         >
           <CardContent sx={{ p: 4 }}>
-            <Typography sx={{ fontWeight: 600, fontSize: 18 }}>
+            <Typography sx={{ fontWeight: 700, fontSize: 18, mb: 1 }}>
               {m.label}
             </Typography>
-            <Typography sx={{ color: "var(--muted)", mt: 0.5, minHeight: 44 }}>
+            <Typography sx={{ color: "var(--muted)", lineHeight: 1.6 }}>
               {m.desc}
             </Typography>
           </CardContent>
@@ -97,4 +95,4 @@ const Dashboard = () => {
   );
 };
 
-export default Dashboard;
+export default ExamDashboard;

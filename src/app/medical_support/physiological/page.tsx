@@ -2,7 +2,6 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { useDispatch, useSelector } from "react-redux";
 import MainLayout from "@/components/layout/MainLayout";
 import {
   Alert,
@@ -29,9 +28,50 @@ import HelpOutlineOutlinedIcon from "@mui/icons-material/HelpOutlineOutlined";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import AddIcon from "@mui/icons-material/Add";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
-import { TestExecutionActions } from "@/features/medical_support/testExecution/testExecutionSlice";
-import type { TestExecution } from "@/features/medical_support/testExecution/testExecutionType";
-import type { RootState, AppDispatch } from "@/store/store";
+
+type PhysiologicalExam = {
+  physiologicalExamId: string;
+  testExecutionId: string;
+  examEquipmentId: string;
+  rawData: string;
+  reportDocId: string;
+  status: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+const mockItems: PhysiologicalExam[] = [
+  {
+    physiologicalExamId: "PHY_001",
+    testExecutionId: "TE_3001",
+    examEquipmentId: "EQ_001",
+    rawData: "ECG_RAW_001",
+    reportDocId: "RPT_001",
+    status: "COMPLETED",
+    createdAt: "2026-03-26T09:00:00",
+    updatedAt: "2026-03-26T10:00:00",
+  },
+  {
+    physiologicalExamId: "PHY_002",
+    testExecutionId: "TE_3002",
+    examEquipmentId: "EQ_002",
+    rawData: "PFT_RAW_002",
+    reportDocId: "RPT_002",
+    status: "IN_PROGRESS",
+    createdAt: "2026-03-26T09:30:00",
+    updatedAt: "2026-03-26T10:10:00",
+  },
+  {
+    physiologicalExamId: "PHY_003",
+    testExecutionId: "TE_3003",
+    examEquipmentId: "EQ_003",
+    rawData: "EEG_RAW_003",
+    reportDocId: "RPT_003",
+    status: "WAITING",
+    createdAt: "2026-03-26T10:00:00",
+    updatedAt: "2026-03-26T10:00:00",
+  },
+];
 
 const DONE_STATUSES = ["COMPLETED"];
 const ACTIVE_STATUSES = ["IN_PROGRESS"];
@@ -100,37 +140,26 @@ const getStatusSx = (status?: string | null) => {
   };
 };
 
-export default function NurseImagingPage() {
-  const dispatch = useDispatch<AppDispatch>();
-
+export default function PhysiologicalPage() {
   const [page, setPage] = React.useState(0);
   const [rowsPerPage, setRowsPerPage] = React.useState(10);
   const [selectedId, setSelectedId] = React.useState<string | null>(null);
 
-  const { list: items, loading, error } = useSelector(
-    (state: RootState) => state.testexecutions
-  );
-
-  React.useEffect(() => {
-    dispatch(
-      TestExecutionActions.fetchTestExecutionsRequest({
-        executionType: "IMAGING",
-      })
-    );
-  }, [dispatch]);
+  const items = mockItems;
+  const loading = false;
+  const error = "";
 
   const completedCount = React.useMemo(
     () =>
-      items.filter((item) =>
-        DONE_STATUSES.includes(normalizeStatus(item.progressStatus))
-      ).length,
+      items.filter((item) => DONE_STATUSES.includes(normalizeStatus(item.status)))
+        .length,
     [items]
   );
 
   const inProgressCount = React.useMemo(
     () =>
       items.filter((item) =>
-        ACTIVE_STATUSES.includes(normalizeStatus(item.progressStatus))
+        ACTIVE_STATUSES.includes(normalizeStatus(item.status))
       ).length,
     [items]
   );
@@ -149,8 +178,10 @@ export default function NurseImagingPage() {
 
   const selected = React.useMemo(
     () =>
-      items.find((item) => String(item.testExecutionId) === String(selectedId)) ??
-      null,
+      items.find(
+        (item) =>
+          String(item.physiologicalExamId) === String(selectedId)
+      ) ?? null,
     [items, selectedId]
   );
 
@@ -167,8 +198,8 @@ export default function NurseImagingPage() {
     setPage(0);
   };
 
-  const handleSelect = (item: TestExecution) => {
-    setSelectedId(String(item.testExecutionId));
+  const handleSelect = (item: PhysiologicalExam) => {
+    setSelectedId(String(item.physiologicalExamId));
   };
 
   return (
@@ -184,13 +215,17 @@ export default function NurseImagingPage() {
           }}
         >
           <CardContent sx={{ p: 3 }}>
-            <Stack direction={{ xs: "column", md: "row" }} spacing={2} alignItems="center">
+            <Stack
+              direction={{ xs: "column", md: "row" }}
+              spacing={2}
+              alignItems="center"
+            >
               <Stack spacing={0.5} sx={{ flexGrow: 1 }}>
                 <Typography sx={{ fontSize: 22, fontWeight: 900 }}>
-                  영상 검사 워크스테이션
+                  생리 기능 검사 워크스테이션
                 </Typography>
                 <Typography sx={{ color: "var(--muted)" }}>
-                  검사 수행 목록 중 영상 검사 항목만 조회하고 상세를 확인하는 화면입니다.
+                  생리 기능 검사 목록을 조회하고 선택한 항목의 상세 정보를 확인하는 화면입니다.
                 </Typography>
               </Stack>
 
@@ -198,20 +233,13 @@ export default function NurseImagingPage() {
                 <Button
                   variant="outlined"
                   startIcon={<RefreshIcon />}
-                  onClick={() =>
-                    dispatch(
-                      TestExecutionActions.fetchTestExecutionsRequest({
-                        executionType: "IMAGING",
-                      })
-                    )
-                  }
                   disabled={loading}
                 >
                   새로고침
                 </Button>
                 <Button
                   component={Link}
-                  href="/medical_support/testExecution/create"
+                  href="/medical_support/physiological/create"
                   variant="contained"
                   startIcon={<AddIcon />}
                 >
@@ -248,10 +276,15 @@ export default function NurseImagingPage() {
         >
           <Card sx={{ borderRadius: 3, border: "1px solid var(--line)" }}>
             <CardContent sx={{ p: 2.5 }}>
-              <Stack direction="row" spacing={1} alignItems="center" justifyContent="space-between">
+              <Stack
+                direction="row"
+                spacing={1}
+                alignItems="center"
+                justifyContent="space-between"
+              >
                 <Stack direction="row" spacing={1} alignItems="center">
                   <ScienceOutlinedIcon sx={{ color: "var(--brand)" }} />
-                  <Typography fontWeight={800}>영상 검사 목록</Typography>
+                  <Typography fontWeight={800}>생리 기능 검사 목록</Typography>
                 </Stack>
                 <Chip label={`표시 ${items.length}`} size="small" />
               </Stack>
@@ -283,12 +316,12 @@ export default function NurseImagingPage() {
                       <TableHead>
                         <TableRow>
                           <TableCell align="center">번호</TableCell>
+                          <TableCell align="center">생리기능검사 ID</TableCell>
                           <TableCell align="center">검사수행 ID</TableCell>
-                          <TableCell align="center">오더항목 ID</TableCell>
-                          <TableCell align="center">검사유형</TableCell>
-                          <TableCell align="center">진행상태</TableCell>
-                          <TableCell align="center">시작일시</TableCell>
-                          <TableCell align="center">완료일시</TableCell>
+                          <TableCell align="center">검사장비 ID</TableCell>
+                          <TableCell align="center">리포트문서 ID</TableCell>
+                          <TableCell align="center">상태</TableCell>
+                          <TableCell align="center">생성일시</TableCell>
                         </TableRow>
                       </TableHead>
 
@@ -296,14 +329,14 @@ export default function NurseImagingPage() {
                         {paginatedItems.length === 0 && (
                           <TableRow>
                             <TableCell colSpan={7} align="center" sx={{ py: 5 }}>
-                              영상 검사 데이터가 없습니다.
+                              생리 기능 검사 데이터가 없습니다.
                             </TableCell>
                           </TableRow>
                         )}
 
                         {paginatedItems.map((item, index) => (
                           <TableRow
-                            key={String(item.testExecutionId)}
+                            key={String(item.physiologicalExamId)}
                             hover
                             onClick={() => handleSelect(item)}
                             sx={{
@@ -311,8 +344,8 @@ export default function NurseImagingPage() {
                               "& td": { py: 1.25, whiteSpace: "nowrap" },
                               "&:hover": { backgroundColor: "#f9fbff" },
                               backgroundColor:
-                                String(activeSelected?.testExecutionId) ===
-                                String(item.testExecutionId)
+                                String(activeSelected?.physiologicalExamId) ===
+                                String(item.physiologicalExamId)
                                   ? "rgba(11, 91, 143, 0.08)"
                                   : "transparent",
                             }}
@@ -321,27 +354,27 @@ export default function NurseImagingPage() {
                               {currentPage * rowsPerPage + index + 1}
                             </TableCell>
                             <TableCell align="center">
+                              {safeValue(item.physiologicalExamId)}
+                            </TableCell>
+                            <TableCell align="center">
                               {safeValue(item.testExecutionId)}
                             </TableCell>
                             <TableCell align="center">
-                              {safeValue(item.orderItemId)}
+                              {safeValue(item.examEquipmentId)}
                             </TableCell>
                             <TableCell align="center">
-                              {safeValue(item.executionType)}
+                              {safeValue(item.reportDocId)}
                             </TableCell>
                             <TableCell align="center">
                               <Chip
-                                label={safeValue(item.progressStatus)}
-                                color={getStatusColor(item.progressStatus)}
+                                label={safeValue(item.status)}
+                                color={getStatusColor(item.status)}
                                 size="small"
-                                sx={getStatusSx(item.progressStatus)}
+                                sx={getStatusSx(item.status)}
                               />
                             </TableCell>
                             <TableCell align="center">
-                              {formatDateTime(item.startedAt)}
-                            </TableCell>
-                            <TableCell align="center">
-                              {formatDateTime(item.completedAt)}
+                              {formatDateTime(item.createdAt)}
                             </TableCell>
                           </TableRow>
                         ))}
@@ -370,23 +403,28 @@ export default function NurseImagingPage() {
           <Stack spacing={2}>
             <Card sx={{ borderRadius: 3, border: "1px solid var(--line)" }}>
               <CardContent sx={{ p: 2.5 }}>
-                <Stack direction="row" spacing={1} alignItems="center" justifyContent="space-between">
+                <Stack
+                  direction="row"
+                  spacing={1}
+                  alignItems="center"
+                  justifyContent="space-between"
+                >
                   <Stack direction="row" spacing={1} alignItems="center">
                     <ScienceOutlinedIcon sx={{ color: "var(--brand-strong)" }} />
-                    <Typography fontWeight={800}>선택 검사 수행</Typography>
+                    <Typography fontWeight={800}>선택 생리 기능 검사</Typography>
                   </Stack>
 
                   {activeSelected && (
                     <Stack direction="row" spacing={1}>
                       <Chip
-                        label={safeValue(activeSelected.progressStatus)}
+                        label={safeValue(activeSelected.status)}
                         size="small"
-                        color={getStatusColor(activeSelected.progressStatus)}
-                        sx={getStatusSx(activeSelected.progressStatus)}
+                        color={getStatusColor(activeSelected.status)}
+                        sx={getStatusSx(activeSelected.status)}
                       />
                       <Button
                         component={Link}
-                        href={`/medical_support/testExecution/edit/${activeSelected.testExecutionId}`}
+                        href={`/medical_support/physiological/edit/${activeSelected.physiologicalExamId}`}
                         variant="outlined"
                         size="small"
                         startIcon={<EditOutlinedIcon />}
@@ -397,34 +435,41 @@ export default function NurseImagingPage() {
                   )}
                 </Stack>
 
-                <Box sx={{ mt: 2, p: 2, borderRadius: 2, bgcolor: "rgba(255,255,255,0.7)" }}>
+                <Box
+                  sx={{
+                    mt: 2,
+                    p: 2,
+                    borderRadius: 2,
+                    bgcolor: "rgba(255,255,255,0.7)",
+                  }}
+                >
+                  <Row
+                    label="생리기능검사 ID"
+                    value={safeValue(activeSelected?.physiologicalExamId)}
+                  />
                   <Row
                     label="검사수행 ID"
                     value={safeValue(activeSelected?.testExecutionId)}
                   />
                   <Row
-                    label="오더항목 ID"
-                    value={safeValue(activeSelected?.orderItemId)}
+                    label="검사장비 ID"
+                    value={safeValue(activeSelected?.examEquipmentId)}
                   />
                   <Row
-                    label="검사유형"
-                    value={safeValue(activeSelected?.executionType)}
+                    label="원본데이터"
+                    value={safeValue(activeSelected?.rawData)}
                   />
                   <Row
-                    label="진행상태"
-                    value={safeValue(activeSelected?.progressStatus)}
+                    label="리포트문서 ID"
+                    value={safeValue(activeSelected?.reportDocId)}
                   />
                   <Row
-                    label="시작일시"
-                    value={formatDateTime(activeSelected?.startedAt)}
+                    label="상태"
+                    value={safeValue(activeSelected?.status)}
                   />
                   <Row
-                    label="완료일시"
-                    value={formatDateTime(activeSelected?.completedAt)}
-                  />
-                  <Row
-                    label="수행자 ID"
-                    value={safeValue(activeSelected?.performerId)}
+                    label="생성일시"
+                    value={formatDateTime(activeSelected?.createdAt)}
                   />
                   <Row
                     label="수정일시"
@@ -456,10 +501,10 @@ export default function NurseImagingPage() {
                 </Stack>
                 <Stack spacing={1} sx={{ mt: 2 }}>
                   {[
-                    "좌측 목록: IMAGING 타입의 검사 수행 목록 조회",
-                    "행 클릭: 우측 선택 검사 수행 정보 갱신",
-                    "수정 버튼: 검사 수행 수정 화면으로 이동",
-                    "신규 작성: 검사 수행 등록 화면으로 이동",
+                    "좌측 목록: 생리 기능 검사 항목 조회",
+                    "행 클릭: 우측 상세 정보 갱신",
+                    "수정 버튼: 생리 기능 검사 수정 화면으로 이동",
+                    "신규 작성: 생리 기능 검사 등록 화면으로 이동",
                   ].map((text) => (
                     <Box
                       key={text}
@@ -488,7 +533,9 @@ export default function NurseImagingPage() {
 function Row({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <Stack direction="row" justifyContent="space-between" spacing={2}>
-      <Typography sx={{ color: "text.secondary", fontSize: 13 }}>{label}</Typography>
+      <Typography sx={{ color: "text.secondary", fontSize: 13 }}>
+        {label}
+      </Typography>
       <Typography sx={{ fontWeight: 700, fontSize: 13, textAlign: "right" }}>
         {value}
       </Typography>
@@ -496,7 +543,13 @@ function Row({ label, value }: { label: string; value: React.ReactNode }) {
   );
 }
 
-function SummaryRow({ label, value }: { label: string; value: React.ReactNode }) {
+function SummaryRow({
+  label,
+  value,
+}: {
+  label: string;
+  value: React.ReactNode;
+}) {
   return (
     <Box
       sx={{

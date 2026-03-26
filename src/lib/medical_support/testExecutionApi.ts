@@ -7,8 +7,12 @@ const api = axios.create({
     process.env.NEXT_PUBLIC_NURSING_API_BASE_URL ?? "http://192.168.1.66:8181",
 });
 
-export const fetchTestExecutionsApi = async (): Promise<TestExecution[]> => {
-  const res = await api.get<ApiResponse<TestExecution[]>>("/api/testExecution");
+export const fetchTestExecutionsApi = async (
+  executionType?: string
+): Promise<TestExecution[]> => {
+  const res = await api.get<ApiResponse<TestExecution[]>>("/api/testExecution", {
+    params: executionType ? { executionType } : undefined,
+  });
 
   if (!res.data.success) {
     throw new Error(res.data.message || "검사수행 목록 조회에 실패했습니다.");

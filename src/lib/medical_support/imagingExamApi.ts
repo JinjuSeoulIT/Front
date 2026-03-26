@@ -30,7 +30,7 @@ const api = axios.create({
 });
 
 export const fetchImagingExamsApi = async (): Promise<ImagingExam[]> => {
-  const res = await api.get<ApiResponse<ImagingExam[]>>("/api/imaging-exam");
+  const res = await api.get<ApiResponse<ImagingExam[]>>("/api/imaging");
   if (!res.data.success) {
     throw new Error(res.data.message || "Fetch failed");
   }
@@ -40,7 +40,7 @@ export const fetchImagingExamsApi = async (): Promise<ImagingExam[]> => {
 export const fetchImagingExamApi = async (
   id: string | number
 ): Promise<ImagingExam> => {
-  const res = await api.get<ApiResponse<ImagingExam>>(`/api/imaging-exam/${id}`);
+  const res = await api.get<ApiResponse<ImagingExam>>(`/api/imaging/${id}`);
   if (!res.data.success) {
     throw new Error(res.data.message || "Fetch failed");
   }
@@ -51,7 +51,7 @@ export const searchImagingExamsApi = async (
   searchBy: "visitId" | "imagingType",
   keyword: string
 ): Promise<ImagingExam[]> => {
-  const res = await api.get<ApiResponse<ImagingExam[]>>("/api/imaging-exam/search", {
+  const res = await api.get<ApiResponse<ImagingExam[]>>("/api/imaging", {
     params: {
       searchBy,
       keyword,
@@ -66,7 +66,7 @@ export const searchImagingExamsApi = async (
 export const createImagingExamApi = async (
   payload: ImagingExamCreatePayload
 ): Promise<ImagingExam> => {
-  const res = await api.post<ApiResponse<ImagingExam>>("/api/imaging-exam", payload);
+  const res = await api.post<ApiResponse<ImagingExam>>("/api/imaging", payload);
   if (!res.data.success) {
     throw new Error(res.data.message || "Create failed");
   }
@@ -77,7 +77,7 @@ export const updateImagingExamApi = async (
   id: string | number,
   payload: ImagingExamUpdatePayload
 ): Promise<ImagingExam> => {
-  const res = await api.put<ApiResponse<ImagingExam>>(`/api/imaging-exam/${id}`, payload);
+  const res = await api.put<ApiResponse<ImagingExam>>(`/api/imaging/${id}`, payload);
   if (!res.data.success) {
     throw new Error(res.data.message || "Update failed");
   }
@@ -87,7 +87,7 @@ export const updateImagingExamApi = async (
 export const deleteImagingExamApi = async (
   id: string | number
 ): Promise<void> => {
-  const res = await api.delete<ApiResponse<void>>(`/api/imaging-exam/${id}`);
+  const res = await api.delete<ApiResponse<void>>(`/api/imaging/${id}`);
   if (!res.data.success) {
     throw new Error(res.data.message || "Delete failed");
   }

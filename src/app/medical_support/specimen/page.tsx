@@ -2,241 +2,173 @@
 
 import * as React from "react";
 import Link from "next/link";
+import { useDispatch, useSelector } from "react-redux";
 import MainLayout from "@/components/layout/MainLayout";
 import {
+  Alert,
   Box,
   Button,
   Card,
   CardContent,
   Chip,
-  FormControl,
-  InputLabel,
-  MenuItem,
-  Select,
+  CircularProgress,
+  Paper,
   Stack,
-  Tab,
-  Tabs,
-  TextField,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TablePagination,
+  TableRow,
   Typography,
 } from "@mui/material";
 import ScienceOutlinedIcon from "@mui/icons-material/ScienceOutlined";
+import FactCheckOutlinedIcon from "@mui/icons-material/FactCheckOutlined";
+import HelpOutlineOutlinedIcon from "@mui/icons-material/HelpOutlineOutlined";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import AddIcon from "@mui/icons-material/Add";
-import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
-import {
-  Specimen,
-  SpecimenCreatePayload,
-  createSpecimenApi,
-  deleteSpecimenApi,
-  fetchSpecimensApi,
-  updateSpecimenApi,
-} from "@/lib/specimenApi";
+import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
+import { TestExecutionActions } from "@/features/medical_support/testExecution/testExecutionSlice";
+import type { TestExecution } from "@/features/medical_support/testExecution/testExecutionType";
+import type { RootState, AppDispatch } from "@/store/store";
 
-type ListTab = "ACTIVE" | "INACTIVE" | "ALL";
-type RightTab = "DETAIL" | "FORM";
+const DONE_STATUSES = ["COMPLETED"];
+const ACTIVE_STATUSES = ["IN_PROGRESS"];
 
-type FormState = {
-  specimenId: string;
-  specimenStatus: string;
-  specimenType: string;
-  testExecutionID: string;
-  collectedAt: string;
-  collectedById: string;
+const formatDateTime = (value?: string | null) => {
+  if (!value) return "-";
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+
+  return new Intl.DateTimeFormat("ko-KR", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+  }).format(date);
 };
 
-const emptyForm: FormState = {
-  specimenId: "",
-  specimenStatus: "",
-  specimenType: "",
-  testExecutionID: "",
-  collectedAt: "",
-  collectedById: "",
-};
+const normalizeStatus = (value?: string | null) =>
+  value?.trim().toUpperCase() ?? "";
 
-const specimenStatusOptions = [
-  { value: "COLLECTED", label: "채취 완료" }, // 검체 채취가 완료된 상태
-  { value: "RECEIVED", label: "검사실 접수 완료" }, // 검사실에서 검체를 인수한 상태
-  { value: "REJECTED", label: "반려" }, // 오염/용기 오류 등으로 반려된 상태
-] as const;
-type SpecimenStatus = (typeof specimenStatusOptions)[number]["value"];
-
-const isSpecimenStatus = (value?: string | null): value is SpecimenStatus =>
-  !!value &&
-  specimenStatusOptions.some((option) => option.value === value);
-
-const specimenStatusText = (value?: string | null) => {
-  const option = specimenStatusOptions.find((v) => v.value === value);
-  return option ? `${option.value} - ${option.label}` : safe(value);
-};
-
-const specimenTypeOptions = [
-  { value: "BLOOD", label: "혈액 (전혈 포함)" },
-  { value: "URINE", label: "소변" },
-  { value: "SPUTUM", label: "객담 (가래)" },
-  { value: "TISSUE", label: "조직 (생검 포함)" },
-  { value: "STOOL", label: "대변" },
-] as const;
-type SpecimenType = (typeof specimenTypeOptions)[number]["value"];
-
-const isSpecimenType = (value?: string | null): value is SpecimenType =>
-  !!value &&
-  specimenTypeOptions.some((option) => option.value === value);
-
-const specimenTypeText = (value?: string | null) => {
-  const option = specimenTypeOptions.find((v) => v.value === value);
-  return option ? `${option.value} - ${option.label}` : safe(value);
-};
-
-const safe = (value?: string | number | null) => {
+const safeValue = (value?: string | number | null) => {
   if (value === null || value === undefined) return "-";
   const text = String(value).trim();
   return text ? text : "-";
 };
 
-const normalize = (value?: string | null) => {
-  const v = value?.trim();
-  return v ? v : null;
+const getStatusColor = (
+  status?: string | null
+): "default" | "info" | "success" => {
+  const normalized = normalizeStatus(status);
+
+  if (DONE_STATUSES.includes(normalized)) return "success";
+  if (ACTIVE_STATUSES.includes(normalized)) return "info";
+
+  return "default";
 };
 
-const normalizeDateTime = (value?: string | null) => {
-  const v = value?.trim();
-  if (!v) return null;
-  return v.length === 16 ? `${v}:00` : v;
+const getStatusSx = (status?: string | null) => {
+  const normalized = normalizeStatus(status);
+
+  if (normalized === "WAITING") {
+    return {
+      backgroundColor: "#616161",
+      color: "#ffffff",
+      fontWeight: 600,
+    };
+  }
+
+  if (normalized === "CANCELLED") {
+    return {
+      backgroundColor: "#eeeeee",
+      color: "#757575",
+      fontWeight: 500,
+    };
+  }
+
+  return {
+    fontWeight: 600,
+  };
 };
-
-const toDateTimeInputValue = (value?: string | null) => {
-  const v = value?.trim();
-  if (!v) return "";
-  return v.replace(" ", "T").slice(0, 16);
-};
-
-const isInactive = (value?: string | null) => {
-  const v = value?.trim().toUpperCase();
-  return v === "INACTIVE" || v === "N";
-};
-
-const statusLabel = (value?: string | null) => (isInactive(value) ? "비활성" : "활성");
-
-const readTestExecutionId = (item?: Specimen | null) =>
-  item?.testExecutionID ?? item?.testExecutionId ?? "";
 
 export default function NurseSpecimenPage() {
-  const [items, setItems] = React.useState<Specimen[]>([]);
+  const dispatch = useDispatch<AppDispatch>();
+
+  const [page, setPage] = React.useState(0);
+  const [rowsPerPage, setRowsPerPage] = React.useState(10);
   const [selectedId, setSelectedId] = React.useState<string | null>(null);
-  const [form, setForm] = React.useState<FormState>(emptyForm);
-  const [loading, setLoading] = React.useState(false);
-  const [saving, setSaving] = React.useState(false);
-  const [error, setError] = React.useState<string | null>(null);
-  const [listTab, setListTab] = React.useState<ListTab>("ACTIVE");
-  const [rightTab, setRightTab] = React.useState<RightTab>("DETAIL");
+
+  const { list: items, loading, error } = useSelector(
+    (state: RootState) => state.testexecutions
+  );
+
+  React.useEffect(() => {
+    dispatch(
+      TestExecutionActions.fetchTestExecutionsRequest({
+        executionType: "SPECIMEN",
+      })
+    );
+  }, [dispatch]);
+
+  const completedCount = React.useMemo(
+    () =>
+      items.filter((item) =>
+        DONE_STATUSES.includes(normalizeStatus(item.progressStatus))
+      ).length,
+    [items]
+  );
+
+  const inProgressCount = React.useMemo(
+    () =>
+      items.filter((item) =>
+        ACTIVE_STATUSES.includes(normalizeStatus(item.progressStatus))
+      ).length,
+    [items]
+  );
+
+  const maxPage = Math.max(0, Math.ceil(items.length / rowsPerPage) - 1);
+  const currentPage = Math.min(page, maxPage);
+
+  const paginatedItems = React.useMemo(
+    () =>
+      items.slice(
+        currentPage * rowsPerPage,
+        currentPage * rowsPerPage + rowsPerPage
+      ),
+    [currentPage, items, rowsPerPage]
+  );
 
   const selected = React.useMemo(
-    () => items.find((i) => i.specimenId === selectedId) ?? null,
+    () =>
+      items.find((item) => String(item.testExecutionId) === String(selectedId)) ??
+      null,
     [items, selectedId]
   );
 
-  const filtered = React.useMemo(() => {
-    return items.filter((i) => {
-      if (listTab === "ACTIVE" && isInactive(i.status)) return false;
-      if (listTab === "INACTIVE" && !isInactive(i.status)) return false;
-      return true;
-    });
-  }, [items, listTab]);
+  const activeSelected = selected ?? paginatedItems[0] ?? items[0] ?? null;
 
-  const totalCount = items.length;
-  const inactiveCount = items.filter((i) => isInactive(i.status)).length;
-  const activeCount = totalCount - inactiveCount;
-
-  const load = React.useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const data = await fetchSpecimensApi();
-      setItems(data);
-      if (selectedId && !data.find((i) => i.specimenId === selectedId)) {
-        setSelectedId(null);
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "검체 목록 조회에 실패했습니다");
-    } finally {
-      setLoading(false);
-    }
-  }, [selectedId]);
-
-  React.useEffect(() => {
-    load();
-  }, [load]);
-
-  React.useEffect(() => {
-    if (!selected) {
-      setForm(emptyForm);
-      return;
-    }
-
-    setForm({
-      specimenId: selected.specimenId ?? "",
-      specimenStatus: isSpecimenStatus(selected.specimenStatus)
-        ? selected.specimenStatus
-        : "",
-      specimenType: isSpecimenType(selected.specimenType)
-        ? selected.specimenType
-        : "",
-      testExecutionID: readTestExecutionId(selected),
-      collectedAt: toDateTimeInputValue(selected.collectedAt),
-      collectedById: selected.collectedById ?? "",
-    });
-  }, [selected]);
-
-  const handleSave = async () => {
-    setSaving(true);
-    setError(null);
-    try {
-      const payload: SpecimenCreatePayload = {
-        specimenId: normalize(form.specimenId),
-        specimenStatus: normalize(form.specimenStatus),
-        specimenType: normalize(form.specimenType),
-        testExecutionID: normalize(form.testExecutionID),
-        collectedAt: normalizeDateTime(form.collectedAt),
-        collectedById: normalize(form.collectedById),
-      };
-
-      if (selected) {
-        await updateSpecimenApi(selected.specimenId, payload);
-      } else {
-        await createSpecimenApi(payload);
-      }
-
-      await load();
-      setRightTab("DETAIL");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "저장에 실패했습니다");
-    } finally {
-      setSaving(false);
-    }
+  const handleChangePage = (_event: unknown, newPage: number) => {
+    setPage(newPage);
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm("해당 검체를 비활성화하시겠습니까?")) return;
-    setSaving(true);
-    setError(null);
-    try {
-      await deleteSpecimenApi(id);
-      if (selectedId === id) {
-        setSelectedId(null);
-      }
-      await load();
-      setRightTab("DETAIL");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "비활성화에 실패했습니다");
-    } finally {
-      setSaving(false);
-    }
+  const handleChangeRowsPerPage = (
+    event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
+    setRowsPerPage(Number(event.target.value));
+    setPage(0);
   };
 
-  const handleNew = () => {
-    setSelectedId(null);
-    setForm(emptyForm);
-    setRightTab("FORM");
+  const handleSelect = (item: TestExecution) => {
+    setSelectedId(String(item.testExecutionId));
   };
 
   return (
@@ -266,23 +198,32 @@ export default function NurseSpecimenPage() {
                     </Typography>
                   </Stack>
                   <Typography sx={{ color: "var(--muted)", fontSize: 13 }}>
-                    간호 검체 API 기본 CRUD를 점검하는 화면입니다.
+                    검사 수행 목록 중 검체 항목만 조회하고 상세를 확인하는 화면입니다.
                   </Typography>
                 </Stack>
                 <Stack direction="row" spacing={1}>
-                  <Button component={Link} href="/nurse/record" variant="text" size="small">
-                    간호 기록
-                  </Button>
                   <Button
                     variant="outlined"
                     size="small"
                     startIcon={<RefreshIcon />}
-                    onClick={load}
+                    onClick={() =>
+                      dispatch(
+                        TestExecutionActions.fetchTestExecutionsRequest({
+                          executionType: "SPECIMEN",
+                        })
+                      )
+                    }
                     disabled={loading}
                   >
                     새로고침
                   </Button>
-                  <Button variant="contained" size="small" startIcon={<AddIcon />} onClick={handleNew}>
+                  <Button
+                    component={Link}
+                    href="/medical_support/testExecution/create"
+                    variant="contained"
+                    size="small"
+                    startIcon={<AddIcon />}
+                  >
                     신규 작성
                   </Button>
                 </Stack>
@@ -291,9 +232,9 @@ export default function NurseSpecimenPage() {
           </Card>
 
           <Stack direction="row" spacing={1} sx={{ flexWrap: "wrap" }}>
-            <Chip label={`전체 ${totalCount}`} color="primary" size="small" />
-            <Chip label={`활성 ${activeCount}`} variant="outlined" size="small" />
-            <Chip label={`비활성 ${inactiveCount}`} variant="outlined" size="small" />
+            <Chip label={`전체 ${items.length}`} color="primary" size="small" />
+            <Chip label={`진행 중 ${inProgressCount}`} color="info" variant="outlined" size="small" />
+            <Chip label={`완료 ${completedCount}`} color="success" variant="outlined" size="small" />
             {loading && <Chip label="불러오는 중" variant="outlined" size="small" />}
             {error && <Chip label={`오류: ${error}`} color="error" size="small" />}
           </Stack>
@@ -302,7 +243,7 @@ export default function NurseSpecimenPage() {
             sx={{
               display: "grid",
               gap: 1.5,
-              gridTemplateColumns: { xs: "1fr", lg: "360px minmax(0, 1fr)" },
+              gridTemplateColumns: { xs: "1fr", lg: "1.2fr 1fr" },
               alignItems: "start",
             }}
           >
@@ -312,211 +253,221 @@ export default function NurseSpecimenPage() {
                   <Typography fontWeight={800} sx={{ fontSize: 14 }}>
                     검체 목록
                   </Typography>
-                  <Chip label={`${filtered.length}건`} size="small" />
+                  <Chip label={`${items.length}건`} size="small" />
                 </Stack>
 
-                <Tabs
-                  value={listTab}
-                  onChange={(_, v) => setListTab(v as ListTab)}
-                  sx={{ mt: 0.5, minHeight: 34, "& .MuiTab-root": { minHeight: 34, py: 0 } }}
-                >
-                  <Tab label="활성" value="ACTIVE" />
-                  <Tab label="비활성" value="INACTIVE" />
-                  <Tab label="전체" value="ALL" />
-                </Tabs>
-
-                <Box sx={{ mt: 1.25, maxHeight: { xs: 320, lg: "calc(100vh - 300px)" }, overflowY: "auto", pr: 0.5 }}>
-                  <Stack spacing={0.85}>
-                    {filtered.map((row) => (
-                      <Box
-                        key={row.specimenId}
-                        onClick={() => {
-                          setSelectedId(row.specimenId);
-                          setRightTab("DETAIL");
-                        }}
-                        sx={{
-                          p: 1.15,
-                          borderRadius: 1.5,
-                          border: "1px solid var(--line)",
-                          bgcolor:
-                            selected?.specimenId === row.specimenId
-                              ? "rgba(11, 91, 143, 0.12)"
-                              : "rgba(255,255,255,0.7)",
-                          cursor: "pointer",
-                        }}
-                      >
-                        <Stack direction="row" justifyContent="space-between" alignItems="center">
-                          <Typography fontWeight={700} sx={{ fontSize: 13 }}>
-                            {row.specimenId}
-                          </Typography>
-                          <Chip label={statusLabel(row.status)} size="small" />
-                        </Stack>
-                        <Typography sx={{ color: "var(--muted)", fontSize: 11.5, mt: 0.4 }}>
-                          종류 {specimenTypeText(row.specimenType)} | 진행상태 {specimenStatusText(row.specimenStatus)}
-                        </Typography>
-                        <Typography sx={{ color: "var(--muted)", fontSize: 11.5, mt: 0.2 }}>
-                          검사실행 {safe(readTestExecutionId(row))} | 채취자 {safe(row.collectedById)}
-                        </Typography>
-                      </Box>
-                    ))}
-                    {!filtered.length && (
-                      <Typography color="text.secondary" sx={{ fontSize: 13, py: 1 }}>
-                        조회된 검체가 없습니다.
-                      </Typography>
-                    )}
-                  </Stack>
-                </Box>
-              </CardContent>
-            </Card>
-
-            <Card sx={{ borderRadius: 3, border: "1px solid var(--line)" }}>
-              <CardContent sx={{ p: 1.75 }}>
-                <Stack direction="row" spacing={1} alignItems="center" justifyContent="space-between">
-                  <Typography fontWeight={800} sx={{ fontSize: 14 }}>
-                    검체 상세
-                  </Typography>
-                  {selected && rightTab === "DETAIL" && !isInactive(selected.status) && (
-                    <Button
-                      variant="outlined"
-                      color="warning"
-                      size="small"
-                      startIcon={<DeleteOutlineIcon />}
-                      onClick={() => handleDelete(selected.specimenId)}
-                      disabled={saving}
-                    >
-                      비활성화
-                    </Button>
-                  )}
-                </Stack>
-
-                <Tabs
-                  value={rightTab}
-                  onChange={(_, v) => setRightTab(v as RightTab)}
-                  sx={{ mt: 0.5, minHeight: 34, "& .MuiTab-root": { minHeight: 34, py: 0 } }}
-                >
-                  <Tab label="상세" value="DETAIL" />
-                  <Tab label="등록 / 수정" value="FORM" />
-                </Tabs>
-
-                {rightTab === "DETAIL" ? (
-                  <Box sx={{ mt: 1.5 }}>
-                    {!selected ? (
-                      <Typography color="text.secondary" sx={{ fontSize: 13 }}>
-                        왼쪽 목록에서 검체를 선택하세요.
-                      </Typography>
-                    ) : (
-                      <Box
-                        sx={{
-                          p: 1.25,
-                          borderRadius: 1.5,
-                          bgcolor: "rgba(255,255,255,0.7)",
-                          border: "1px solid var(--line)",
-                          display: "grid",
-                          gap: 0.8,
-                          gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" },
-                        }}
-                      >
-                        <Row label="검체 ID" value={safe(selected.specimenId)} />
-                        <Row label="상태" value={statusLabel(selected.status)} />
-                        <Row label="검체 종류" value={specimenTypeText(selected.specimenType)} />
-                        <Row label="진행상태" value={specimenStatusText(selected.specimenStatus)} />
-                        <Row label="검사실행 ID" value={safe(readTestExecutionId(selected))} />
-                        <Row label="채취 일시" value={safe(selected.collectedAt)} />
-                        <Row label="채취자 ID" value={safe(selected.collectedById)} />
-                      </Box>
-                    )}
+                {loading && (
+                  <Box sx={{ display: "flex", justifyContent: "center", py: 5 }}>
+                    <CircularProgress size={28} />
                   </Box>
-                ) : (
-                  <Box sx={{ mt: 1.5 }}>
-                    <Box
-                      sx={{
-                        display: "grid",
-                        gap: 1.1,
-                        gridTemplateColumns: { xs: "1fr", md: "repeat(2, minmax(0, 1fr))" },
-                      }}
-                    >
-                      <TextField
-                        label="검체 ID (신규 시 비워두면 자동생성)"
-                        value={form.specimenId}
-                        onChange={(e) => setForm((prev) => ({ ...prev, specimenId: e.target.value }))}
-                        size="small"
-                        fullWidth
-                      />
-                      <FormControl size="small" fullWidth>
-                        <InputLabel id="specimen-status-label">검체 진행상태</InputLabel>
-                        <Select
-                          labelId="specimen-status-label"
-                          label="검체 진행상태"
-                          value={form.specimenStatus}
-                          onChange={(e) =>
-                            setForm((prev) => ({ ...prev, specimenStatus: String(e.target.value) }))
-                          }
-                        >
-                          <MenuItem value="">선택</MenuItem>
-                          {specimenStatusOptions.map((status) => (
-                            <MenuItem key={status.value} value={status.value}>
-                              {status.value} - {status.label}
-                            </MenuItem>
-                          ))}
-                        </Select>
-                      </FormControl>
-                      <FormControl size="small" fullWidth>
-                        <InputLabel id="specimen-type-label">검체 종류</InputLabel>
-                        <Select
-                          labelId="specimen-type-label"
-                          label="검체 종류"
-                          value={form.specimenType}
-                          onChange={(e) =>
-                            setForm((prev) => ({ ...prev, specimenType: String(e.target.value) }))
-                          }
-                        >
-                          <MenuItem value="">선택</MenuItem>
-                          {specimenTypeOptions.map((type) => (
-                            <MenuItem key={type.value} value={type.value}>
-                              {type.value} - {type.label}
-                            </MenuItem>
-                          ))}
-                        </Select>
-                      </FormControl>
-                      <TextField
-                        label="검사실행 ID"
-                        value={form.testExecutionID}
-                        onChange={(e) =>
-                          setForm((prev) => ({ ...prev, testExecutionID: e.target.value }))
-                        }
-                        size="small"
-                        fullWidth
-                      />
-                      <TextField
-                        label="채취 일시"
-                        type="datetime-local"
-                        value={form.collectedAt}
-                        onChange={(e) => setForm((prev) => ({ ...prev, collectedAt: e.target.value }))}
-                        size="small"
-                        fullWidth
-                        InputLabelProps={{ shrink: true }}
-                      />
-                      <TextField
-                        label="채취자 ID"
-                        value={form.collectedById}
-                        onChange={(e) => setForm((prev) => ({ ...prev, collectedById: e.target.value }))}
-                        size="small"
-                        fullWidth
-                      />
-                    </Box>
+                )}
 
-                    <Stack direction="row" spacing={1} sx={{ pt: 1.5 }}>
-                      <Button variant="contained" onClick={handleSave} disabled={saving} fullWidth>
-                        {selected ? "수정" : "등록"}
-                      </Button>
-                      <Button variant="outlined" onClick={handleNew} disabled={saving} fullWidth>
-                        초기화
-                      </Button>
-                    </Stack>
-                  </Box>
+                {error && (
+                  <Alert severity="error" sx={{ mt: 2 }}>
+                    {error}
+                  </Alert>
+                )}
+
+                {!loading && !error && (
+                  <Paper
+                    elevation={0}
+                    sx={{
+                      mt: 1.5,
+                      borderRadius: 2,
+                      border: "1px solid var(--line)",
+                      overflow: "hidden",
+                    }}
+                  >
+                    <TableContainer>
+                      <Table size="small" stickyHeader>
+                        <TableHead>
+                          <TableRow>
+                            <TableCell align="center">번호</TableCell>
+                            <TableCell align="center">검사수행 ID</TableCell>
+                            <TableCell align="center">오더항목 ID</TableCell>
+                            <TableCell align="center">검사유형</TableCell>
+                            <TableCell align="center">진행상태</TableCell>
+                            <TableCell align="center">시작일시</TableCell>
+                            <TableCell align="center">완료일시</TableCell>
+                          </TableRow>
+                        </TableHead>
+
+                        <TableBody>
+                          {paginatedItems.length === 0 && (
+                            <TableRow>
+                              <TableCell colSpan={7} align="center" sx={{ py: 5 }}>
+                                조회된 검체가 없습니다.
+                              </TableCell>
+                            </TableRow>
+                          )}
+
+                          {paginatedItems.map((item, index) => (
+                            <TableRow
+                              key={String(item.testExecutionId)}
+                              hover
+                              onClick={() => handleSelect(item)}
+                              sx={{
+                                cursor: "pointer",
+                                "& td": { py: 1.25, whiteSpace: "nowrap" },
+                                "&:hover": { backgroundColor: "#f9fbff" },
+                                backgroundColor:
+                                  String(activeSelected?.testExecutionId) ===
+                                  String(item.testExecutionId)
+                                    ? "rgba(11, 91, 143, 0.08)"
+                                    : "transparent",
+                              }}
+                            >
+                              <TableCell align="center">
+                                {currentPage * rowsPerPage + index + 1}
+                              </TableCell>
+                              <TableCell align="center">
+                                {safeValue(item.testExecutionId)}
+                              </TableCell>
+                              <TableCell align="center">
+                                {safeValue(item.orderItemId)}
+                              </TableCell>
+                              <TableCell align="center">
+                                {safeValue(item.executionType)}
+                              </TableCell>
+                              <TableCell align="center">
+                                <Chip
+                                  label={safeValue(item.progressStatus)}
+                                  color={getStatusColor(item.progressStatus)}
+                                  size="small"
+                                  sx={getStatusSx(item.progressStatus)}
+                                />
+                              </TableCell>
+                              <TableCell align="center">
+                                {formatDateTime(item.startedAt)}
+                              </TableCell>
+                              <TableCell align="center">
+                                {formatDateTime(item.completedAt)}
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </TableContainer>
+
+                    <TablePagination
+                      component="div"
+                      count={items.length}
+                      page={currentPage}
+                      onPageChange={handleChangePage}
+                      rowsPerPage={rowsPerPage}
+                      onRowsPerPageChange={handleChangeRowsPerPage}
+                      rowsPerPageOptions={[10, 20, 50]}
+                      labelRowsPerPage="페이지당 행 수"
+                      labelDisplayedRows={({ from, to, count }) =>
+                        `${from}-${to} / 총 ${count}`
+                      }
+                    />
+                  </Paper>
                 )}
               </CardContent>
             </Card>
+
+            <Stack spacing={2}>
+              <Card sx={{ borderRadius: 3, border: "1px solid var(--line)" }}>
+                <CardContent sx={{ p: 1.75 }}>
+                  <Stack direction="row" spacing={1} alignItems="center" justifyContent="space-between">
+                    <Typography fontWeight={800} sx={{ fontSize: 14 }}>
+                      선택 검사 수행
+                    </Typography>
+                    {activeSelected && (
+                      <Stack direction="row" spacing={1}>
+                        <Chip
+                          label={safeValue(activeSelected.progressStatus)}
+                          size="small"
+                          color={getStatusColor(activeSelected.progressStatus)}
+                          sx={getStatusSx(activeSelected.progressStatus)}
+                        />
+                        <Button
+                          component={Link}
+                          href={`/medical_support/testExecution/edit/${activeSelected.testExecutionId}`}
+                          variant="outlined"
+                          size="small"
+                          startIcon={<EditOutlinedIcon />}
+                        >
+                          수정
+                        </Button>
+                      </Stack>
+                    )}
+                  </Stack>
+
+                  <Box
+                    sx={{
+                      mt: 1.5,
+                      p: 1.25,
+                      borderRadius: 1.5,
+                      bgcolor: "rgba(255,255,255,0.7)",
+                      border: "1px solid var(--line)",
+                      display: "grid",
+                      gap: 0.8,
+                      gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" },
+                    }}
+                  >
+                    <Row label="검사수행 ID" value={safeValue(activeSelected?.testExecutionId)} />
+                    <Row label="오더항목 ID" value={safeValue(activeSelected?.orderItemId)} />
+                    <Row label="검사유형" value={safeValue(activeSelected?.executionType)} />
+                    <Row label="진행상태" value={safeValue(activeSelected?.progressStatus)} />
+                    <Row label="시작일시" value={formatDateTime(activeSelected?.startedAt)} />
+                    <Row label="완료일시" value={formatDateTime(activeSelected?.completedAt)} />
+                    <Row label="수행자 ID" value={safeValue(activeSelected?.performerId)} />
+                    <Row label="수정일시" value={formatDateTime(activeSelected?.updatedAt)} />
+                  </Box>
+                </CardContent>
+              </Card>
+
+              <Card sx={{ borderRadius: 3, border: "1px solid var(--line)" }}>
+                <CardContent sx={{ p: 1.75 }}>
+                  <Stack direction="row" spacing={1} alignItems="center">
+                    <FactCheckOutlinedIcon sx={{ color: "var(--accent)" }} />
+                    <Typography fontWeight={800} sx={{ fontSize: 14 }}>
+                      상태 요약
+                    </Typography>
+                  </Stack>
+                  <Stack spacing={1.25} sx={{ mt: 2 }}>
+                    <SummaryRow label="전체 항목" value={items.length} />
+                    <SummaryRow label="진행 중 항목" value={inProgressCount} />
+                    <SummaryRow label="완료 항목" value={completedCount} />
+                  </Stack>
+                </CardContent>
+              </Card>
+
+              <Card sx={{ borderRadius: 3, border: "1px solid var(--line)" }}>
+                <CardContent sx={{ p: 1.75 }}>
+                  <Stack direction="row" spacing={1} alignItems="center">
+                    <HelpOutlineOutlinedIcon sx={{ color: "var(--brand)" }} />
+                    <Typography fontWeight={800} sx={{ fontSize: 14 }}>
+                      점검 가이드
+                    </Typography>
+                  </Stack>
+                  <Stack spacing={1} sx={{ mt: 2 }}>
+                    {[
+                      "좌측 목록: SPECIMEN 타입의 검사 수행 목록 조회",
+                      "행 클릭: 우측 선택 검사 수행 정보 갱신",
+                      "수정 버튼: 검사 수행 수정 화면으로 이동",
+                      "검체 기록은 검사 수행 수정 후 확인",
+                    ].map((text) => (
+                      <Box
+                        key={text}
+                        sx={{
+                          p: 1.25,
+                          borderRadius: 2,
+                          border: "1px solid var(--line)",
+                          bgcolor: "rgba(255,255,255,0.7)",
+                        }}
+                      >
+                        <Typography sx={{ fontSize: 12, color: "var(--muted)" }}>
+                          {text}
+                        </Typography>
+                      </Box>
+                    ))}
+                  </Stack>
+                </CardContent>
+              </Card>
+            </Stack>
           </Box>
         </Stack>
       </Box>
@@ -528,7 +479,27 @@ function Row({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <Stack direction="row" justifyContent="space-between" spacing={1.25}>
       <Typography sx={{ color: "text.secondary", fontSize: 12.5 }}>{label}</Typography>
-      <Typography sx={{ fontWeight: 700, fontSize: 12.5, textAlign: "right" }}>{value}</Typography>
+      <Typography sx={{ fontWeight: 700, fontSize: 12.5, textAlign: "right" }}>
+        {value}
+      </Typography>
     </Stack>
+  );
+}
+
+function SummaryRow({ label, value }: { label: string; value: React.ReactNode }) {
+  return (
+    <Box
+      sx={{
+        p: 1.25,
+        borderRadius: 2,
+        border: "1px solid var(--line)",
+        display: "flex",
+        justifyContent: "space-between",
+        bgcolor: "rgba(255,255,255,0.7)",
+      }}
+    >
+      <Typography>{label}</Typography>
+      <Typography fontWeight={800}>{value}</Typography>
+    </Box>
   );
 }
