@@ -9,7 +9,7 @@ const ExamDashboard = () => {
       key: "imaging",
       label: "영상 검사",
       desc: "영상 검사 관리",
-      path: "/medical_support/imaging",
+      path: "/medical_support/imaging/list",
       tone:
         "linear-gradient(135deg, rgba(23, 162, 142, 0.22), rgba(23, 162, 142, 0))",
     },
@@ -17,7 +17,7 @@ const ExamDashboard = () => {
       key: "specimen",
       label: "검체 검사",
       desc: "검체 검사 관리",
-      path: "/medical_support/specimen",
+      path: "/medical_support/specimen/list",
       tone:
         "linear-gradient(135deg, rgba(23, 162, 142, 0.22), rgba(23, 162, 142, 0))",
     },
@@ -25,7 +25,7 @@ const ExamDashboard = () => {
       key: "pathology",
       label: "병리 검사",
       desc: "병리 검사 관리",
-      path: "/medical_support/pathology",
+      path: "/medical_support/pathology/list",
       tone:
         "linear-gradient(135deg, rgba(23, 162, 142, 0.22), rgba(23, 162, 142, 0))",
     },
@@ -33,7 +33,7 @@ const ExamDashboard = () => {
       key: "endoscopy",
       label: "내시경 검사",
       desc: "내시경 검사 관리",
-      path: "/medical_support/endoscopy",
+      path: "/medical_support/endoscopy/list",
       tone:
         "linear-gradient(135deg, rgba(23, 162, 142, 0.22), rgba(23, 162, 142, 0))",
     },
@@ -41,7 +41,7 @@ const ExamDashboard = () => {
       key: "physiological",
       label: "생리 기능 검사",
       desc: "생리 기능 검사 관리",
-      path: "/medical_support/physiological",
+      path: "/medical_support/physiological/list",
       tone:
         "linear-gradient(135deg, rgba(23, 162, 142, 0.22), rgba(23, 162, 142, 0))",
     },

@@ -26,7 +26,6 @@ import ScienceOutlinedIcon from "@mui/icons-material/ScienceOutlined";
 import FactCheckOutlinedIcon from "@mui/icons-material/FactCheckOutlined";
 import HelpOutlineOutlinedIcon from "@mui/icons-material/HelpOutlineOutlined";
 import RefreshIcon from "@mui/icons-material/Refresh";
-import AddIcon from "@mui/icons-material/Add";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 
 type PathologyExam = {
@@ -165,7 +164,7 @@ const getStatusSx = (status?: string | null) => {
   };
 };
 
-export default function PathologyPage() {
+export default function PathologyList() {
   const [page, setPage] = React.useState(0);
   const [rowsPerPage, setRowsPerPage] = React.useState(10);
   const [selectedId, setSelectedId] = React.useState<string | null>(null);
@@ -261,14 +260,14 @@ export default function PathologyPage() {
                 >
                   새로고침
                 </Button>
-                <Button
+                {/* <Button
                   component={Link}
                   href="/medical_support/pathology/create"
                   variant="contained"
                   startIcon={<AddIcon />}
                 >
                   신규 작성
-                </Button>
+                </Button> */}
               </Stack>
             </Stack>
           </CardContent>

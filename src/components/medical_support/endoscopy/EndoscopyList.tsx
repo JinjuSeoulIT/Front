@@ -1,8 +1,8 @@
 "use client";
 
 import * as React from "react";
-import Link from "next/link";
 import MainLayout from "@/components/layout/MainLayout";
+import Link from "next/link";
 import {
   Alert,
   Box,
@@ -26,47 +26,54 @@ import ScienceOutlinedIcon from "@mui/icons-material/ScienceOutlined";
 import FactCheckOutlinedIcon from "@mui/icons-material/FactCheckOutlined";
 import HelpOutlineOutlinedIcon from "@mui/icons-material/HelpOutlineOutlined";
 import RefreshIcon from "@mui/icons-material/Refresh";
-import AddIcon from "@mui/icons-material/Add";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 
-type PhysiologicalExam = {
-  physiologicalExamId: string;
+type EndoscopyExam = {
+  endoscopyExamId: string;
   testExecutionId: string;
-  examEquipmentId: string;
-  rawData: string;
-  reportDocId: string;
+  procedureRoom: string;
+  equipment: string;
+  sedationYn: string;
+  operationId: string;
+  procedureAt: string;
   status: string;
   createdAt: string;
   updatedAt: string;
 };
 
-const mockItems: PhysiologicalExam[] = [
+const mockItems: EndoscopyExam[] = [
   {
-    physiologicalExamId: "PHY_001",
-    testExecutionId: "TE_3001",
-    examEquipmentId: "EQ_001",
-    rawData: "ECG_RAW_001",
-    reportDocId: "RPT_001",
+    endoscopyExamId: "ENDO_001",
+    testExecutionId: "TE_1001",
+    procedureRoom: "내시경실 A",
+    equipment: "Olympus CV-190",
+    sedationYn: "Y",
+    operationId: "DOC_101",
+    procedureAt: "2026-03-26T09:30:00",
     status: "COMPLETED",
-    createdAt: "2026-03-26T09:00:00",
-    updatedAt: "2026-03-26T10:00:00",
+    createdAt: "2026-03-26T08:40:00",
+    updatedAt: "2026-03-26T10:15:00",
   },
   {
-    physiologicalExamId: "PHY_002",
-    testExecutionId: "TE_3002",
-    examEquipmentId: "EQ_002",
-    rawData: "PFT_RAW_002",
-    reportDocId: "RPT_002",
+    endoscopyExamId: "ENDO_002",
+    testExecutionId: "TE_1002",
+    procedureRoom: "내시경실 B",
+    equipment: "Pentax EPK-i7000",
+    sedationYn: "N",
+    operationId: "DOC_102",
+    procedureAt: "2026-03-26T10:00:00",
     status: "IN_PROGRESS",
-    createdAt: "2026-03-26T09:30:00",
-    updatedAt: "2026-03-26T10:10:00",
+    createdAt: "2026-03-26T09:10:00",
+    updatedAt: "2026-03-26T10:20:00",
   },
   {
-    physiologicalExamId: "PHY_003",
-    testExecutionId: "TE_3003",
-    examEquipmentId: "EQ_003",
-    rawData: "EEG_RAW_003",
-    reportDocId: "RPT_003",
+    endoscopyExamId: "ENDO_003",
+    testExecutionId: "TE_1003",
+    procedureRoom: "내시경실 C",
+    equipment: "Olympus GIF-HQ190",
+    sedationYn: "Y",
+    operationId: "DOC_103",
+    procedureAt: "2026-03-26T11:00:00",
     status: "WAITING",
     createdAt: "2026-03-26T10:00:00",
     updatedAt: "2026-03-26T10:00:00",
@@ -75,6 +82,15 @@ const mockItems: PhysiologicalExam[] = [
 
 const DONE_STATUSES = ["COMPLETED"];
 const ACTIVE_STATUSES = ["IN_PROGRESS"];
+
+const normalizeStatus = (value?: string | null) =>
+  value?.trim().toUpperCase() ?? "";
+
+const safeValue = (value?: string | number | null) => {
+  if (value === null || value === undefined) return "-";
+  const text = String(value).trim();
+  return text ? text : "-";
+};
 
 const formatDateTime = (value?: string | null) => {
   if (!value) return "-";
@@ -96,13 +112,13 @@ const formatDateTime = (value?: string | null) => {
   }).format(date);
 };
 
-const normalizeStatus = (value?: string | null) =>
-  value?.trim().toUpperCase() ?? "";
+const formatSedation = (value?: string | null) => {
+  const normalized = value?.trim().toUpperCase();
 
-const safeValue = (value?: string | number | null) => {
-  if (value === null || value === undefined) return "-";
-  const text = String(value).trim();
-  return text ? text : "-";
+  if (normalized === "Y") return "예";
+  if (normalized === "N") return "아니오";
+
+  return safeValue(value);
 };
 
 const getStatusColor = (
@@ -140,7 +156,7 @@ const getStatusSx = (status?: string | null) => {
   };
 };
 
-export default function PhysiologicalPage() {
+export default function EndoscopyList() {
   const [page, setPage] = React.useState(0);
   const [rowsPerPage, setRowsPerPage] = React.useState(10);
   const [selectedId, setSelectedId] = React.useState<string | null>(null);
@@ -151,8 +167,9 @@ export default function PhysiologicalPage() {
 
   const completedCount = React.useMemo(
     () =>
-      items.filter((item) => DONE_STATUSES.includes(normalizeStatus(item.status)))
-        .length,
+      items.filter((item) =>
+        DONE_STATUSES.includes(normalizeStatus(item.status))
+      ).length,
     [items]
   );
 
@@ -179,8 +196,7 @@ export default function PhysiologicalPage() {
   const selected = React.useMemo(
     () =>
       items.find(
-        (item) =>
-          String(item.physiologicalExamId) === String(selectedId)
+        (item) => String(item.endoscopyExamId) === String(selectedId)
       ) ?? null,
     [items, selectedId]
   );
@@ -198,8 +214,8 @@ export default function PhysiologicalPage() {
     setPage(0);
   };
 
-  const handleSelect = (item: PhysiologicalExam) => {
-    setSelectedId(String(item.physiologicalExamId));
+  const handleSelect = (item: EndoscopyExam) => {
+    setSelectedId(String(item.endoscopyExamId));
   };
 
   return (
@@ -222,10 +238,10 @@ export default function PhysiologicalPage() {
             >
               <Stack spacing={0.5} sx={{ flexGrow: 1 }}>
                 <Typography sx={{ fontSize: 22, fontWeight: 900 }}>
-                  생리 기능 검사 워크스테이션
+                  내시경 검사 워크스테이션
                 </Typography>
                 <Typography sx={{ color: "var(--muted)" }}>
-                  생리 기능 검사 목록을 조회하고 선택한 항목의 상세 정보를 확인하는 화면입니다.
+                  내시경 검사 목록을 조회하고 선택한 항목의 상세 정보를 확인하는 화면입니다.
                 </Typography>
               </Stack>
 
@@ -237,14 +253,14 @@ export default function PhysiologicalPage() {
                 >
                   새로고침
                 </Button>
-                <Button
+                {/* <Button
                   component={Link}
-                  href="/medical_support/physiological/create"
+                  href="/medical_support/endoscopy/create"
                   variant="contained"
                   startIcon={<AddIcon />}
                 >
                   신규 작성
-                </Button>
+                </Button> */}
               </Stack>
             </Stack>
           </CardContent>
@@ -284,7 +300,7 @@ export default function PhysiologicalPage() {
               >
                 <Stack direction="row" spacing={1} alignItems="center">
                   <ScienceOutlinedIcon sx={{ color: "var(--brand)" }} />
-                  <Typography fontWeight={800}>생리 기능 검사 목록</Typography>
+                  <Typography fontWeight={800}>내시경 검사 목록</Typography>
                 </Stack>
                 <Chip label={`표시 ${items.length}`} size="small" />
               </Stack>
@@ -316,27 +332,28 @@ export default function PhysiologicalPage() {
                       <TableHead>
                         <TableRow>
                           <TableCell align="center">번호</TableCell>
-                          <TableCell align="center">생리기능검사 ID</TableCell>
+                          <TableCell align="center">내시경검사 ID</TableCell>
                           <TableCell align="center">검사수행 ID</TableCell>
-                          <TableCell align="center">검사장비 ID</TableCell>
-                          <TableCell align="center">리포트문서 ID</TableCell>
+                          <TableCell align="center">시술실</TableCell>
+                          <TableCell align="center">장비</TableCell>
+                          <TableCell align="center">진정여부</TableCell>
+                          <TableCell align="center">시술일시</TableCell>
                           <TableCell align="center">상태</TableCell>
-                          <TableCell align="center">생성일시</TableCell>
                         </TableRow>
                       </TableHead>
 
                       <TableBody>
                         {paginatedItems.length === 0 && (
                           <TableRow>
-                            <TableCell colSpan={7} align="center" sx={{ py: 5 }}>
-                              생리 기능 검사 데이터가 없습니다.
+                            <TableCell colSpan={8} align="center" sx={{ py: 5 }}>
+                              내시경 검사 데이터가 없습니다.
                             </TableCell>
                           </TableRow>
                         )}
 
                         {paginatedItems.map((item, index) => (
                           <TableRow
-                            key={String(item.physiologicalExamId)}
+                            key={String(item.endoscopyExamId)}
                             hover
                             onClick={() => handleSelect(item)}
                             sx={{
@@ -344,8 +361,8 @@ export default function PhysiologicalPage() {
                               "& td": { py: 1.25, whiteSpace: "nowrap" },
                               "&:hover": { backgroundColor: "#f9fbff" },
                               backgroundColor:
-                                String(activeSelected?.physiologicalExamId) ===
-                                String(item.physiologicalExamId)
+                                String(activeSelected?.endoscopyExamId) ===
+                                String(item.endoscopyExamId)
                                   ? "rgba(11, 91, 143, 0.08)"
                                   : "transparent",
                             }}
@@ -354,16 +371,22 @@ export default function PhysiologicalPage() {
                               {currentPage * rowsPerPage + index + 1}
                             </TableCell>
                             <TableCell align="center">
-                              {safeValue(item.physiologicalExamId)}
+                              {safeValue(item.endoscopyExamId)}
                             </TableCell>
                             <TableCell align="center">
                               {safeValue(item.testExecutionId)}
                             </TableCell>
                             <TableCell align="center">
-                              {safeValue(item.examEquipmentId)}
+                              {safeValue(item.procedureRoom)}
                             </TableCell>
                             <TableCell align="center">
-                              {safeValue(item.reportDocId)}
+                              {safeValue(item.equipment)}
+                            </TableCell>
+                            <TableCell align="center">
+                              {formatSedation(item.sedationYn)}
+                            </TableCell>
+                            <TableCell align="center">
+                              {formatDateTime(item.procedureAt)}
                             </TableCell>
                             <TableCell align="center">
                               <Chip
@@ -372,9 +395,6 @@ export default function PhysiologicalPage() {
                                 size="small"
                                 sx={getStatusSx(item.status)}
                               />
-                            </TableCell>
-                            <TableCell align="center">
-                              {formatDateTime(item.createdAt)}
                             </TableCell>
                           </TableRow>
                         ))}
@@ -411,7 +431,7 @@ export default function PhysiologicalPage() {
                 >
                   <Stack direction="row" spacing={1} alignItems="center">
                     <ScienceOutlinedIcon sx={{ color: "var(--brand-strong)" }} />
-                    <Typography fontWeight={800}>선택 생리 기능 검사</Typography>
+                    <Typography fontWeight={800}>선택 내시경 검사</Typography>
                   </Stack>
 
                   {activeSelected && (
@@ -424,7 +444,7 @@ export default function PhysiologicalPage() {
                       />
                       <Button
                         component={Link}
-                        href={`/medical_support/physiological/edit/${activeSelected.physiologicalExamId}`}
+                        href={`/medical_support/endoscopy/edit/${activeSelected.endoscopyExamId}`}
                         variant="outlined"
                         size="small"
                         startIcon={<EditOutlinedIcon />}
@@ -444,24 +464,32 @@ export default function PhysiologicalPage() {
                   }}
                 >
                   <Row
-                    label="생리기능검사 ID"
-                    value={safeValue(activeSelected?.physiologicalExamId)}
+                    label="내시경검사 ID"
+                    value={safeValue(activeSelected?.endoscopyExamId)}
                   />
                   <Row
                     label="검사수행 ID"
                     value={safeValue(activeSelected?.testExecutionId)}
                   />
                   <Row
-                    label="검사장비 ID"
-                    value={safeValue(activeSelected?.examEquipmentId)}
+                    label="시술실"
+                    value={safeValue(activeSelected?.procedureRoom)}
                   />
                   <Row
-                    label="원본데이터"
-                    value={safeValue(activeSelected?.rawData)}
+                    label="장비"
+                    value={safeValue(activeSelected?.equipment)}
                   />
                   <Row
-                    label="리포트문서 ID"
-                    value={safeValue(activeSelected?.reportDocId)}
+                    label="진정여부"
+                    value={formatSedation(activeSelected?.sedationYn)}
+                  />
+                  <Row
+                    label="시술자 ID"
+                    value={safeValue(activeSelected?.operationId)}
+                  />
+                  <Row
+                    label="시술일시"
+                    value={formatDateTime(activeSelected?.procedureAt)}
                   />
                   <Row
                     label="상태"
@@ -501,10 +529,10 @@ export default function PhysiologicalPage() {
                 </Stack>
                 <Stack spacing={1} sx={{ mt: 2 }}>
                   {[
-                    "좌측 목록: 생리 기능 검사 항목 조회",
+                    "좌측 목록: 내시경 검사 항목 조회",
                     "행 클릭: 우측 상세 정보 갱신",
-                    "수정 버튼: 생리 기능 검사 수정 화면으로 이동",
-                    "신규 작성: 생리 기능 검사 등록 화면으로 이동",
+                    "수정 버튼: 내시경 검사 수정 화면으로 이동",
+                    "신규 작성: 내시경 검사 등록 화면으로 이동",
                   ].map((text) => (
                     <Box
                       key={text}
