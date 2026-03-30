@@ -1,10 +1,10 @@
 "use client";
 
-import { useRef, useState, type ChangeEvent, type FormEvent } from "react";
+import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import Script from "next/script";
 import { Box, Button, MenuItem, Paper, Stack, TextField, Typography } from "@mui/material";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 
 import {
   formatPhoneKR,
@@ -15,14 +15,39 @@ import {
   initialstaffCreateForm,
   type staffCreateRequest,
 } from "@/features/staff/Basiclnfo/BasiclnfoType";
-import { doctorBasiclnfoDraft } from "@/features/staff/Basiclnfo/BasiclnfoSlict";
+import { BasiclnfoDraft } from "@/features/staff/Basiclnfo/BasiclnfoSlict";
+import { RootState } from "@/store/rootReducer";
+import { departmentListRequest } from "@/features/staff/department/departmentSlisct";
+import { positionListRequest } from "@/features/staff/position/positionSlice";
 
 export default function NurseBasicInfoCreate() {
   const dispatch = useDispatch();
   const router = useRouter();
   const addressDetailRef = useRef<HTMLInputElement | null>(null);
 
+
+  //⭐부서 셀렉터값
+  const { Departmentlist } = useSelector((state: RootState) => state.department);
+  
+  //⭐직책 셀렉터값
+  const { positionList   } = useSelector((state: RootState) => state.position);
+
+
+
   const [form, setForm] = useState<staffCreateRequest>(initialstaffCreateForm);
+
+
+
+//⭐부서목록 리랜더링
+useEffect(() => {dispatch(departmentListRequest());}, [dispatch]);
+
+//⭐직책목록 리랜더링
+useEffect(() => {dispatch(positionListRequest())},[dispatch]);
+
+
+
+
+
 
   const handleChange = (event: ChangeEvent<HTMLInputElement>) => {
     const { name, value } = event.target;
@@ -76,6 +101,8 @@ export default function NurseBasicInfoCreate() {
     const basicInfo: staffCreateRequest = {
       staffId: form.staffId.trim(),
       deptId: form.deptId.trim(),
+      positionId: form.positionId.trim(),
+
       name: form.name.trim(),
       phone: form.phone.trim(),
       email: form.email.trim(),
@@ -87,7 +114,7 @@ export default function NurseBasicInfoCreate() {
       status: form.status.trim() || "ACTIVE",
     };
 
-    dispatch(doctorBasiclnfoDraft(basicInfo));
+    dispatch(BasiclnfoDraft(basicInfo));
     router.push("/staff/nurse/create");
   };
 
@@ -110,16 +137,59 @@ export default function NurseBasicInfoCreate() {
           <Box component="form" onSubmit={handleNext}>
             <Stack spacing={2}>
               <Stack direction={{ xs: "column", md: "row" }} spacing={2}>
-                <TextField label="직원번호" name="staffId" value={form.staffId} onChange={handleChange} fullWidth required />
-                <TextField label="부서 ID" name="deptId" value={form.deptId} onChange={handleChange} fullWidth required />
-              </Stack>
+                <TextField label="직원번호" 
+                name="staffId" value={form.staffId} 
+                onChange={handleChange} fullWidth required />
 
+
+
+      <TextField
+      select
+      label="부서"
+      name="deptId"
+      value={form.deptId}
+      onChange={handleChange}
+      fullWidth
+      required>
+      <MenuItem value="">부서를 선택하세요</MenuItem>
+      {Departmentlist.map((dept) => (
+      <MenuItem key={dept.deptId} value={dept.deptId}>
+      {dept.deptName} ({dept.deptId})
+      </MenuItem>
+      ))}
+      </TextField>
+
+          <TextField
+      select
+      label="직책"
+      name="positionId"
+      value={form.positionId}
+      onChange={handleChange}
+      fullWidth
+      required>
+      <MenuItem value="">직책를 선택하세요</MenuItem>
+      {positionList.map((position) => (
+      <MenuItem key={position.positionId} value={position.positionId}>
+      {position.positionName} ({position.positionId})
+      </MenuItem>
+      ))}
+      </TextField>
+      </Stack>
+
+              
+              
               <Stack direction={{ xs: "column", md: "row" }} spacing={2}>
-                <TextField label="이름" name="name" value={form.name} onChange={handleChange} fullWidth required />
-                <TextField label="연락처" name="phone" value={form.phone} onChange={handleChange} fullWidth />
+                <TextField label="이름" 
+                name="name" value={form.name} onChange={handleChange} fullWidth required />
+
+                <TextField label="연락처" 
+                name="phone" value={form.phone} onChange={handleChange} fullWidth />
               </Stack>
 
-              <TextField label="이메일" name="email" value={form.email} onChange={handleChange} fullWidth />
+              <TextField label="이메일" 
+                 name="email" value={form.email} onChange={handleChange} fullWidth />
+
+
 
               <Stack direction={{ xs: "column", md: "row" }} spacing={2}>
                 <TextField

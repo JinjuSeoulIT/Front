@@ -2,7 +2,7 @@
 
 
 //일반 입력폼 컴포넌트
-import { useRef, useState, type ChangeEvent, type FormEvent } from "react";
+import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import Script from "next/script";
 import {
@@ -21,8 +21,12 @@ import {
   sanitizeGenderCode,
 } from "@/components/staff/BasiclnfoDashboard/BasiclnfoUtils";
 import { initialstaffCreateForm, staffCreateRequest } from "@/features/staff/Basiclnfo/BasiclnfoType";
-import { useDispatch } from "react-redux";
-import { doctorBasiclnfoDraft } from "@/features/staff/Basiclnfo/BasiclnfoSlict";
+import { useDispatch, useSelector } from "react-redux";
+
+import { RootState } from "@/store/rootReducer";
+import { departmentListRequest } from "@/features/staff/department/departmentSlisct";
+import { positionListRequest } from "@/features/staff/position/positionSlice";
+import { BasiclnfoDraft } from "@/features/staff/Basiclnfo/BasiclnfoSlict";
 
 
 
@@ -35,14 +39,27 @@ export default function DoctorBasicInfoCreate() {
 
   const address = useRef<HTMLInputElement | null>(null);
 
+  //⭐부서 셀렉터값
+  const { Departmentlist } = useSelector((state: RootState) => state.department);
+  
+  //⭐직책 셀렉터값
+  const { positionList   } = useSelector((state: RootState) => state.position);
+
+
   const [form, setForm] = useState<staffCreateRequest>(initialstaffCreateForm);
+
+
+
+//⭐부서목록 리랜더링
+useEffect(() => {dispatch(departmentListRequest());}, [dispatch]);
+
+//⭐직책목록 리랜더링
+useEffect(() => {dispatch(positionListRequest())},[dispatch]);
+
+
 
   const handleChange = (event: ChangeEvent<HTMLInputElement>) => {
     const { name, value } = event.target;
-
-
-
-
 
     //생년 월일 앞모듈 (공통) 
     if (name === "birthDate") {
@@ -52,7 +69,6 @@ export default function DoctorBasicInfoCreate() {
       }));
       return;
     }
-
     //생년 월일 뒤모듈 (공통)
     if (name === "genderCode") {
       setForm((prev) => ({
@@ -61,7 +77,6 @@ export default function DoctorBasicInfoCreate() {
       }));
       return;
     }
-
     //전화 모듈 
     if (name === "phone") {
       setForm((prev) => ({
@@ -70,7 +85,6 @@ export default function DoctorBasicInfoCreate() {
       }));
       return;
     }
-
     setForm((prev) => ({
       ...prev,
       [name]: value,
@@ -80,11 +94,36 @@ export default function DoctorBasicInfoCreate() {
 
 
 
+  const handleNext = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    const doctorBasiclnfo: staffCreateRequest = {
+      staffId: form.staffId.trim(),
+      deptId: form.deptId.trim(),
+      positionId: form.positionId.trim(),
+
+      name: form.name.trim(),
+      phone: form.phone.trim(),
+      email: form.email.trim(),
+      birthDate: form.birthDate.trim(),
+      genderCode: form.genderCode.trim(),
+      zipCode: form.zipCode.trim(),
+      address1: form.address1.trim(),
+      address2: form.address2.trim(),
+      status: form.status.trim() || "ACTIVE",
+    };
+    // 임시저장
+    dispatch(BasiclnfoDraft(doctorBasiclnfo));
+
+    router.push("/staff/doctor/create"); //그후 의사쪽으로 라우팅
+  };
 
 
 
 
-  //주소
+
+
+   //주소 모듈
   const openPostcode = () => {
     const daum = (window as any).daum;
     if (!daum?.Postcode) {
@@ -109,33 +148,6 @@ export default function DoctorBasicInfoCreate() {
 
 
 
-
-
-
-  const handleNext = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-
-    const doctorBasiclnfo: staffCreateRequest = {
-      staffId: form.staffId.trim(),
-      deptId: form.deptId.trim(),
-      name: form.name.trim(),
-      phone: form.phone.trim(),
-      email: form.email.trim(),
-      birthDate: form.birthDate.trim(),
-      genderCode: form.genderCode.trim(),
-      zipCode: form.zipCode.trim(),
-      address1: form.address1.trim(),
-      address2: form.address2.trim(),
-      status: form.status.trim() || "ACTIVE",
-    };
-
-
-    // 임시저장
-    dispatch(doctorBasiclnfoDraft(doctorBasiclnfo));
-
-    router.push("/staff/doctor/create"); //그후 의사쪽으로 라우팅
-  };
-
   return (
 
 
@@ -152,6 +164,8 @@ export default function DoctorBasicInfoCreate() {
           </Typography>
 
           <Box component="form" onSubmit={handleNext}>
+
+            
             <Stack spacing={2}>
               <Stack direction={{ xs: "column", md: "row" }} spacing={2}>
                 <TextField
@@ -162,14 +176,40 @@ export default function DoctorBasicInfoCreate() {
                   fullWidth
                   required
                 />
-                <TextField
-                  label="부서 ID"
-                  name="deptId"
-                  value={form.deptId}
-                  onChange={handleChange}
-                  fullWidth
-                  required
-                />
+              
+      <TextField
+      select
+      label="부서"
+      name="deptId"
+      value={form.deptId}
+      onChange={handleChange}
+      fullWidth
+      required>
+      <MenuItem value="">부서를 선택하세요</MenuItem>
+      {Departmentlist.map((dept) => (
+      <MenuItem key={dept.deptId} value={dept.deptId}>
+      {dept.deptName} ({dept.deptId})
+      </MenuItem>
+      ))}
+      </TextField>
+
+          <TextField
+      select
+      label="직책"
+      name="positionId"
+      value={form.positionId}
+      onChange={handleChange}
+      fullWidth
+      required>
+      <MenuItem value="">직책를 선택하세요</MenuItem>
+      {positionList.map((position) => (
+      <MenuItem key={position.positionId} value={position.positionId}>
+      {position.positionName} ({position.positionId})
+      </MenuItem>
+      ))}
+      </TextField>
+
+
               </Stack>
 
               <Stack direction={{ xs: "column", md: "row" }} spacing={2}>

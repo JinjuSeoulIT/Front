@@ -22,7 +22,7 @@ import {
 } from "@/features/staff/doctor/doctorSlice";
 
 import { DoctorCreateRequest, initialDoctorCreateForm } from "@/features/staff/doctor/doctortypes";
-import { clearDoctorBasicDraft, doctorBasiclnfoDraft } from "@/features/staff/Basiclnfo/BasiclnfoSlict";
+import { clearBasicDraft } from "@/features/staff/Basiclnfo/BasiclnfoSlict";
 
 
 
@@ -30,14 +30,10 @@ export default function DoctorCreate() {
   const dispatch = useDispatch();
   const router = useRouter();
 
-  const { loading, error, createSuccess } = useSelector(
-    (state: RootState) => state.doctor
-  );
+  const { loading, error, createSuccess } = useSelector((state: RootState) => state.doctor);
 
-
-
-  //이게 기존 저장소
-const doctorBasiclnfo = useSelector((state: RootState) => state.staff.doctorBasiclnfoCreate);
+//⭐이게 기존 저장소 (가져옴)
+const doctorBasiclnfo = useSelector((state: RootState) => state.staff.BasiclnfoCreate);
 
 const [form, setForm] = useState(initialDoctorCreateForm);
 
@@ -51,27 +47,8 @@ const [form, setForm] = useState(initialDoctorCreateForm);
   }, [doctorBasiclnfo, router]);
 
 
-  //의사 정보 없으면 리턴
-  useEffect(() => {
-    if (!createSuccess) return;
-
-    dispatch(clearDoctorBasicDraft());
-    dispatch(resetSuccessEnd());
-    router.replace("/staff/doctor/list");
-  }, [createSuccess, dispatch, router]);
 
 
-
-
-
-  const handleChange = (event: ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = event.target;
-
-    setForm((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-  };
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -80,13 +57,12 @@ const [form, setForm] = useState(initialDoctorCreateForm);
       alert("공통 입력 정보가 없습니다.");
       return;
     }
-
-
-    
     const doctorReq: DoctorCreateRequest = {
-      // 공통
+      //⭐ 공통 (기존값)
       staffId: doctorBasiclnfo.staffId.trim(),
       deptId: doctorBasiclnfo.deptId.trim(),
+      positionId: doctorBasiclnfo.positionId.trim(),
+
       name: doctorBasiclnfo.name.trim(),
       phone: doctorBasiclnfo.phone.trim(),
       email: doctorBasiclnfo.email.trim(),
@@ -97,13 +73,12 @@ const [form, setForm] = useState(initialDoctorCreateForm);
       address2: doctorBasiclnfo.address2.trim(),
       status: doctorBasiclnfo.status.trim() || "ACTIVE",
 
+
       // 의사
       licenseNo: form.licenseNo.trim(),
       specialtyId: form.specialtyId.trim(),
       doctorType: "DOCTOR",
-
       doctorFileUrl: (form.doctorFileUrl ?? "").trim(),
-      
       profileSummary: form.profileSummary.trim(),
       education: form.education.trim(),
       careerDetail: form.careerDetail.trim(),
@@ -117,9 +92,26 @@ const [form, setForm] = useState(initialDoctorCreateForm);
 
 
 
+    const handleChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = event.target;
+
+    setForm((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
 
 
 
+
+  //의사 정보 없으면 리턴
+  useEffect(() => {
+    if (!createSuccess) return;
+
+    dispatch(clearBasicDraft());
+    dispatch(resetSuccessEnd());
+    router.replace("/staff/doctor/list");
+  }, [createSuccess, dispatch, router]);
 
 
 
@@ -166,6 +158,16 @@ const [form, setForm] = useState(initialDoctorCreateForm);
               helperText="최종 등록 시 공통 + 의사 정보와 함께 전송됩니다."
               sx={{ "& .MuiInputBase-root": { bgcolor: "#f4f7fd" } }}
             />
+
+            <TextField
+              label="직책 ID"
+              value={doctorBasiclnfo?.positionId ?? ""}
+              fullWidth
+              InputProps={{ readOnly: true }}
+              helperText="이전 단계 공통 입력폼에서 작성한 값입니다."
+              sx={{ "& .MuiInputBase-root": { bgcolor: "#f4f7fd" } }}
+            />
+
 
             <TextField
               label="이름"

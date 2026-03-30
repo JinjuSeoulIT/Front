@@ -33,26 +33,91 @@ const ReceptionDetail = ({ staffId }: ReceptionIdNumber) => {
             <>
               <Table size="small">
                 <TableBody>
-                  <TableRow><TableCell sx={{ fontWeight: 700, width: 180 }}>직원번호</TableCell><TableCell>{receptionDetail.staffId ?? "-"}</TableCell></TableRow>
-                  <TableRow><TableCell sx={{ fontWeight: 700 }}>이름</TableCell><TableCell>{receptionDetail.name ?? "-"}</TableCell></TableRow>
-                  <TableRow><TableCell sx={{ fontWeight: 700 }}>부서</TableCell><TableCell>{receptionDetail.deptId ?? "-"}</TableCell></TableRow>
-                  <TableRow><TableCell sx={{ fontWeight: 700 }}>직군</TableCell><TableCell><ReceptionFont receptionType={receptionDetail.receptionType} /></TableCell></TableRow>
-                  <TableRow><TableCell sx={{ fontWeight: 700 }}>업무구분</TableCell><TableCell>{receptionDetail.jobTypeCd ?? "-"}</TableCell></TableRow>
-                  <TableRow><TableCell sx={{ fontWeight: 700 }}>창구번호</TableCell><TableCell>{receptionDetail.deskNo ?? "-"}</TableCell></TableRow>
-                  <TableRow><TableCell sx={{ fontWeight: 700 }}>근무형태</TableCell><TableCell>{receptionDetail.shiftType ?? "-"}</TableCell></TableRow>
-                  <TableRow><TableCell sx={{ fontWeight: 700 }}>업무 시작일</TableCell><TableCell>{receptionDetail.startDate ?? "-"}</TableCell></TableRow>
-                  <TableRow><TableCell sx={{ fontWeight: 700 }}>창구구역</TableCell><TableCell>{receptionDetail.windowArea ?? "-"}</TableCell></TableRow>
-                  <TableRow><TableCell sx={{ fontWeight: 700 }}>사내번호</TableCell><TableCell>{receptionDetail.extNo ?? "-"}</TableCell></TableRow>
-                  <TableRow><TableCell sx={{ fontWeight: 700 }}>파트타임/멀티태스크</TableCell><TableCell>{receptionDetail.multiTask ?? "-"}</TableCell></TableRow>
-                  <TableRow><TableCell sx={{ fontWeight: 700 }}>비고</TableCell><TableCell>{receptionDetail.rmk ?? "-"}</TableCell></TableRow>
-                  <TableRow><TableCell sx={{ fontWeight: 700 }}>상태</TableCell><TableCell><StatusBadge status={receptionDetail.status ?? "-"} /></TableCell></TableRow>
-                </TableBody>
-              </Table>
+                <TableRow>
 
-              <Stack direction="row" spacing={1.5} justifyContent="flex-end">
-                <Button variant="outlined" onClick={() => router.push("/staff/reception/list")}>목록</Button>
-                <Button variant="contained" onClick={() => router.push(`/staff/reception/${staffId}/edit`)} sx={{ bgcolor: "#2b5aa9" }}>수정</Button>
-                <Button color="error" variant="outlined" onClick={() => router.push(`/staff/reception/${staffId}/delete`)}>삭제</Button>
+                <TableCell 
+                sx={{ fontWeight: 700, width: 180 }}>직원번호
+                </TableCell><TableCell>{receptionDetail.staffId ?? "-"}</TableCell>
+                </TableRow>
+
+
+                <TableRow><TableCell 
+                sx={{ fontWeight: 700 }}>이름</TableCell>
+                <TableCell>{receptionDetail.name ?? "-"}</TableCell></TableRow>
+
+
+                <TableRow>
+                <TableCell 
+                sx={{ fontWeight: 700 }}>부서</TableCell>
+                <TableCell>{receptionDetail.deptId ?? "-"}</TableCell></TableRow>
+
+
+                <TableRow>
+                <TableCell sx={{ fontWeight: 700 }}>직군</TableCell>
+                <TableCell><ReceptionFont receptionType={receptionDetail.receptionType} /></TableCell>
+                </TableRow>
+
+
+                <TableRow>
+                <TableCell sx={{ fontWeight: 700 }}>업무구분</TableCell>
+                <TableCell>{receptionDetail.jobTypeCd ?? "-"}</TableCell></TableRow>
+
+
+                <TableRow>
+                <TableCell sx={{ fontWeight: 700 }}>창구번호</TableCell>
+                <TableCell>{receptionDetail.deskNo ?? "-"}</TableCell>
+                </TableRow>
+
+
+                <TableRow>
+                <TableCell sx={{ fontWeight: 700 }}>근무형태</TableCell>
+                <TableCell>{receptionDetail.shiftType ?? "-"}</TableCell>
+                </TableRow>
+
+
+                <TableRow>
+                <TableCell sx={{ fontWeight: 700 }}>업무 시작일</TableCell>
+                <TableCell>{receptionDetail.startDate ?? "-"}</TableCell>
+                </TableRow>
+
+
+                <TableRow>
+                <TableCell sx={{ fontWeight: 700 }}>창구구역</TableCell>
+                <TableCell>{receptionDetail.windowArea ?? "-"}</TableCell>
+                </TableRow>
+
+
+                <TableRow>
+                <TableCell sx={{ fontWeight: 700 }}>사내번호</TableCell>
+                <TableCell>{receptionDetail.extNo ?? "-"}</TableCell>
+                </TableRow>
+
+
+                <TableRow>
+                <TableCell sx={{ fontWeight: 700 }}>파트타임/멀티태스크</TableCell>
+                <TableCell>{receptionDetail.multiTask ?? "-"}</TableCell>
+                </TableRow>
+
+                <TableRow>
+                <TableCell sx={{ fontWeight: 700 }}>비고</TableCell>
+                <TableCell>{receptionDetail.rmk ?? "-"}</TableCell>
+                </TableRow>
+                <TableRow><TableCell sx={{ fontWeight: 700 }}>상태</TableCell><TableCell><StatusBadge status={receptionDetail.status ?? "-"} /></TableCell></TableRow>
+                </TableBody>
+                </Table>
+
+                <Stack direction="row" spacing={1.5} justifyContent="flex-end">
+                <Button variant="outlined" onClick={() => router.push("/staff/reception/list")}>목록
+                </Button>
+
+                <Button variant="contained" onClick={() => router.push(`/staff/reception/${staffId}/edit`)} 
+                sx={{ bgcolor: "#2b5aa9" }}>원무 정보수정</Button>
+
+                 <Button variant="contained" onClick={() => router.push(`/staff/Basiclnfo/${staffId}/edit`)} 
+                sx={{ bgcolor: "#2b5aa9" }}>일반 정보수정</Button>
+
+                <Button color="error" variant="outlined" onClick={() => router.push(`/staff/reception/${staffId}/delete`)}>삭제
+                </Button>
               </Stack>
             </>
           )}

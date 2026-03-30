@@ -11,6 +11,8 @@ export type PropsOpen = {
 export type staffResponse = {
   staffId: string;
   deptId: string;
+  positionId :string;
+
   name: string;
   phone: string;
   email: string;
@@ -32,6 +34,8 @@ export type staffResponse = {
 export type staffCreateRequest = {
   staffId: string;
   deptId: string;
+  positionId :string;
+
   name: string;
   phone: string;
   email: string;
@@ -51,6 +55,8 @@ export type staffCreateRequest = {
 export const initialstaffCreateForm: staffCreateRequest = {
   staffId: "",
   deptId: "",
+  positionId :"",
+
   name: "",
   phone: "",
   email: "",
@@ -73,7 +79,10 @@ export type staffIdNumber = {
 
 
 export type staffUpdateRequest = {
+  staffId: string;
   deptId: string;
+  positionId :String;
+
   name: string;
   phone: string;
   email: string;
@@ -88,7 +97,10 @@ export type staffUpdateRequest = {
 
 
 export const initialstaffUpdateForm: staffUpdateRequest = {
+  staffId: "",
   deptId: "",
+  positionId : "",
+
   name: "",
   phone: "",
   email: "",

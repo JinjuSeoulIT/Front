@@ -9,10 +9,15 @@ import type {
   FileUploadResDTO,
 } from "../../features/staff/doctor/doctortypes";
 
-const doctor_API_BASE_URL = "http://192.168.1.58:8022";
+const DOCTOR_API_BASE_URL = "http://192.168.1.58:8022";
+
+const LOCAL_API_BASE_URL =
+  process.env.LOCAL_API_BASE_URL ?? "http://localhost:8022";
+
+
 
 const doctorAPI = axios.create({
-  baseURL: doctor_API_BASE_URL,
+  baseURL: DOCTOR_API_BASE_URL,
 });
 
 

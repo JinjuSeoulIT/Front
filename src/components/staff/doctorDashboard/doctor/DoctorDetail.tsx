@@ -15,17 +15,23 @@ import StatusBadge from "../../BasiclnfoDashboard/BasiclnfoStatus";
 
 
 const DoctorDetail = ({ staffId }: DoctorIdNumber) => {
+
   const dispatch = useDispatch();
+
   const router = useRouter();
   const { doctorDetail, loading, error } = useSelector((state: RootState) => state.doctor);
 
-
+  //의사 리스트
   const goDoctorList = () => router.replace(`/staff/doctor/list`);
-
+  //전체 리스트
   const goEeployeeList = () => router.push(`/staff/Basiclnfo/list`);
-
-  const goEdit = () => router.push(`/staff/doctor/${staffId}/edit`);
   
+  //의사수정
+  const goDosctorEdit = () => router.push(`/staff/doctor/${staffId}/edit`)
+  
+  //수정 리스트
+  const goEdit = () => router.push(`/staff/Basiclnfo/${staffId}/edit`);
+   
 
   
     useEffect(() => {
@@ -47,7 +53,6 @@ const DoctorDetail = ({ staffId }: DoctorIdNumber) => {
 
 
               <Stack direction="row" spacing={1.5} justifyContent="pace-between" sx={{ mt: 2 }} >
-              <Button variant="contained" onClick={goEeployeeList}  sx={{ bgcolor: "#da342f" }}>전체 직원목록</Button>
               </Stack>
 
               <Stack direction="row" spacing={1.5} justifyContent="pace-between" sx={{ mt: 2 }} ></Stack>
@@ -179,9 +184,13 @@ const DoctorDetail = ({ staffId }: DoctorIdNumber) => {
             
 
             <Stack direction="row" spacing={1.5} justifyContent="flex-end" sx={{ mt: 2 }} >
+            <Button variant="contained" onClick={goEeployeeList}  sx={{ bgcolor: "#da342f" }}>전체 직원목록</Button>
+
             <Button variant="outlined" onClick={goDoctorList}>의사 목록</Button>
 
-            <Button variant="contained" onClick={goEdit} sx={{ bgcolor: "#2b5aa9" }}>수정</Button>
+            <Button variant="contained" onClick={goDosctorEdit} sx={{ bgcolor: "#2b5aa9" }}>의사정보 수정</Button>
+
+            <Button variant="contained" onClick={goEdit} sx={{ bgcolor: "#2b5aa9" }}>기본 정보 수정</Button>
             </Stack>
 
             {error && <Typography color="error" sx={{ mb: 2 }}>{error}</Typography>}

@@ -1,4 +1,4 @@
-export * from "./staffTypes";
+
 
 export type PatientItem = {
   receptionId: string | number;

@@ -20,13 +20,13 @@ import {
   resetReceptionSuccessEnd,
 } from "@/features/staff/reception/receptionSlice";
 
-type Props = {
+  type Props = {
   open: boolean;
   staffId: string | null;
   onClose: () => void;
-};
+  };
 
-const ReceptionDelete = ({ open, staffId, onClose }: Props) => {
+  const ReceptionDelete = ({ open, staffId, onClose }: Props) => {
   const dispatch = useDispatch();
   const router = useRouter();
   const { loading, deleteSuccess, error } = useSelector((state: RootState) => state.reception);
@@ -47,14 +47,15 @@ const ReceptionDelete = ({ open, staffId, onClose }: Props) => {
     dispatch(deleteReceptionRequest({ staffId }));
   };
 
-  return (
+    return (
     <Dialog open={open} onClose={loading ? undefined : handleClose} maxWidth="xs" fullWidth>
       <DialogTitle>원무 직원 삭제</DialogTitle>
       <DialogContent>
-        <DialogContentText sx={{ mb: 2 }}>정말 삭제하시겠습니까?</DialogContentText>
-        <Typography variant="body2" color="text.secondary">staffId: {staffId ?? "-"}</Typography>
-        {loading && <CircularProgress sx={{ mt: 2 }} />}
-        {error && <Alert severity="error" sx={{ mt: 2 }}>{error}</Alert>}
+      <DialogContentText sx={{ mb: 2 }}>정말 삭제하시겠습니까?</DialogContentText>
+      <Typography variant="body2" color="text.secondary">staffId: {staffId ?? "-"}</Typography>
+      
+      {loading && <CircularProgress sx={{ mt: 2 }} />}
+      {error && <Alert severity="error" sx={{ mt: 2 }}>{error}</Alert>}
       </DialogContent>
       <DialogActions>
         <Button onClick={handleClose} disabled={loading}>취소</Button>
@@ -62,6 +63,6 @@ const ReceptionDelete = ({ open, staffId, onClose }: Props) => {
       </DialogActions>
     </Dialog>
   );
-};
+  };
 
 export default ReceptionDelete;

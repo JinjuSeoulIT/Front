@@ -11,32 +11,34 @@ import {
 } from "@/features/staff/Basiclnfo/BasiclnfoSlict";
 import { PropsOpen } from "@/features/staff/Basiclnfo/BasiclnfoType";
 
+    //모달창
+    const BasicInfoDelete = ({ open, staffId, onClose }: PropsOpen) => {
 
-const BasicInfoDelete = ({ open, staffId, onClose }: PropsOpen) => {
-
-  const dispatch = useDispatch();
-  const { deleteSuccess, loading, error } = useSelector((state: RootState) => state.staff);
+    const dispatch = useDispatch();
+    const { deleteSuccess, loading, error } = useSelector((state: RootState) => state.staff);
 
 
 
-  const handleConfirmDelete = () => {
+    const handleConfirmDelete = () => {
       if (!staffId) return;
-      dispatch(deleteStaffRequest({ staffId }));
+    dispatch(deleteStaffRequest({ staffId }));
     };
   
+    //모달창
     useEffect(() => {
-      if (!deleteSuccess) return;
-
-      onClose();
-            dispatch(StafflistRequest());
-            dispatch(resetSuccessEnd());
+    if (!deleteSuccess) return;
+    onClose();
+    
+    dispatch(StafflistRequest());
+    dispatch(resetSuccessEnd());
     }, [deleteSuccess, dispatch, onClose]);
 
 
 
     
 
-    return (
+        return (
+        
         //Dialog 공통 삭제는 모달창 팝업 레이어 식으로 만듬
         <Dialog open={open} onClose={loading ? undefined : onClose} maxWidth="xs" fullWidth>
         <DialogTitle>직원 삭제</DialogTitle>
@@ -70,9 +72,8 @@ const BasicInfoDelete = ({ open, staffId, onClose }: PropsOpen) => {
         {error && (<Alert severity="error" sx={{ mt: 2 }}>{error}</Alert>)}
         </DialogActions>
         </Dialog>
-
-  );
-};
+        );
+        };
 
 export default BasicInfoDelete;
 
