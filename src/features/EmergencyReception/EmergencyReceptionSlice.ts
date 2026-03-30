@@ -18,6 +18,7 @@ interface UpdateEmergencyReceptionPayload {
 const initialState: EmergencyReceptionState = {
   list: [],
   selected: null,
+  lastCreated: null,
   loading: false,
   error: null,
 };
@@ -70,9 +71,14 @@ const emergencyReceptionSlice = createSlice({
     ) => {
       state.loading = true;
       state.error = null;
+      state.lastCreated = null;
     },
-    createEmergencyReceptionSuccess: (state) => {
+    createEmergencyReceptionSuccess: (
+      state,
+      action: PayloadAction<EmergencyReception | null>
+    ) => {
       state.loading = false;
+      state.lastCreated = action.payload;
     },
     createEmergencyReceptionFailure: (state, action: PayloadAction<string>) => {
       state.loading = false;

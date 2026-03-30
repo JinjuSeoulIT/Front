@@ -5,10 +5,6 @@ import {
   Box,
   Button,
   Chip,
-  CircularProgress,
-  List,
-  ListItemButton,
-  ListItemText,
   Divider,
   MenuItem,
   Paper,
@@ -20,8 +16,6 @@ import LocalHospitalOutlinedIcon from "@mui/icons-material/LocalHospitalOutlined
 import EditNoteRoundedIcon from "@mui/icons-material/EditNoteRounded";
 import type { ReceptionForm as ReceptionFormPayload } from "@/features/Reception/ReceptionTypes";
 import type { DepartmentOption, DoctorOption } from "@/features/Reservations/ReservationTypes";
-import { searchPatientsApi } from "@/lib/patient/patientApi";
-import type { Patient } from "@/features/patients/patientTypes";
 import { fetchDepartmentsApi, fetchDoctorsApi } from "@/lib/masterDataApi";
 
 type ReceptionFormState = {
@@ -89,9 +83,6 @@ export default function ReceptionForm({
   const [doctors, setDoctors] = React.useState<DoctorOption[]>([]);
   const [masterDataLoading, setMasterDataLoading] = React.useState(false);
   const [masterDataError, setMasterDataError] = React.useState<string | null>(null);
-  const [patientSearchLoading, setPatientSearchLoading] = React.useState(false);
-  const [patientSearchResults, setPatientSearchResults] = React.useState<Patient[]>([]);
-  const [showPatientSearchResults, setShowPatientSearchResults] = React.useState(false);
   const fieldSx = {
     "& .MuiInputBase-root": {
       bgcolor: "#f7faff",
@@ -150,47 +141,10 @@ export default function ReceptionForm({
     );
   }, [doctors, form.departmentId]);
 
-  React.useEffect(() => {
-    const keyword = form.patientName.trim();
-    if (!keyword || isEditMode) {
-      setPatientSearchResults([]);
-      setShowPatientSearchResults(false);
-      return;
-    }
-
-    let active = true;
-    const timer = setTimeout(async () => {
-      try {
-        setPatientSearchLoading(true);
-        const list = await searchPatientsApi("name", keyword);
-        if (!active) return;
-        setPatientSearchResults(list.slice(0, 8));
-        setShowPatientSearchResults(list.length > 0);
-      } catch {
-        if (!active) return;
-        setPatientSearchResults([]);
-        setShowPatientSearchResults(false);
-      } finally {
-        if (active) {
-          setPatientSearchLoading(false);
-        }
-      }
-    }, 250);
-
-    return () => {
-      active = false;
-      clearTimeout(timer);
-    };
-  }, [form.patientName, isEditMode]);
-
   const handleSubmit = () => {
     if (!form.patientName.trim()) return;
     const departmentId = toOptionalNumber(form.departmentId);
     if (!departmentId) return;
-    if (!isEditMode && !form.patientId) {
-      alert("등록된 환자 목록에서 환자를 선택해 주세요.");
-      return;
-    }
 
     const doctorId = toOptionalNumber(form.doctorId) ?? null;
 
@@ -308,45 +262,6 @@ export default function ReceptionForm({
                 }
                 sx={fieldSx}
               />
-              {patientSearchLoading && !isEditMode && (
-                <CircularProgress size={18} sx={{ position: "absolute", top: 14, right: 12 }} />
-              )}
-              {!isEditMode && showPatientSearchResults && patientSearchResults.length > 0 && (
-                <Paper
-                  elevation={4}
-                  sx={{
-                    position: "absolute",
-                    top: "calc(100% + 6px)",
-                    left: 0,
-                    right: 0,
-                    zIndex: 30,
-                    maxHeight: 280,
-                    overflowY: "auto",
-                    borderRadius: 2,
-                  }}
-                >
-                  <List dense>
-                    {patientSearchResults.map((p) => (
-                      <ListItemButton
-                        key={p.patientId}
-                        onClick={() => {
-                          setForm((prev) => ({
-                            ...prev,
-                            patientId: p.patientId,
-                            patientName: p.name,
-                          }));
-                          setShowPatientSearchResults(false);
-                        }}
-                      >
-                        <ListItemText
-                          primary={`${p.name} · ID ${p.patientId}`}
-                          secondary={`${p.birthDate ?? "-"} · ${p.phone ?? "-"}`}
-                        />
-                      </ListItemButton>
-                    ))}
-                  </List>
-                </Paper>
-              )}
             </Box>
             <TextField
               select
@@ -493,7 +408,6 @@ export default function ReceptionForm({
               loading ||
               masterDataLoading ||
               !form.patientName.trim() ||
-              (!isEditMode && !form.patientId) ||
               !form.departmentId.trim()
             }
             sx={{
@@ -514,3 +428,4 @@ export default function ReceptionForm({
     </Paper>
   );
 }
+
