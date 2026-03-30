@@ -24,9 +24,9 @@ const MedicalMainDashboard = () => {
   const receptions: PatientItem[] = list.map((item) => ({
     receptionId: item.receptionId,                //환자 접수
     receptionNo: item.receptionNo,                //환자 접수번호
-    patientName : item.patientName ?? "",         //환자 이름
+    patientName: item.patientName ?? "",          //환자 이름
     visitType :  item.visitType ,                 //
-    status: item.status ,  //환자 상태 //스트롱..
+    status: item.status ,                         //환자 상태 //스트롱..
 
   }));
 

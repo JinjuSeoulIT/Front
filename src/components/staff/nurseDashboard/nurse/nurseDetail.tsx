@@ -19,10 +19,12 @@ const NurseDetail = ({ staffId }: NurseIdNumber) => {
 
 
   const goEeployeeList = () => router.push("/staff/Basiclnfo/list");
+
   const goNurseList = () => router.replace("/staff/nurse/list");
-  const goEdit = () => router.push(`/staff/nurse/${staffId}/edit`);
-
-
+  //간호사수정
+  const goNurseEdit = () => router.push(`/staff/nurse/${staffId}/edit`);
+  //일반수정
+  const goEdit = () => router.push(`/staff/Basiclnfo/${staffId}/edit`);
   
   useEffect(() => {
     if (!staffId) return;
@@ -39,7 +41,7 @@ const NurseDetail = ({ staffId }: NurseIdNumber) => {
         </Stack>
 
             <Stack direction="row" spacing={1.5} justifyContent="pace-between" sx={{ mt: 2 }} >
-            <Button variant="contained" onClick={goEeployeeList}  sx={{ bgcolor: "#da342f" }}> 직원 목록</Button>
+         
             </Stack>
 
 
@@ -142,8 +144,14 @@ const NurseDetail = ({ staffId }: NurseIdNumber) => {
 
 
             <Stack direction="row" spacing={1.5} justifyContent="flex-end" sx={{ mt: 2 }} >
-            <Button variant="outlined" onClick={goNurseList}>목록</Button>
-            <Button variant="contained" onClick={goEdit} sx={{ bgcolor: "#2b5aa9" }}>수정</Button>
+            
+            <Button variant="contained" onClick={goEeployeeList}  sx={{ bgcolor: "#da342f" }}> 직원 목록</Button>
+
+            <Button variant="outlined" onClick={goNurseList}>간호사목록</Button>
+            
+            <Button variant="contained" onClick={goNurseEdit} sx={{ bgcolor: "#2b5aa9" }}>간호사 정보수정</Button>
+
+            <Button variant="contained" onClick={goEdit} sx={{ bgcolor: "#2b5aa9" }}>일반 정보수정</Button>
             </Stack>
 
         {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}

@@ -18,7 +18,7 @@ import AssignmentIndIcon from "@mui/icons-material/AssignmentInd";
 
 
 
-const StaffOnboardingHub = () => {
+  const StaffOnboardingHub = () => {
   const router = useRouter();
 
 

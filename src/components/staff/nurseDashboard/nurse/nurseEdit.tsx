@@ -38,8 +38,12 @@ const NurseUpdate = ({ staffId }: NurseIdNumber) => {
 
 
       const handleSubmit = (event: FormEvent) => {
+
       event.preventDefault();
+
       const nurseReq: NurseUpdateRequest = {
+
+        
       staffId:   (form.staffId ?? staffId).trim(),
       licenseNo: (form.licenseNo ?? "").trim(),
       shiftType: (form.shiftType ?? "").trim(),

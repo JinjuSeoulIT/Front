@@ -8,13 +8,14 @@ import { Alert, Box, Button, CircularProgress, Divider, Paper, Stack, TextField,
 import { RootState } from "@/store/rootReducer";
 import { createNurseRequest, resetSuccessEnd } from "@/features/staff/nurse/nurseSlice";
 import { initialNurseCreateForm, type NurseCreateRequest } from "@/features/staff/nurse/nurseTypes";
-import { clearDoctorBasicDraft } from "@/features/staff/Basiclnfo/BasiclnfoSlict";
+import { clearBasicDraft } from "@/features/staff/Basiclnfo/BasiclnfoSlict";
+
 
 const NurseCreatePage = () => {
   const dispatch = useDispatch();
   const router = useRouter();
   const { createSuccess, loading, error } = useSelector((state: RootState) => state.nurse);
-  const basicInfo = useSelector((state: RootState) => state.staff.doctorBasiclnfoCreate);
+  const basicInfo = useSelector((state: RootState) => state.staff.BasiclnfoCreate);
 
   const [form, setForm] = useState<NurseCreateRequest>(initialNurseCreateForm);
 
@@ -27,15 +28,16 @@ const NurseCreatePage = () => {
   useEffect(() => {
     if (!createSuccess) return;
 
-    dispatch(clearDoctorBasicDraft());
+    dispatch(clearBasicDraft());
+
     dispatch(resetSuccessEnd());
+
     router.replace("/staff/nurse/list");
   }, [createSuccess, dispatch, router]);
 
-  const handleChange = (event: ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = event.target;
-    setForm((prev) => ({ ...prev, [name]: value }));
-  };
+
+
+
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -48,6 +50,8 @@ const NurseCreatePage = () => {
     const request: NurseCreateRequest = {
       staffId: basicInfo.staffId.trim(),
       deptId: basicInfo.deptId.trim(),
+      positionId: basicInfo.positionId.trim(),
+
       name: basicInfo.name.trim(),
       phone: basicInfo.phone.trim(),
       email: basicInfo.email.trim(),
@@ -57,6 +61,9 @@ const NurseCreatePage = () => {
       address1: basicInfo.address1.trim(),
       address2: basicInfo.address2.trim(),
       status: basicInfo.status.trim() || "ACTIVE",
+
+
+      
       licenseNo: (form.licenseNo ?? "").trim(),
       nurseType: "NURSE",
       shiftType: (form.shiftType ?? "").trim(),
@@ -68,6 +75,14 @@ const NurseCreatePage = () => {
 
     dispatch(createNurseRequest(request));
   };
+
+
+    const handleChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = event.target;
+    setForm((prev) => ({ ...prev, [name]: value }));
+  };
+
+
 
   return (
     <Box sx={{ maxWidth: 780, mx: "auto", px: { xs: 2, md: 0 } }}>
@@ -109,6 +124,16 @@ const NurseCreatePage = () => {
               helperText="최종 등록 시 공통 + 간호사 정보와 함께 전송됩니다."
               sx={{ "& .MuiInputBase-root": { bgcolor: "#f4f7fd" } }}
             />
+ 
+           <TextField
+              label="직책 ID"
+              value={basicInfo?.positionId ?? ""}
+              fullWidth
+              InputProps={{ readOnly: true }}
+              helperText="이전 단계 공통 입력폼에서 작성한 값입니다."
+              sx={{ "& .MuiInputBase-root": { bgcolor: "#f4f7fd" } }}
+            />
+   
 
             <TextField
               label="이름"

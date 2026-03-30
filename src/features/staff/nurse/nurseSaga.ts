@@ -1,7 +1,6 @@
 import { call, put, takeLatest } from "redux-saga/effects";
 import type { PayloadAction } from "@reduxjs/toolkit";
 import type { SagaIterator } from "redux-saga";
-import axios from "axios";
 
 import {
   createNurseFailure,

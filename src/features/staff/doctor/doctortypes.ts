@@ -2,6 +2,8 @@
 export type DoctorResponse = {
   staffId: string;
   deptId?: string;
+  positionId? :String;
+
   name?: string;
   status : string;
  
@@ -36,6 +38,8 @@ export type DoctorCreateRequest = {
   
   staffId: string;
   deptId: string;
+  positionId? :String;
+
   name: string;
   phone: string;
   email: string;
@@ -64,6 +68,8 @@ export const initialDoctorCreateForm: DoctorCreateRequest = {
   
   staffId: "",
   deptId: "",
+  positionId : "",
+
   name: "",
   phone: "",
   email: "",

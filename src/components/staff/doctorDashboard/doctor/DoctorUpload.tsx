@@ -23,6 +23,7 @@ export default function DoctorUpload({ staffId }: DoctorIdNumber) {
   const [previewUrl, setPreviewUrl] = useState<string>("");
 
 
+  //미리보기
   useEffect(() => {
     if (!selectedFile) {
       setPreviewUrl("");
@@ -114,21 +115,35 @@ export default function DoctorUpload({ staffId }: DoctorIdNumber) {
 
 
   <Button
-  variant="outlined" component="label" fullWidth disabled={uploadLoading}
+  variant="outlined" 
+  component="label" 
+  fullWidth disabled={uploadLoading}
   sx={{height: 52,borderRadius: 2,borderColor: "#c7d7ee",color: "#2b5aa9",fontWeight: 700,}}>
-  <input hidden type="file" accept="image/*" onChange={handleFileChange} />
+  <input hidden type="file" accept="image/*" 
+  onChange={handleFileChange} />
   이미지등록
   </Button>
 
 
-  <Box sx={{ minHeight: 48, px: 2, py: 1.5, borderRadius: 2, bgcolor: "#f4f7fd", border: "1px solid #e3ebf7", display: "flex", alignItems: "center" }}>
+  <Box sx={{ minHeight: 48, 
+    px: 2, py: 1.5, 
+    borderRadius: 2, 
+    bgcolor: "#f4f7fd", 
+    border: "1px solid #e3ebf7", 
+    display: "flex", 
+    alignItems: "center" }}>
+  
   <Typography variant="body2" color="text.secondary" fontWeight={600}>
   {selectedFile ? `선택 파일: ${selectedFile.name}` : "선택된 파일이 없습니다."}</Typography>
   </Box>
 
+
   <Stack direction={{ xs: "column", sm: "row" }} spacing={1.25}>
-  <Button type="button" variant="outlined" onClick={() => { setSelectedFile(null); setPreviewUrl(""); }} disabled={uploadLoading} fullWidth>취소</Button>
+  <Button type="button" variant="outlined" 
+  onClick={() => { setSelectedFile(null); setPreviewUrl(""); }} 
+  disabled={uploadLoading} fullWidth>취소</Button>
   
+
 
   {/*업로드용 단추 비활성 상태*/}
   <Button type="button" variant="contained" onClick={handleUpload} 
