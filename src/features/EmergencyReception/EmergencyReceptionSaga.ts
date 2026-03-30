@@ -8,12 +8,23 @@ import type {
 } from "./EmergencyReceptionTypes";
 import * as api from "../../lib/reception/emergencyReceptionApi";
 
+const getErrorMessage = (err: unknown, fallback: string) => {
+  if (err instanceof Error && err.message) {
+    return err.message;
+  }
+  return fallback;
+};
+
 function* fetchEmergencyReceptionsSaga() {
   try {
     const list: EmergencyReception[] = yield call(api.fetchEmergencyReceptionsApi);
     yield put(actions.fetchEmergencyReceptionsSuccess(list));
-  } catch (err: any) {
-    yield put(actions.fetchEmergencyReceptionsFailure(err.message ?? "응급 접수 목록 조회 실패"));
+  } catch (err: unknown) {
+    yield put(
+      actions.fetchEmergencyReceptionsFailure(
+        getErrorMessage(err, "Failed to fetch emergency receptions")
+      )
+    );
   }
 }
 
@@ -24,7 +35,7 @@ function* fetchEmergencyReceptionSaga(action: PayloadAction<{ receptionId: strin
       action.payload.receptionId
     );
     yield put(actions.fetchEmergencyReceptionSuccess(p));
-  } catch (err: any) {
+  } catch (err: unknown) {
     try {
       // Fallback: detail endpoint can return 400 for some statuses, while list still contains the record.
       const list: EmergencyReception[] = yield call(api.fetchEmergencyReceptionsApi);
@@ -36,18 +47,30 @@ function* fetchEmergencyReceptionSaga(action: PayloadAction<{ receptionId: strin
         return;
       }
     } catch {
-      // keep original error
+      // Keep original error.
     }
-    yield put(actions.fetchEmergencyReceptionFailure(err.message ?? "응급 접수 조회 실패"));
+    yield put(
+      actions.fetchEmergencyReceptionFailure(
+        getErrorMessage(err, "Failed to fetch emergency reception")
+      )
+    );
   }
 }
+
 function* createEmergencyReceptionSaga(action: PayloadAction<EmergencyReceptionForm>) {
   try {
-    yield call(api.createEmergencyReceptionApi, action.payload);
-    yield put(actions.createEmergencyReceptionSuccess());
+    const created: EmergencyReception | null = yield call(
+      api.createEmergencyReceptionApi,
+      action.payload
+    );
+    yield put(actions.createEmergencyReceptionSuccess(created));
     yield put(actions.fetchEmergencyReceptionsRequest());
-  } catch (err: any) {
-    yield put(actions.createEmergencyReceptionFailure(err.message ?? "응급 접수 등록 실패"));
+  } catch (err: unknown) {
+    yield put(
+      actions.createEmergencyReceptionFailure(
+        getErrorMessage(err, "Failed to create emergency reception")
+      )
+    );
   }
 }
 
@@ -62,8 +85,12 @@ function* updateEmergencyReceptionSaga(
     );
     yield put(actions.updateEmergencyReceptionSuccess());
     yield put(actions.fetchEmergencyReceptionsRequest());
-  } catch (err: any) {
-    yield put(actions.updateEmergencyReceptionFailure(err.message ?? "응급 접수 수정 실패"));
+  } catch (err: unknown) {
+    yield put(
+      actions.updateEmergencyReceptionFailure(
+        getErrorMessage(err, "Failed to update emergency reception")
+      )
+    );
   }
 }
 
@@ -78,9 +105,10 @@ function* searchEmergencyReceptionsSaga(
       keyword
     );
     yield put(actions.fetchEmergencyReceptionsSuccess(list));
-  } catch (err: any) {
-    alert(err.message ?? "응급 접수 검색 실패");
-    yield put(actions.fetchEmergencyReceptionsFailure(err.message ?? "응급 접수 검색 실패"));
+  } catch (err: unknown) {
+    const message = getErrorMessage(err, "Failed to search emergency receptions");
+    alert(message);
+    yield put(actions.fetchEmergencyReceptionsFailure(message));
   }
 }
 

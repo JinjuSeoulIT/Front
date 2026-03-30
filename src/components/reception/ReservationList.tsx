@@ -27,9 +27,15 @@ import ListAltIcon from "@mui/icons-material/ListAlt";
 import { useDispatch, useSelector } from "react-redux";
 import type { RootState, AppDispatch } from "@/store/store";
 import { reservationActions } from "@/features/Reservations/ReservationSlice";
-import type { Reservation, ReservationForm } from "@/features/Reservations/ReservationTypes";
+import type {
+  Reservation,
+  ReservationForm,
+  DepartmentOption,
+  DoctorOption,
+} from "@/features/Reservations/ReservationTypes";
 import type { Patient } from "@/features/patients/patientTypes";
 import { fetchPatientsApi, searchPatientsApi } from "@/lib/patient/patientApi";
+import { fetchDepartmentsApi, fetchDoctorsApi } from "@/lib/masterDataApi";
 
 const statusLabel = (value?: string | null) => {
   switch (value) {
@@ -138,21 +144,6 @@ const compareReservationsByLatest = (a: Reservation, b: Reservation) => {
 
 const ITEMS_PER_PAGE = 10;
 const PATIENT_LIST_ITEMS_PER_PAGE = 8;
-const RESERVATION_DEPARTMENTS = [
-  { id: 1, name: "내과" },
-  { id: 2, name: "정형외과" },
-  { id: 3, name: "소아과" },
-  { id: 4, name: "이비인후과" },
-  { id: 5, name: "피부과" },
-];
-
-const RESERVATION_DOCTORS = [
-  { id: 1, name: "송태민", departmentId: 1 },
-  { id: 2, name: "이현석", departmentId: 2 },
-  { id: 3, name: "성숙희", departmentId: 3 },
-  { id: 4, name: "최효정", departmentId: 4 },
-  { id: 5, name: "홍예진", departmentId: 5 },
-];
 
 export default function ReservationList({
   hideCanceled = true,
@@ -163,6 +154,10 @@ export default function ReservationList({
   );
 
   const [keyword, setKeyword] = React.useState("");
+  const [departments, setDepartments] = React.useState<DepartmentOption[]>([]);
+  const [doctors, setDoctors] = React.useState<DoctorOption[]>([]);
+  const [masterDataLoading, setMasterDataLoading] = React.useState(false);
+  const [masterDataError, setMasterDataError] = React.useState<string | null>(null);
   const [patientSuggestions, setPatientSuggestions] = React.useState<Patient[]>([]);
   const [openSuggestion, setOpenSuggestion] = React.useState(false);
   const [patientSearchResultCount, setPatientSearchResultCount] = React.useState<number | null>(
@@ -207,6 +202,37 @@ export default function ReservationList({
     }
     dispatch(reservationActions.fetchReservationSuccess(list[0]));
   }, [list, selected, dispatch]);
+
+  React.useEffect(() => {
+    let active = true;
+
+    const loadMasterData = async () => {
+      try {
+        setMasterDataLoading(true);
+        setMasterDataError(null);
+        const [departmentList, doctorList] = await Promise.all([
+          fetchDepartmentsApi(),
+          fetchDoctorsApi(),
+        ]);
+        if (!active) return;
+        setDepartments(departmentList);
+        setDoctors(doctorList);
+      } catch (err: unknown) {
+        if (!active) return;
+        const message =
+          err instanceof Error && err.message ? err.message : "진료과/의사 목록 조회 실패";
+        setMasterDataError(message);
+      } finally {
+        if (!active) return;
+        setMasterDataLoading(false);
+      }
+    };
+
+    void loadMasterData();
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const openCreateWithPatient = React.useCallback(
     (patient: Patient) => {
@@ -384,17 +410,17 @@ export default function ReservationList({
   };
 
   const doctorsForSelectedDepartment = React.useMemo(() => {
-    if (!createModalForm.departmentId) return RESERVATION_DOCTORS;
-    return RESERVATION_DOCTORS.filter(
+    if (!createModalForm.departmentId) return doctors;
+    return doctors.filter(
       (doctor) => (doctor.departmentId ?? null) === createModalForm.departmentId
     );
-  }, [createModalForm.departmentId]);
+  }, [createModalForm.departmentId, doctors]);
 
   React.useEffect(() => {
     if (!createModalOpen) return;
-    const defaultDepartmentId = RESERVATION_DEPARTMENTS[0]?.id ?? 0;
+    const defaultDepartmentId = departments[0]?.departmentId ?? 0;
     const defaultDoctorId =
-      RESERVATION_DOCTORS.find((doctor) => doctor.departmentId === defaultDepartmentId)?.id ??
+      doctors.find((doctor) => (doctor.departmentId ?? null) === defaultDepartmentId)?.doctorId ??
       null;
     setCreateModalForm({
       departmentId: defaultDepartmentId,
@@ -402,7 +428,7 @@ export default function ReservationList({
       reservedAt: toLocalDateTimeValue(new Date()),
       note: "",
     });
-  }, [createModalOpen]);
+  }, [createModalOpen, departments, doctors]);
 
   const onCreateModalSubmit = () => {
     if (!createTargetPatient.patientId) {
@@ -410,15 +436,17 @@ export default function ReservationList({
       return;
     }
 
-    const department = RESERVATION_DEPARTMENTS.find((item) => item.id === createModalForm.departmentId);
+    const department = departments.find(
+      (item) => item.departmentId === createModalForm.departmentId
+    );
     if (!department) {
       alert("진료과를 선택해주세요.");
       return;
     }
 
     const doctor =
-      RESERVATION_DOCTORS.find((item) => item.id === createModalForm.doctorId) ??
-      RESERVATION_DOCTORS.find((item) => item.departmentId === department.id) ??
+      doctors.find((item) => item.doctorId === createModalForm.doctorId) ??
+      doctors.find((item) => (item.departmentId ?? null) === department.departmentId) ??
       null;
 
     dispatch(
@@ -426,10 +454,10 @@ export default function ReservationList({
         reservationNo: "",
         patientId: createTargetPatient.patientId,
         patientName: createTargetPatient.patientName || null,
-        departmentId: department.id,
-        departmentName: department.name,
-        doctorId: doctor?.id ?? null,
-        doctorName: doctor?.name ?? null,
+        departmentId: department.departmentId,
+        departmentName: null,
+        doctorId: doctor?.doctorId ?? null,
+        doctorName: null,
         reservedAt: createModalForm.reservedAt,
         status: "RESERVED",
         note: createModalForm.note.trim() ? createModalForm.note.trim() : null,
@@ -1088,24 +1116,24 @@ export default function ReservationList({
             <TextField
               select
               size="small"
-                label={"진료과"}
-                value={createModalForm.departmentId}
-                onChange={(e) => {
-                  const departmentId = Number(e.target.value);
-                  const nextDoctorId =
-                    RESERVATION_DOCTORS.find((doctor) => doctor.departmentId === departmentId)?.id ??
-                    null;
-                  setCreateModalForm((prev) => ({
-                    ...prev,
+              label={"진료과"}
+              value={createModalForm.departmentId}
+              onChange={(e) => {
+                const departmentId = Number(e.target.value);
+                const nextDoctorId =
+                  doctors.find((doctor) => (doctor.departmentId ?? null) === departmentId)
+                    ?.doctorId ?? null;
+                setCreateModalForm((prev) => ({
+                  ...prev,
                   departmentId,
                   doctorId: nextDoctorId,
                 }));
               }}
               fullWidth
             >
-              {RESERVATION_DEPARTMENTS.map((item) => (
-                <MenuItem key={item.id} value={item.id}>
-                  {item.name}
+              {departments.map((item) => (
+                <MenuItem key={item.departmentId} value={item.departmentId}>
+                  {item.departmentName}
                 </MenuItem>
               ))}
             </TextField>
@@ -1117,7 +1145,7 @@ export default function ReservationList({
               value={createModalForm.doctorId ?? ""}
               onChange={(e) => {
                 const doctorId = Number(e.target.value);
-                const doctor = RESERVATION_DOCTORS.find((item) => item.id === doctorId);
+                const doctor = doctors.find((item) => item.doctorId === doctorId);
                 setCreateModalForm((prev) => ({
                   ...prev,
                   doctorId,
@@ -1127,8 +1155,8 @@ export default function ReservationList({
               fullWidth
             >
               {doctorsForSelectedDepartment.map((item) => (
-                <MenuItem key={item.id} value={item.id}>
-                  {item.name}
+                <MenuItem key={item.doctorId} value={item.doctorId}>
+                  {item.doctorName}
                 </MenuItem>
               ))}
               {!doctorsForSelectedDepartment.length && (
@@ -1137,6 +1165,12 @@ export default function ReservationList({
                 </MenuItem>
               )}
             </TextField>
+
+            {masterDataError && (
+              <Typography color="error" fontWeight={700}>
+                {masterDataError}
+              </Typography>
+            )}
 
             <TextField
               size="small"
@@ -1175,6 +1209,7 @@ export default function ReservationList({
                 onClick={onCreateModalSubmit}
                 disabled={
                   loading ||
+                  masterDataLoading ||
                   !createTargetPatient.patientId ||
                   !createModalForm.departmentId ||
                   !createModalForm.reservedAt

@@ -20,6 +20,23 @@ function toApiErrorMessage(err: unknown, fallback: string) {
   return fallback;
 }
 
+function unwrapApiResult<T>(data: ApiResponse<T> | T): T {
+  if (data && typeof data === "object" && "result" in (data as ApiResponse<T>)) {
+    return ((data as ApiResponse<T>).result ?? null) as T;
+  }
+  return data as T;
+}
+
+function isEmergencyReception(value: unknown): value is EmergencyReception {
+  return (
+    !!value &&
+    typeof value === "object" &&
+    "receptionId" in value &&
+    "patientId" in value &&
+    "departmentId" in value
+  );
+}
+
 export const fetchEmergencyReceptionsApi = async (): Promise<EmergencyReception[]> => {
   const res = await api.get<ApiResponse<EmergencyReception[]>>("/api/emergency-receptions");
   if (!res.data.success) {
@@ -42,12 +59,19 @@ export const fetchEmergencyReceptionApi = async (
 
 export const createEmergencyReceptionApi = async (
   form: EmergencyReceptionForm
-): Promise<void> => {
+): Promise<EmergencyReception | null> => {
   try {
-    const res = await api.post<ApiResponse<void>>("/api/emergency-receptions", form);
-    if (!res.data.success) {
-      throw new Error(res.data.message || "Create failed");
+    const res = await api.post<
+      ApiResponse<EmergencyReception | null> | ApiResponse<void> | EmergencyReception | null
+    >("/api/emergency-receptions", form);
+    const wrapped = res.data as Partial<ApiResponse<unknown>> | null;
+    if (wrapped && typeof wrapped === "object" && "success" in wrapped && wrapped.success === false) {
+      throw new Error((wrapped as ApiResponse<unknown>).message || "Create failed");
     }
+    const unwrapped = unwrapApiResult<EmergencyReception | null>(
+      res.data as ApiResponse<EmergencyReception | null> | EmergencyReception | null
+    );
+    return isEmergencyReception(unwrapped) ? unwrapped : null;
   } catch (err) {
     throw new Error(toApiErrorMessage(err, "Create failed"));
   }
