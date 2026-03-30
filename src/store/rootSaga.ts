@@ -7,13 +7,13 @@ import { watchInpatientReceptionSaga } from "@/features/InpatientReception/Inpat
 import { watchPatientSaga } from "@/features/patients/patientSaga";
 import { watchRecordSaga } from "@/features/medical_support/record/recordSaga";
 import { watchTestExecutionSaga } from "@/features/medical_support/testExecution/testExecutionSaga";
+import { watchImagingSaga } from "@/features/medical_support/imaging/imagingSaga";
 import { watchReceptionSaga as watchReceptionsSaga } from "@/features/Reception/ReceptionSaga";
 import { watchReservationSaga } from "@/features/Reservations/ReservationSaga";
 import { watchEmployeeNurseSaga } from "@/features/staff/nurse/nurseSaga";
 import { watchEmployeedoctorSaga } from "@/features/staff/doctor/doctorSaga";
 import { watchEmployeeStaffSaga } from "@/features/staff/Basiclnfo/BasiclnfoSaga";
 import { watchEmployeeReceptionSaga } from "@/features/staff/reception/receptionSaga";
-
 
 export default function* rootSaga() {
   yield all([
@@ -22,6 +22,7 @@ export default function* rootSaga() {
     fork(watchPatientSaga),
     fork(watchRecordSaga),
     fork(watchTestExecutionSaga),
+    fork(watchImagingSaga),
     fork(watchInsuranceSaga),
     fork(watchConsentSaga),
     fork(watchReceptionsSaga),

@@ -27,14 +27,10 @@ import ScienceOutlinedIcon from "@mui/icons-material/ScienceOutlined";
 import FactCheckOutlinedIcon from "@mui/icons-material/FactCheckOutlined";
 import HelpOutlineOutlinedIcon from "@mui/icons-material/HelpOutlineOutlined";
 import RefreshIcon from "@mui/icons-material/Refresh";
-// import AddIcon from "@mui/icons-material/Add";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
-import { TestExecutionActions } from "@/features/medical_support/testExecution/testExecutionSlice";
-import type { TestExecution } from "@/features/medical_support/testExecution/testExecutionType";
+import { ImagingActions } from "@/features/medical_support/imaging/imagingSlice";
+import type { ImagingExam } from "@/features/medical_support/imaging/imagingType";
 import type { RootState, AppDispatch } from "@/store/store";
-
-const DONE_STATUSES = ["COMPLETED"];
-const ACTIVE_STATUSES = ["IN_PROGRESS"];
 
 const formatDateTime = (value?: string | null) => {
   if (!value) return "-";
@@ -56,47 +52,43 @@ const formatDateTime = (value?: string | null) => {
   }).format(date);
 };
 
-const normalizeStatus = (value?: string | null) =>
-  value?.trim().toUpperCase() ?? "";
-
 const safeValue = (value?: string | number | null) => {
   if (value === null || value === undefined) return "-";
   const text = String(value).trim();
   return text ? text : "-";
 };
 
-const getStatusColor = (
-  status?: string | null
-): "default" | "info" | "success" => {
-  const normalized = normalizeStatus(status);
+const formatExamStatus = (value?: string | null) => {
+  const normalized = value?.trim().toUpperCase();
 
-  if (DONE_STATUSES.includes(normalized)) return "success";
-  if (ACTIVE_STATUSES.includes(normalized)) return "info";
+  if (normalized === "Y") return "완료";
+  if (normalized === "N") return "미완료";
 
+  return safeValue(value);
+};
+
+const getExamStatusColor = (
+  value?: string | null
+): "default" | "success" => {
+  const normalized = value?.trim().toUpperCase();
+
+  if (normalized === "Y") return "success";
   return "default";
 };
 
-const getStatusSx = (status?: string | null) => {
-  const normalized = normalizeStatus(status);
+const getExamStatusSx = (value?: string | null) => {
+  const normalized = value?.trim().toUpperCase();
 
-  if (normalized === "WAITING") {
+  if (normalized === "Y") {
     return {
-      backgroundColor: "#616161",
-      color: "#ffffff",
       fontWeight: 600,
     };
   }
 
-  if (normalized === "CANCELLED") {
-    return {
-      backgroundColor: "#eeeeee",
-      color: "#757575",
-      fontWeight: 500,
-    };
-  }
-
   return {
-    fontWeight: 600,
+    backgroundColor: "#eeeeee",
+    color: "#757575",
+    fontWeight: 500,
   };
 };
 
@@ -108,30 +100,24 @@ export default function ImagingList() {
   const [selectedId, setSelectedId] = React.useState<string | null>(null);
 
   const { list: items, loading, error } = useSelector(
-    (state: RootState) => state.testexecutions
+    (state: RootState) => state.imagings
   );
 
   React.useEffect(() => {
-    dispatch(
-      TestExecutionActions.fetchTestExecutionsRequest({
-        executionType: "IMAGING",
-      })
-    );
+    dispatch(ImagingActions.fetchImagingsRequest());
   }, [dispatch]);
 
   const completedCount = React.useMemo(
     () =>
-      items.filter((item) =>
-        DONE_STATUSES.includes(normalizeStatus(item.progressStatus))
-      ).length,
+      items.filter((item) => item.EXAM_STATUS_YN?.trim().toUpperCase() === "Y")
+        .length,
     [items]
   );
 
-  const inProgressCount = React.useMemo(
+  const pendingCount = React.useMemo(
     () =>
-      items.filter((item) =>
-        ACTIVE_STATUSES.includes(normalizeStatus(item.progressStatus))
-      ).length,
+      items.filter((item) => item.EXAM_STATUS_YN?.trim().toUpperCase() !== "Y")
+        .length,
     [items]
   );
 
@@ -149,8 +135,9 @@ export default function ImagingList() {
 
   const selected = React.useMemo(
     () =>
-      items.find((item) => String(item.testExecutionId) === String(selectedId)) ??
-      null,
+      items.find(
+        (item) => String(item.IMAGING_EXAM_ID) === String(selectedId)
+      ) ?? null,
     [items, selectedId]
   );
 
@@ -167,8 +154,8 @@ export default function ImagingList() {
     setPage(0);
   };
 
-  const handleSelect = (item: TestExecution) => {
-    setSelectedId(String(item.testExecutionId));
+  const handleSelect = (item: ImagingExam) => {
+    setSelectedId(String(item.IMAGING_EXAM_ID));
   };
 
   return (
@@ -184,7 +171,11 @@ export default function ImagingList() {
           }}
         >
           <CardContent sx={{ p: 3 }}>
-            <Stack direction={{ xs: "column", md: "row" }} spacing={2} alignItems="center">
+            <Stack
+              direction={{ xs: "column", md: "row" }}
+              spacing={2}
+              alignItems="center"
+            >
               <Stack spacing={0.5} sx={{ flexGrow: 1 }}>
                 <Typography sx={{ fontSize: 22, fontWeight: 900 }}>
                   영상 검사 워크스테이션
@@ -198,25 +189,11 @@ export default function ImagingList() {
                 <Button
                   variant="outlined"
                   startIcon={<RefreshIcon />}
-                  onClick={() =>
-                    dispatch(
-                      TestExecutionActions.fetchTestExecutionsRequest({
-                        executionType: "IMAGING",
-                      })
-                    )
-                  }
+                  onClick={() => dispatch(ImagingActions.fetchImagingsRequest())}
                   disabled={loading}
                 >
                   새로고침
                 </Button>
-                {/* <Button
-                  component={Link}
-                  href="/medical_support/testExecution/create"
-                  variant="contained"
-                  startIcon={<AddIcon />}
-                >
-                  신규 작성
-                </Button> */}
               </Stack>
             </Stack>
           </CardContent>
@@ -225,15 +202,11 @@ export default function ImagingList() {
         <Stack direction="row" spacing={1} sx={{ flexWrap: "wrap" }}>
           <Chip label={`전체 ${items.length}`} color="primary" />
           <Chip
-            label={`진행 중 ${inProgressCount}`}
-            color="info"
-            variant="outlined"
-          />
-          <Chip
             label={`완료 ${completedCount}`}
             color="success"
             variant="outlined"
           />
+          <Chip label={`미완료 ${pendingCount}`} variant="outlined" />
           {loading && <Chip label="불러오는 중" variant="outlined" />}
           {error && <Chip label={`오류: ${error}`} color="error" />}
         </Stack>
@@ -248,7 +221,12 @@ export default function ImagingList() {
         >
           <Card sx={{ borderRadius: 3, border: "1px solid var(--line)" }}>
             <CardContent sx={{ p: 2.5 }}>
-              <Stack direction="row" spacing={1} alignItems="center" justifyContent="space-between">
+              <Stack
+                direction="row"
+                spacing={1}
+                alignItems="center"
+                justifyContent="space-between"
+              >
                 <Stack direction="row" spacing={1} alignItems="center">
                   <ScienceOutlinedIcon sx={{ color: "var(--brand)" }} />
                   <Typography fontWeight={800}>영상 검사 목록</Typography>
@@ -283,19 +261,20 @@ export default function ImagingList() {
                       <TableHead>
                         <TableRow>
                           <TableCell align="center">번호</TableCell>
-                          <TableCell align="center">검사수행 ID</TableCell>
-                          <TableCell align="center">오더항목 ID</TableCell>
-                          <TableCell align="center">검사유형</TableCell>
-                          <TableCell align="center">진행상태</TableCell>
-                          <TableCell align="center">시작일시</TableCell>
-                          <TableCell align="center">완료일시</TableCell>
+                          <TableCell align="center">영상검사아이디</TableCell>
+                          <TableCell align="center">검사수행아이디</TableCell>
+                          <TableCell align="center">영상검사유형</TableCell>
+                          <TableCell align="center">검사상태여부</TableCell>
+                          <TableCell align="center">검사일시</TableCell>
+                          <TableCell align="center">생성일시</TableCell>
+                          <TableCell align="center">수정일시</TableCell>
                         </TableRow>
                       </TableHead>
 
                       <TableBody>
                         {paginatedItems.length === 0 && (
                           <TableRow>
-                            <TableCell colSpan={7} align="center" sx={{ py: 5 }}>
+                            <TableCell colSpan={8} align="center" sx={{ py: 5 }}>
                               영상 검사 데이터가 없습니다.
                             </TableCell>
                           </TableRow>
@@ -303,7 +282,7 @@ export default function ImagingList() {
 
                         {paginatedItems.map((item, index) => (
                           <TableRow
-                            key={String(item.testExecutionId)}
+                            key={String(item.IMAGING_EXAM_ID)}
                             hover
                             onClick={() => handleSelect(item)}
                             sx={{
@@ -311,8 +290,8 @@ export default function ImagingList() {
                               "& td": { py: 1.25, whiteSpace: "nowrap" },
                               "&:hover": { backgroundColor: "#f9fbff" },
                               backgroundColor:
-                                String(activeSelected?.testExecutionId) ===
-                                String(item.testExecutionId)
+                                String(activeSelected?.IMAGING_EXAM_ID) ===
+                                String(item.IMAGING_EXAM_ID)
                                   ? "rgba(11, 91, 143, 0.08)"
                                   : "transparent",
                             }}
@@ -321,27 +300,30 @@ export default function ImagingList() {
                               {currentPage * rowsPerPage + index + 1}
                             </TableCell>
                             <TableCell align="center">
-                              {safeValue(item.testExecutionId)}
+                              {safeValue(item.IMAGING_EXAM_ID)}
                             </TableCell>
                             <TableCell align="center">
-                              {safeValue(item.orderItemId)}
+                              {safeValue(item.TEST_EXECUTION_ID)}
                             </TableCell>
                             <TableCell align="center">
-                              {safeValue(item.executionType)}
+                              {safeValue(item.IMAGING_TYPE)}
                             </TableCell>
                             <TableCell align="center">
                               <Chip
-                                label={safeValue(item.progressStatus)}
-                                color={getStatusColor(item.progressStatus)}
+                                label={formatExamStatus(item.EXAM_STATUS_YN)}
+                                color={getExamStatusColor(item.EXAM_STATUS_YN)}
                                 size="small"
-                                sx={getStatusSx(item.progressStatus)}
+                                sx={getExamStatusSx(item.EXAM_STATUS_YN)}
                               />
                             </TableCell>
                             <TableCell align="center">
-                              {formatDateTime(item.startedAt)}
+                              {formatDateTime(item.EXAM_AT)}
                             </TableCell>
                             <TableCell align="center">
-                              {formatDateTime(item.completedAt)}
+                              {formatDateTime(item.CREATED_AT)}
+                            </TableCell>
+                            <TableCell align="center">
+                              {formatDateTime(item.UPDATED_AT)}
                             </TableCell>
                           </TableRow>
                         ))}
@@ -370,23 +352,28 @@ export default function ImagingList() {
           <Stack spacing={2}>
             <Card sx={{ borderRadius: 3, border: "1px solid var(--line)" }}>
               <CardContent sx={{ p: 2.5 }}>
-                <Stack direction="row" spacing={1} alignItems="center" justifyContent="space-between">
+                <Stack
+                  direction="row"
+                  spacing={1}
+                  alignItems="center"
+                  justifyContent="space-between"
+                >
                   <Stack direction="row" spacing={1} alignItems="center">
                     <ScienceOutlinedIcon sx={{ color: "var(--brand-strong)" }} />
-                    <Typography fontWeight={800}>선택 검사 수행</Typography>
+                    <Typography fontWeight={800}>선택 영상 검사</Typography>
                   </Stack>
 
                   {activeSelected && (
                     <Stack direction="row" spacing={1}>
                       <Chip
-                        label={safeValue(activeSelected.progressStatus)}
+                        label={formatExamStatus(activeSelected.EXAM_STATUS_YN)}
                         size="small"
-                        color={getStatusColor(activeSelected.progressStatus)}
-                        sx={getStatusSx(activeSelected.progressStatus)}
+                        color={getExamStatusColor(activeSelected.EXAM_STATUS_YN)}
+                        sx={getExamStatusSx(activeSelected.EXAM_STATUS_YN)}
                       />
                       <Button
                         component={Link}
-                        href={`/medical_support/testExecution/edit/${activeSelected.testExecutionId}`}
+                        href={`/medical_support/imaging/edit/${activeSelected.IMAGING_EXAM_ID}`}
                         variant="outlined"
                         size="small"
                         startIcon={<EditOutlinedIcon />}
@@ -397,38 +384,41 @@ export default function ImagingList() {
                   )}
                 </Stack>
 
-                <Box sx={{ mt: 2, p: 2, borderRadius: 2, bgcolor: "rgba(255,255,255,0.7)" }}>
+                <Box
+                  sx={{
+                    mt: 2,
+                    p: 2,
+                    borderRadius: 2,
+                    bgcolor: "rgba(255,255,255,0.7)",
+                  }}
+                >
                   <Row
-                    label="검사수행 ID"
-                    value={safeValue(activeSelected?.testExecutionId)}
+                    label="영상검사아이디"
+                    value={safeValue(activeSelected?.IMAGING_EXAM_ID)}
                   />
                   <Row
-                    label="오더항목 ID"
-                    value={safeValue(activeSelected?.orderItemId)}
+                    label="검사수행아이디"
+                    value={safeValue(activeSelected?.TEST_EXECUTION_ID)}
                   />
                   <Row
-                    label="검사유형"
-                    value={safeValue(activeSelected?.executionType)}
+                    label="영상검사유형"
+                    value={safeValue(activeSelected?.IMAGING_TYPE)}
                   />
                   <Row
-                    label="진행상태"
-                    value={safeValue(activeSelected?.progressStatus)}
+                    label="검사상태여부"
+                    value={formatExamStatus(activeSelected?.EXAM_STATUS_YN)}
                   />
                   <Row
-                    label="시작일시"
-                    value={formatDateTime(activeSelected?.startedAt)}
+                    label="검사일시"
+                    value={formatDateTime(activeSelected?.EXAM_AT)}
                   />
                   <Row
-                    label="완료일시"
-                    value={formatDateTime(activeSelected?.completedAt)}
-                  />
-                  <Row
-                    label="수행자 ID"
-                    value={safeValue(activeSelected?.performerId)}
+                    label="생성일시"
+                    value={formatDateTime(activeSelected?.CREATED_AT)}
                   />
                   <Row
                     label="수정일시"
-                    value={formatDateTime(activeSelected?.updatedAt)}
+                    value={formatDateTime(activeSelected?.UPDATED_AT)}
                   />
                 </Box>
               </CardContent>
@@ -442,8 +432,8 @@ export default function ImagingList() {
                 </Stack>
                 <Stack spacing={1.25} sx={{ mt: 2 }}>
                   <SummaryRow label="전체 항목" value={items.length} />
-                  <SummaryRow label="진행 중 항목" value={inProgressCount} />
                   <SummaryRow label="완료 항목" value={completedCount} />
+                  <SummaryRow label="미완료 항목" value={pendingCount} />
                 </Stack>
               </CardContent>
             </Card>
@@ -456,10 +446,9 @@ export default function ImagingList() {
                 </Stack>
                 <Stack spacing={1} sx={{ mt: 2 }}>
                   {[
-                    "좌측 목록: IMAGING 타입의 검사 수행 목록 조회",
-                    "행 클릭: 우측 선택 검사 수행 정보 갱신",
-                    "수정 버튼: 검사 수행 수정 화면으로 이동",
-                    "신규 작성: 검사 수행 등록 화면으로 이동",
+                    "좌측 목록: 영상 검사 항목 조회",
+                    "행 클릭: 우측 상세 정보 갱신",
+                    "수정 버튼: 영상 검사 수정 화면으로 이동",
                   ].map((text) => (
                     <Box
                       key={text}
@@ -488,7 +477,9 @@ export default function ImagingList() {
 function Row({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <Stack direction="row" justifyContent="space-between" spacing={2}>
-      <Typography sx={{ color: "text.secondary", fontSize: 13 }}>{label}</Typography>
+      <Typography sx={{ color: "text.secondary", fontSize: 13 }}>
+        {label}
+      </Typography>
       <Typography sx={{ fontWeight: 700, fontSize: 13, textAlign: "right" }}>
         {value}
       </Typography>
@@ -496,7 +487,13 @@ function Row({ label, value }: { label: string; value: React.ReactNode }) {
   );
 }
 
-function SummaryRow({ label, value }: { label: string; value: React.ReactNode }) {
+function SummaryRow({
+  label,
+  value,
+}: {
+  label: string;
+  value: React.ReactNode;
+}) {
   return (
     <Box
       sx={{
