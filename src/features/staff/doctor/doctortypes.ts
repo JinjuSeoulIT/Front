@@ -2,6 +2,8 @@
 export type DoctorResponse = {
   staffId: string;
   deptId?: string;
+  positionId? :String;
+
   name?: string;
   status : string;
  
@@ -32,7 +34,23 @@ export type DoctorIdNumber = {
 
 // ✅ 의사 생성/수정은 의사 상세 테이블 컬럼만 전송
 export type DoctorCreateRequest = {
+  
+  
   staffId: string;
+  deptId: string;
+  positionId? :String;
+
+  name: string;
+  phone: string;
+  email: string;
+  birthDate: string;
+  genderCode: string;
+  zipCode: string;
+  address1: string;
+  address2: string;
+  status: string;
+
+
   licenseNo: string;
   specialtyId: string;
   doctorType?: string | null;
@@ -41,10 +59,28 @@ export type DoctorCreateRequest = {
   profileSummary: string;
   education: string;
   careerDetail: string;
-};
+
+
+
+}
 
 export const initialDoctorCreateForm: DoctorCreateRequest = {
+  
   staffId: "",
+  deptId: "",
+  positionId : "",
+
+  name: "",
+  phone: "",
+  email: "",
+  birthDate: "",
+  genderCode: "",
+  zipCode: "",
+  address1: "",
+  address2: "",
+  status: "ACTIVE",
+  
+
   licenseNo: "",
   specialtyId: "",
   doctorType: "DOCTOR",
@@ -53,6 +89,7 @@ export const initialDoctorCreateForm: DoctorCreateRequest = {
   profileSummary: "",
   education: "",
   careerDetail: "",
+  
 };
 //생성
 

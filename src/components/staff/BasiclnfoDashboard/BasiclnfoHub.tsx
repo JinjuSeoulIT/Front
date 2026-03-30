@@ -13,46 +13,52 @@ import {
 import LocalHospitalIcon from "@mui/icons-material/LocalHospital";
 import MedicationIcon from "@mui/icons-material/Medication";
 import VaccinesIcon from "@mui/icons-material/Vaccines";
-import { staffIdNumber } from "@/features/staff/Basiclnfo/BasiclnfoType";
+
 import AssignmentIndIcon from "@mui/icons-material/AssignmentInd";
 
 
-const StaffOnboardingHub = ({ staffId }: staffIdNumber) => {
+
+  const StaffOnboardingHub = () => {
   const router = useRouter();
 
+
+
+  //의사
   const moveDoctorCreate = () => {   //정보확인요청
-  console.log("moveDoctorCreate staffId =", staffId);
-  if (!staffId) {
-    alert("staffId가 없습니다. 기본정보 상세에서 다시 진입하세요.");
-    return;
-  }
-  router.push(`/staff/doctor/${staffId}/create`);
+
+  router.push(`/staff/doctor/basiclnfocreate`);
 };
 
 
 
   //간호사
   const moveNurseCreate = () => {   //정보확인요청 
-  console.log("moveNurseCreate staffId =", staffId);
-
-  if (!staffId) {
-    alert("staffId가 없습니다. 기본정보 상세에서 다시 진입하세요.");
-    return;
-  }
-
-  router.push(`/staff/nurse/${staffId}/create`);
+ 
+  router.push(`/staff/nurse/basiclnfocreate`);
   };
+
 
   //원무
   const moveReceptionCreate = () => {   //정보확인요청 
-  console.log("moveReceptionCreate staffId =", staffId);
+  // console.log("moveReceptionCreate staffId =", staffId);
 
-  if (!staffId) {
-    alert("staffId가 없습니다. 기본정보 상세에서 다시 진입하세요.");
-    return;
-  }
+  // if (!staffId) {
+    // alert("staffId가 없습니다. 기본정보 상세에서 다시 진입하세요.");
+  //   return;
+  // }
+  router.push(`/staff/reception/basiclnfocreate`);
+  };
 
-  router.push(`/staff/reception/${staffId}/create`);
+
+   //일반
+  const moveBasiclnfoCreate = () => {   //정보확인요청 
+  // console.log("moveReceptionCreate staffId =", staffId);
+
+  // if (!staffId) {
+    // alert("staffId가 없습니다. 기본정보 상세에서 다시 진입하세요.");
+  //   return;
+  // }
+  router.push(`/staff/Basiclnfo/create`);
   };
 
 
@@ -105,13 +111,15 @@ const StaffOnboardingHub = ({ staffId }: staffIdNumber) => {
     다음 단계로 이동하여 직군별 상세 정보를 등록해주세요.
             </Typography>
 
-    {(staffId ) && (<Box sx={{ mt: 2 }}> {staffId && ( <Typography variant="body2">
-          <strong>STAFF ID:</strong> {staffId}
-    </Typography>)}
-    </Box>)}
+    {/* {(staffId ) && (<Box sx={{ mt: 2 }}> {staffId && ( <Typography variant="body2">
+          <strong>STAFF ID:</strong> {staffId} */}
+    {/* </Typography>)} */}
+    {/* </Box>)} */}
+
     </Box> <Divider sx={{ mb: 3 }} />
     <Stack spacing={2.5}>
     
+
 
     
     {/*의사 등록 카드*/}
@@ -131,6 +139,7 @@ const StaffOnboardingHub = ({ staffId }: staffIdNumber) => {
     진료과, 면허번호, 프로필 등 의사 상세 정보를 등록합니다.
     </Typography>
     </Box>
+
 
     <Button variant="contained"size="large"onClick={moveDoctorCreate} sx={{minWidth: 160,borderRadius: 2,fontWeight: "bold",}}>
     의사 등록 이동
@@ -189,6 +198,33 @@ const StaffOnboardingHub = ({ staffId }: staffIdNumber) => {
     <Button variant="contained"color="warning"size="large"onClick={moveReceptionCreate} 
     sx={{minWidth: 160, borderRadius: 2, fontWeight: "bold", }} >
     원무 등록 이동
+    </Button>
+    </Stack>
+    </CardContent>
+    </Card>
+
+
+
+    {/*일반 등록 카드*/}
+    <Card variant="outlined" sx={{borderRadius: 3,borderColor: "#c8e6c9",}}>
+    <CardContent>
+    <Stack direction={{ xs: "column", md: "row" }} spacing={2}justifyContent="space-between"alignItems={{ xs: "flex-start", md: "center" }}>
+    <Box>
+    <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1 }}>
+    <VaccinesIcon color="success" />
+    <Typography variant="h6" fontWeight="bold">
+    일반 등록
+    </Typography>
+    </Stack>
+
+    <Typography variant="body2" color="text.secondary">
+    근무형태, 배치부서, 자격정보 등 일반 상세 정보를 등록합니다.
+    </Typography>
+    </Box>
+
+    <Button variant="contained"color="success"size="large"onClick={moveBasiclnfoCreate} 
+    sx={{minWidth: 160, borderRadius: 2, fontWeight: "bold", }} >
+    일반 등록 이동
     </Button>
     </Stack>
     </CardContent>

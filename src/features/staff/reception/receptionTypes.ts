@@ -1,6 +1,8 @@
 export type ReceptionResponse = {
   staffId: string;
   deptId?: string;
+  positionId? :String;
+  
   name?: string;
   status: string;
 
@@ -15,16 +17,33 @@ export type ReceptionResponse = {
   extNo?: string | null;
 };
 
+
+
 export type ReceptionIdNumber = {
   staffId: string;
 };
 
 export type ReceptionCreateRequest = {
   staffId: string;
+  deptId: string;
+  positionId? :String;
+
+  name: string;
+  phone: string;
+  email: string;
+
+  birthDate: string;
+  genderCode: string;
+  zipCode: string;
+  address1: string;
+  address2: string;
+  status: string;
+
+
   jobTypeCd: string;
   deskNo: string;
   shiftType: string;
-  startDate: string;
+  startDate?: string | null;
   windowArea: string;
   multiTask: string;
   rmk: string;
@@ -34,6 +53,19 @@ export type ReceptionCreateRequest = {
 
 export const initialReceptionCreateForm: ReceptionCreateRequest = {
   staffId: "",
+  deptId: "",
+  positionId :"",
+
+  name: "",
+  phone: "",
+  email: "",
+  birthDate: "",
+  genderCode: "",
+  zipCode: "",
+  address1: "",
+  address2: "",
+  status: "ACTIVE",
+
   jobTypeCd: "",
   deskNo: "",
   shiftType: "",

@@ -14,10 +14,11 @@ import type {
 import {
   createReceptionApi,
   deleteReceptionApi,
-  detailReceptionApi,
-  receptionListApi,
+  DetailReceptionApi,
+  ReceptionlistApi,
   searchReceptionListApi,
-  updateReceptionApi,
+  updateReceptiondApi,
+
 } from "@/lib/staff/employeeReceptionAPI";
 import {
   createReceptionFailure,
@@ -56,7 +57,7 @@ function* searchReceptionListSaga(action: PayloadAction<SearchReceptionPayload>)
 
 function* receptionListSaga(): SagaIterator {
   try {
-    const response: ApiResponse<ReceptionResponse[]> = yield call(receptionListApi);
+    const response: ApiResponse<ReceptionResponse[]> = yield call(ReceptionlistApi);
     if (response.success) {
       yield put(ReceptionListSuccess(response.data));
     } else {
@@ -69,7 +70,7 @@ function* receptionListSaga(): SagaIterator {
 
 function* detailReceptionSaga(action: PayloadAction<ReceptionIdNumber>): SagaIterator {
   try {
-    const response: ApiResponse<ReceptionResponse> = yield call(detailReceptionApi, action.payload);
+    const response: ApiResponse<ReceptionResponse> = yield call(DetailReceptionApi, action.payload);
     if (response.success) {
       yield put(DetailReceptionSuccess(response.data));
     } else {
@@ -96,7 +97,7 @@ function* createReceptionSaga(action: PayloadAction<ReceptionCreateRequest>): Sa
 function* updateReceptionSaga(action: PayloadAction<ReceptionUpdateNumber>): SagaIterator {
   try {
     const { staffId, receptionReq } = action.payload;
-    const response: ApiResponse<ReceptionResponse> = yield call(updateReceptionApi, staffId, receptionReq);
+    const response: ApiResponse<ReceptionResponse> = yield call(updateReceptiondApi, staffId, receptionReq);
     if (response.success) {
       yield put(updateReceptionSuccess(response.data));
     } else {
@@ -119,6 +120,9 @@ function* deleteReceptionSaga(action: PayloadAction<ReceptionIdNumber>): SagaIte
     yield put(deleteReceptionFailure("원무 직원 삭제 실패 500"));
   }
 }
+
+
+
 
 export function* watchEmployeeReceptionSaga(): SagaIterator {
   yield takeLatest(searchReceptionListRequest.type, searchReceptionListSaga);

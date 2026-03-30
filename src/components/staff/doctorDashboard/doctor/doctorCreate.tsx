@@ -3,224 +3,269 @@
 import { ChangeEvent, FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useDispatch, useSelector } from "react-redux";
-import { Alert, Box, Button, CircularProgress, Divider, Paper, Stack, TextField, Typography } from "@mui/material";
+import {
+  Alert,
+  Box,
+  Button,
+  CircularProgress,
+  Divider,
+  Paper,
+  Stack,
+  TextField,
+  Typography,
+} from "@mui/material";
 
-
-import { DoctorCreateRequest, DoctorIdNumber, initialDoctorCreateForm } from "@/features/staff/doctor/doctortypes";
-import { createDoctorRequest, resetSuccessEnd } from "@/features/staff/doctor/doctorSlice";
 import { RootState } from "@/store/rootReducer";
-import { DetailStaffApi } from "@/lib/staff/employeeBasiclnfoAPI";
+import {
+  createDoctorRequest,
+  resetSuccessEnd,
+} from "@/features/staff/doctor/doctorSlice";
+
+import { DoctorCreateRequest, initialDoctorCreateForm } from "@/features/staff/doctor/doctortypes";
+import { clearBasicDraft } from "@/features/staff/Basiclnfo/BasiclnfoSlict";
 
 
 
-const DoctorCreate = ({ staffId }: DoctorIdNumber) => {
+export default function DoctorCreate() {
   const dispatch = useDispatch();
   const router = useRouter();
+
   const { loading, error, createSuccess } = useSelector((state: RootState) => state.doctor);
 
-  const [form, setForm] = useState<DoctorCreateRequest>(initialDoctorCreateForm);
+//⭐이게 기존 저장소 (가져옴)
+const doctorBasiclnfo = useSelector((state: RootState) => state.staff.BasiclnfoCreate);
+
+const [form, setForm] = useState(initialDoctorCreateForm);
 
 
-  //확인조회용
-  const [staffInfo, setStaffInfo] = useState<{staffId: string; deptId: string; name: string;}>
-                                            ({ staffId: "", deptId: "", name: "" });
-
-
-
-
-
-// 여기서부터 staffId [PK] 조회후 생성용 (비동기상태에서 백엔드에서 받아오는것만 하면 됨)
-async function fetchStaffInfo(staffId: string) {
-  const response = await DetailStaffApi(staffId); //부모 StaffApi 
-
-  return {
-    staffId: response.data.staffId ?? staffId,
-    deptId: response.data.deptId ?? "",
-    name: response.data.name ?? "",
-  };
-}
-
-
-//비동기에서 부모값 staffid 백엔드에서 받아오면 리랜더링
-useEffect(() => {
-  if (!staffId) return;
-    const loadStaff = async () => {
-
-    const staffInfo = await fetchStaffInfo(staffId);
-    setStaffInfo(staffInfo);
-    
-    setForm((prev) => ({   //등록 활성화이벤트
-  ...prev,
-  staffId: staffInfo.staffId,
-}));
-
-  };
-  loadStaff();}, 
-  [staffId]);
+  //기본정보 없으면 리턴
+  useEffect(() => {
+    if (!doctorBasiclnfo) {
+  
+      router.replace("/staff/Basiclnfo/list");
+    }
+  }, [doctorBasiclnfo, router]);
 
 
 
 
 
-
-
-
-    const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
+    if (!doctorBasiclnfo) {
+      alert("공통 입력 정보가 없습니다.");
+      return;
+    }
     const doctorReq: DoctorCreateRequest = {
-      staffId: (form.staffId ?? "").trim(),
-      licenseNo: (form.licenseNo ?? "").trim(),
-      specialtyId: (form.specialtyId ?? "").trim(),
-      doctorType: "DOCTOR", //백엔드에도 타입적용중
-      doctorFileUrl: (form.doctorFileUrl ?? "").trim(),
-      extNo: (form.extNo ?? "").trim(),
-      profileSummary: (form.profileSummary ?? "").trim(),
-      education: (form.education ?? "").trim(),
-      careerDetail: (form.careerDetail ?? "").trim(),
-    };
+      //⭐ 공통 (기존값)
+      staffId: doctorBasiclnfo.staffId.trim(),
+      deptId: doctorBasiclnfo.deptId.trim(),
+      positionId: doctorBasiclnfo.positionId.trim(),
 
-    console.log(doctorReq);
+      name: doctorBasiclnfo.name.trim(),
+      phone: doctorBasiclnfo.phone.trim(),
+      email: doctorBasiclnfo.email.trim(),
+      birthDate: doctorBasiclnfo.birthDate.trim(),
+      genderCode: doctorBasiclnfo.genderCode.trim(),
+      zipCode: doctorBasiclnfo.zipCode.trim(),
+      address1: doctorBasiclnfo.address1.trim(),
+      address2: doctorBasiclnfo.address2.trim(),
+      status: doctorBasiclnfo.status.trim() || "ACTIVE",
+
+
+      // 의사
+      licenseNo: form.licenseNo.trim(),
+      specialtyId: form.specialtyId.trim(),
+      doctorType: "DOCTOR",
+      doctorFileUrl: (form.doctorFileUrl ?? "").trim(),
+      profileSummary: form.profileSummary.trim(),
+      education: form.education.trim(),
+      careerDetail: form.careerDetail.trim(),
+      extNo: form.extNo.trim(),
+    };
 
     dispatch(createDoctorRequest(doctorReq));
   };
 
-  const handleChange = (event: ChangeEvent<HTMLInputElement>) => {
+
+
+
+
+    const handleChange = (event: ChangeEvent<HTMLInputElement>) => {
     const { name, value } = event.target;
-    setForm((prev) => ({ ...prev, [name]: value }));
+
+    setForm((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
   };
 
-  //성공하면
+
+
+
+  //의사 정보 없으면 리턴
   useEffect(() => {
     if (!createSuccess) return;
-    router.replace("/staff/doctor/list");
+
+    dispatch(clearBasicDraft());
     dispatch(resetSuccessEnd());
-  }, [createSuccess, router, dispatch]);
-
-
-
-
-
-
-
-
-
+    router.replace("/staff/doctor/list");
+  }, [createSuccess, dispatch, router]);
 
 
 
 
   return (
     <Box sx={{ maxWidth: 780, mx: "auto", px: { xs: 2, md: 0 } }}>
-
-      <Paper elevation={0} 
-      sx={{ p: { xs: 3, md: 4 }, 
-      borderRadius: 3, 
-      border: "1px solid #dbe5f5", 
-      bgcolor: "white", 
-      boxShadow: "0 14px 28px rgba(23, 52, 97, 0.15)" }}>
-
-
-        <Stack spacing={2.5} 
-        component="form" 
-        onSubmit={handleSubmit}>
-
-
+      <Paper
+        elevation={0}
+        sx={{
+          p: { xs: 3, md: 4 },
+          borderRadius: 3,
+          border: "1px solid #dbe5f5",
+          bgcolor: "white",
+          boxShadow: "0 14px 28px rgba(23, 52, 97, 0.15)",
+        }}
+      >
+        <Stack spacing={2.5} component="form" onSubmit={handleSubmit}>
           <Stack spacing={0.5}>
-
-            <Typography variant="h6" fontWeight={800}>의사 상세정보 가입</Typography>
-
+            <Typography variant="h6" fontWeight={800}>
+              의사 생성
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              공통 정보 + 의사 정보를 마지막에 한 번에 등록합니다.
+            </Typography>
           </Stack>
 
-          {/* 구분선 */}
-          <Divider /> 
+          <Divider />
 
-            {/* 의사 기본정보 확인 */}
           <Stack spacing={2}>
-            <TextField label="부서 ID" 
-            value={staffInfo.deptId} 
-            fullWidth 
-            InputProps={{ readOnly: true }} 
-            helperText="공통 직원 기본정보에서 가져온 표시용 값입니다." 
-            sx={{ "& .MuiInputBase-root": { bgcolor: "#f4f7fd" } }} />
+            <TextField
+              label="부서 ID"
+              value={doctorBasiclnfo?.deptId ?? ""}
+              fullWidth
+              InputProps={{ readOnly: true }}
+              helperText="이전 단계 공통 입력폼에서 작성한 값입니다."
+              sx={{ "& .MuiInputBase-root": { bgcolor: "#f4f7fd" } }}
+            />
 
-            <TextField 
-            label="직원번호(staffId) *" 
-            value={staffInfo.staffId} 
-            fullWidth required InputProps={{ readOnly: true }} 
-            helperText="공통 직원 기본정보의 STAFF_ID(FK) 입니다." 
-            sx={{ "& .MuiInputBase-root": { bgcolor: "#f4f7fd" } }} />
+            <TextField
+              label="직원번호(staffId)"
+              value={doctorBasiclnfo?.staffId ?? ""}
+              fullWidth
+              InputProps={{ readOnly: true }}
+              helperText="최종 등록 시 공통 + 의사 정보와 함께 전송됩니다."
+              sx={{ "& .MuiInputBase-root": { bgcolor: "#f4f7fd" } }}
+            />
 
-
-            <TextField label="이름" 
-            value={staffInfo.name} 
-            fullWidth InputProps={{ readOnly: true }} 
-            helperText="공통 직원 기본정보에서 가져온 표시용 값입니다." 
-            sx={{ "& .MuiInputBase-root": { bgcolor: "#f4f7fd" } }} />
-
-
-
-            {/* 의사 상세정보 가입 */}
-            <TextField label="의사 면허 *" 
-            name="licenseNo" value={form.licenseNo ?? ""} 
-            onChange={handleChange} fullWidth required 
-            sx={{ "& .MuiInputBase-root": { bgcolor: "#f4f7fd" } }} />
+            <TextField
+              label="직책 ID"
+              value={doctorBasiclnfo?.positionId ?? ""}
+              fullWidth
+              InputProps={{ readOnly: true }}
+              helperText="이전 단계 공통 입력폼에서 작성한 값입니다."
+              sx={{ "& .MuiInputBase-root": { bgcolor: "#f4f7fd" } }}
+            />
 
 
-            <TextField label="전문 과목 *" 
-            name="specialtyId" value={form.specialtyId ?? ""} 
-            onChange={handleChange} fullWidth required 
-            sx={{ "& .MuiInputBase-root": { bgcolor: "#f4f7fd" } }} />
-
-            <TextField label="사내번호"
-            name="extNo" value={form.extNo ?? ""}
-            onChange={handleChange} fullWidth
-            sx={{ "& .MuiInputBase-root": { bgcolor: "#f4f7fd" } }} />
+            <TextField
+              label="이름"
+              value={doctorBasiclnfo?.name ?? ""}
+              fullWidth
+              InputProps={{ readOnly: true }}
+              sx={{ "& .MuiInputBase-root": { bgcolor: "#f4f7fd" } }}
+            />
 
 
-            <TextField label="한줄 소개" 
-            name="profileSummary" value={form.profileSummary ?? ""} 
-            onChange={handleChange} fullWidth 
-            sx={{ "& .MuiInputBase-root": { bgcolor: "#f4f7fd" } }} />
 
 
-            <TextField label="학력" 
-            name="education" value={form.education ?? ""} 
-            onChange={handleChange} fullWidth 
-            sx={{ "& .MuiInputBase-root": { bgcolor: "#f4f7fd" } }} />
 
+            <TextField
+              label="의사 면허 *"
+              name="licenseNo"
+              value={form.licenseNo}
+              onChange={handleChange}
+              fullWidth
+              required
+              sx={{ "& .MuiInputBase-root": { bgcolor: "#f4f7fd" } }}
+            />
 
-            <TextField label="경력 상세" 
-            name="careerDetail" value={form.careerDetail ?? ""} 
-            onChange={handleChange} fullWidth 
-            sx={{ "& .MuiInputBase-root": { bgcolor: "#f4f7fd" } }} />
+            <TextField
+              label="전문 과목 *"
+              name="specialtyId"
+              value={form.specialtyId}
+              onChange={handleChange}
+              fullWidth
+              required
+              sx={{ "& .MuiInputBase-root": { bgcolor: "#f4f7fd" } }}
+            />
 
+            <TextField
+              label="사내번호"
+              name="extNo"
+              value={form.extNo}
+              onChange={handleChange}
+              fullWidth
+              sx={{ "& .MuiInputBase-root": { bgcolor: "#f4f7fd" } }}
+            />
+
+            <TextField
+              label="한줄 소개"
+              name="profileSummary"
+              value={form.profileSummary}
+              onChange={handleChange}
+              fullWidth
+              sx={{ "& .MuiInputBase-root": { bgcolor: "#f4f7fd" } }}
+            />
+
+            <TextField
+              label="학력"
+              name="education"
+              value={form.education}
+              onChange={handleChange}
+              fullWidth
+              sx={{ "& .MuiInputBase-root": { bgcolor: "#f4f7fd" } }}
+            />
+
+            <TextField
+              label="경력 상세"
+              name="careerDetail"
+              value={form.careerDetail}
+              onChange={handleChange}
+              fullWidth
+              sx={{ "& .MuiInputBase-root": { bgcolor: "#f4f7fd" } }}
+            />
 
             <Stack direction={{ xs: "column", sm: "row" }} spacing={1.25}>
-            <Button variant="outlined" 
-            onClick={() => router.replace("/staff/doctor/list")} 
-            disabled={loading} fullWidth>뒤로가기
+              <Button
+                variant="outlined"
+                onClick={() => router.push("/staff/doctor/basiclnfocreate")}
+                disabled={loading}
+                fullWidth
+              >
+                이전으로
               </Button>
 
-
-          <Button
-          type="submit"
-          variant="contained"
-          disabled={loading || !form.staffId}
-          sx={{ bgcolor: "#2b5aa9" }}
-          fullWidth>  
-          {/*CircularProgress 로딩중 표시하는 스피너*/}
-          {loading ? <CircularProgress size={18} /> : "등록중"} 
-          </Button>
-          
-          {createSuccess && <Alert severity="success">등록이 완료되었습니다.</Alert>}
-
-          {error && <Alert severity="error">{error}</Alert>}
+              <Button
+                type="submit"
+                variant="contained"
+                disabled={loading || !doctorBasiclnfo}
+                sx={{ bgcolor: "#2b5aa9" }}
+                fullWidth
+              >
+                {loading ? <CircularProgress size={18} /> : "가입완료"}
+              </Button>
             </Stack>
+
+            {createSuccess && (
+              <Alert severity="success">등록이 완료되었습니다.</Alert>
+            )}
+
+            {error && <Alert severity="error">{error}</Alert>}
           </Stack>
         </Stack>
       </Paper>
     </Box>
   );
-};
-
-export default DoctorCreate;
+}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, ChangeEvent, FormEvent } from "react";
+import { useEffect, useState, ChangeEvent, FormEvent, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useDispatch, useSelector } from "react-redux";
 import type { RootState } from "@/store/rootReducer";
@@ -14,7 +14,9 @@ import { DoctorIdNumber, DoctorUpdateRequest, initialDoctorUpdateForm } from "@/
   const router = useRouter();
   const { doctorDetail, updateSuccess, loading, error } = useSelector((state: RootState) => state.doctor);
   const [form, setForm] = useState<DoctorUpdateRequest>(initialDoctorUpdateForm);
-
+  
+    //상세조회 데이터가져올때  form 초기값 세팅을 딱 1번
+    const loadedRef = useRef(false);
 
   useEffect(() => {
   if (!staffId) return;
@@ -27,7 +29,7 @@ import { DoctorIdNumber, DoctorUpdateRequest, initialDoctorUpdateForm } from "@/
 
 
   useEffect(() => {
-    if (!doctorDetail) return;
+   if (!doctorDetail || loadedRef.current) return;
 
     setForm({
       staffId : doctorDetail.staffId,
@@ -39,12 +41,17 @@ import { DoctorIdNumber, DoctorUpdateRequest, initialDoctorUpdateForm } from "@/
       education: doctorDetail.education ?? "",
       careerDetail: doctorDetail.careerDetail ?? "",
     });
+
+      loadedRef.current = true;
+
   }, [doctorDetail, staffId]);
+
 
 
 
   const handleSubmit = (event: FormEvent) => {
     event.preventDefault();
+
     const doctorReq: DoctorUpdateRequest = {
       staffId : (form.staffId),
       licenseNo: (form.licenseNo ?? "").trim(),
@@ -55,10 +62,12 @@ import { DoctorIdNumber, DoctorUpdateRequest, initialDoctorUpdateForm } from "@/
       education: (form.education ?? "").trim(),
       careerDetail: (form.careerDetail ?? "").trim(),
     };
+
     dispatch(updateDoctorRequest({ staffId, doctorReq }));
   };
 
 
+  
 
   const handleChange = (event: ChangeEvent<HTMLInputElement>) => {
     const { name, value } = event.target;

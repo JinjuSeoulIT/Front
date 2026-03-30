@@ -1,7 +1,7 @@
 import { call, put, takeLatest } from "redux-saga/effects";
 import type { SagaIterator } from "redux-saga";
 import type { PayloadAction } from "@reduxjs/toolkit";
-import axios from "axios";
+
 
 import type {
   ApiResponse,
@@ -18,21 +18,27 @@ import {
   DoctorListRequest,
   DoctorListSuccess,
   DoctorListFailure,
+  
   DetailDoctorRequest,
   DetailDoctorSuccess,
   DetailDoctorFailure,
+
   createDoctorRequest,
   createDoctorSuccess,
   createDoctorFailure,
+
   updateDoctorRequest,
   updateDoctorSuccess,
   updateDoctorFailure,
+
   deleteDoctorRequest,
   deleteDoctorSuccess,
   deleteDoctorFailure,
+
   uploadDoctorFileRequest,
   uploadDoctorFileSuccess,
   uploadDoctorFileFailure,
+
   searchDoctorListSuccess,
   searchDoctorListFailure,
   searchDoctorListRequest,
@@ -159,7 +165,7 @@ function* uploadDoctorFileSaga(action: PayloadAction<DoctorFile>): SagaIterator 
 }
 
 
-export function* watchEmployeedoctorSaga(): SagaIterator {
+export function* watchEmployeeDoctorSaga(): SagaIterator {
   yield takeLatest(searchDoctorListRequest.type, searchDoctorListSaga);
   yield takeLatest(DoctorListRequest.type, doctorListSaga);
   yield takeLatest(DetailDoctorRequest.type, detailDoctorSaga);

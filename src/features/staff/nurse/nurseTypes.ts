@@ -2,6 +2,7 @@
 export type NurseResponse = {
   staffId: string;
   deptId?: string;
+  positionId? :String;
   name?: string;
   status : string;
 
@@ -32,6 +33,19 @@ export type NurseIdNumber = {
 
 export type NurseCreateRequest = {
   staffId: string;
+  deptId: string;
+  positionId? :String;
+
+  name: string;
+  phone: string;
+  email: string;
+  birthDate: string;
+  genderCode: string;
+  zipCode: string;
+  address1: string;
+  address2: string;
+  status: string;
+
   licenseNo: string;
   nurseType?: string | null;
   shiftType: string;
@@ -43,6 +57,19 @@ export type NurseCreateRequest = {
 
 export const initialNurseCreateForm: NurseCreateRequest = {
   staffId: "",
+  deptId: "",
+  positionId :"",
+  
+  name: "",
+  phone: "",
+  email: "",
+  birthDate: "",
+  genderCode: "",
+  zipCode: "",
+  address1: "",
+  address2: "",
+  status: "ACTIVE",
+
   licenseNo: "",
   nurseType: "NURSE",
   shiftType: "",
