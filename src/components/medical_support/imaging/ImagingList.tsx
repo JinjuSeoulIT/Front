@@ -109,14 +109,14 @@ export default function ImagingList() {
 
   const completedCount = React.useMemo(
     () =>
-      items.filter((item) => item.EXAM_STATUS_YN?.trim().toUpperCase() === "Y")
+      items.filter((item) => item.examStatusYn?.trim().toUpperCase() === "Y")
         .length,
     [items]
   );
 
   const pendingCount = React.useMemo(
     () =>
-      items.filter((item) => item.EXAM_STATUS_YN?.trim().toUpperCase() !== "Y")
+      items.filter((item) => item.examStatusYn?.trim().toUpperCase() !== "Y")
         .length,
     [items]
   );
@@ -135,9 +135,8 @@ export default function ImagingList() {
 
   const selected = React.useMemo(
     () =>
-      items.find(
-        (item) => String(item.IMAGING_EXAM_ID) === String(selectedId)
-      ) ?? null,
+      items.find((item) => String(item.imagingExamId) === String(selectedId)) ??
+      null,
     [items, selectedId]
   );
 
@@ -155,7 +154,7 @@ export default function ImagingList() {
   };
 
   const handleSelect = (item: ImagingExam) => {
-    setSelectedId(String(item.IMAGING_EXAM_ID));
+    setSelectedId(String(item.imagingExamId));
   };
 
   return (
@@ -282,7 +281,7 @@ export default function ImagingList() {
 
                         {paginatedItems.map((item, index) => (
                           <TableRow
-                            key={String(item.IMAGING_EXAM_ID)}
+                            key={String(item.imagingExamId)}
                             hover
                             onClick={() => handleSelect(item)}
                             sx={{
@@ -290,8 +289,8 @@ export default function ImagingList() {
                               "& td": { py: 1.25, whiteSpace: "nowrap" },
                               "&:hover": { backgroundColor: "#f9fbff" },
                               backgroundColor:
-                                String(activeSelected?.IMAGING_EXAM_ID) ===
-                                String(item.IMAGING_EXAM_ID)
+                                String(activeSelected?.imagingExamId) ===
+                                String(item.imagingExamId)
                                   ? "rgba(11, 91, 143, 0.08)"
                                   : "transparent",
                             }}
@@ -300,30 +299,30 @@ export default function ImagingList() {
                               {currentPage * rowsPerPage + index + 1}
                             </TableCell>
                             <TableCell align="center">
-                              {safeValue(item.IMAGING_EXAM_ID)}
+                              {safeValue(item.imagingExamId)}
                             </TableCell>
                             <TableCell align="center">
-                              {safeValue(item.TEST_EXECUTION_ID)}
+                              {safeValue(item.testExecutionId)}
                             </TableCell>
                             <TableCell align="center">
-                              {safeValue(item.IMAGING_TYPE)}
+                              {safeValue(item.imagingType)}
                             </TableCell>
                             <TableCell align="center">
                               <Chip
-                                label={formatExamStatus(item.EXAM_STATUS_YN)}
-                                color={getExamStatusColor(item.EXAM_STATUS_YN)}
+                                label={formatExamStatus(item.examStatusYn)}
+                                color={getExamStatusColor(item.examStatusYn)}
                                 size="small"
-                                sx={getExamStatusSx(item.EXAM_STATUS_YN)}
+                                sx={getExamStatusSx(item.examStatusYn)}
                               />
                             </TableCell>
                             <TableCell align="center">
-                              {formatDateTime(item.EXAM_AT)}
+                              {formatDateTime(item.examAt)}
                             </TableCell>
                             <TableCell align="center">
-                              {formatDateTime(item.CREATED_AT)}
+                              {formatDateTime(item.createdAt)}
                             </TableCell>
                             <TableCell align="center">
-                              {formatDateTime(item.UPDATED_AT)}
+                              {formatDateTime(item.updatedAt)}
                             </TableCell>
                           </TableRow>
                         ))}
@@ -366,14 +365,14 @@ export default function ImagingList() {
                   {activeSelected && (
                     <Stack direction="row" spacing={1}>
                       <Chip
-                        label={formatExamStatus(activeSelected.EXAM_STATUS_YN)}
+                        label={formatExamStatus(activeSelected.examStatusYn)}
                         size="small"
-                        color={getExamStatusColor(activeSelected.EXAM_STATUS_YN)}
-                        sx={getExamStatusSx(activeSelected.EXAM_STATUS_YN)}
+                        color={getExamStatusColor(activeSelected.examStatusYn)}
+                        sx={getExamStatusSx(activeSelected.examStatusYn)}
                       />
                       <Button
                         component={Link}
-                        href={`/medical_support/imaging/edit/${activeSelected.IMAGING_EXAM_ID}`}
+                        href={`/medical_support/imaging/edit/${activeSelected.imagingExamId}`}
                         variant="outlined"
                         size="small"
                         startIcon={<EditOutlinedIcon />}
@@ -394,31 +393,31 @@ export default function ImagingList() {
                 >
                   <Row
                     label="영상검사아이디"
-                    value={safeValue(activeSelected?.IMAGING_EXAM_ID)}
+                    value={safeValue(activeSelected?.imagingExamId)}
                   />
                   <Row
                     label="검사수행아이디"
-                    value={safeValue(activeSelected?.TEST_EXECUTION_ID)}
+                    value={safeValue(activeSelected?.testExecutionId)}
                   />
                   <Row
                     label="영상검사유형"
-                    value={safeValue(activeSelected?.IMAGING_TYPE)}
+                    value={safeValue(activeSelected?.imagingType)}
                   />
                   <Row
                     label="검사상태여부"
-                    value={formatExamStatus(activeSelected?.EXAM_STATUS_YN)}
+                    value={formatExamStatus(activeSelected?.examStatusYn)}
                   />
                   <Row
                     label="검사일시"
-                    value={formatDateTime(activeSelected?.EXAM_AT)}
+                    value={formatDateTime(activeSelected?.examAt)}
                   />
                   <Row
                     label="생성일시"
-                    value={formatDateTime(activeSelected?.CREATED_AT)}
+                    value={formatDateTime(activeSelected?.createdAt)}
                   />
                   <Row
                     label="수정일시"
-                    value={formatDateTime(activeSelected?.UPDATED_AT)}
+                    value={formatDateTime(activeSelected?.updatedAt)}
                   />
                 </Box>
               </CardContent>

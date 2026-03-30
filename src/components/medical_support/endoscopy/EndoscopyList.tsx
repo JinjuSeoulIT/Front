@@ -28,12 +28,9 @@ import FactCheckOutlinedIcon from "@mui/icons-material/FactCheckOutlined";
 import HelpOutlineOutlinedIcon from "@mui/icons-material/HelpOutlineOutlined";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
-import { TestExecutionActions } from "@/features/medical_support/testExecution/testExecutionSlice";
-import type { TestExecution } from "@/features/medical_support/testExecution/testExecutionType";
+import { EndoscopyActions } from "@/features/medical_support/endoscopy/endoscopySlice";
+import type { EndoscopyExam } from "@/features/medical_support/endoscopy/endoscopyType";
 import type { RootState, AppDispatch } from "@/store/store";
-
-const DONE_STATUSES = ["COMPLETED"];
-const ACTIVE_STATUSES = ["IN_PROGRESS"];
 
 const formatDateTime = (value?: string | null) => {
   if (!value) return "-";
@@ -55,47 +52,52 @@ const formatDateTime = (value?: string | null) => {
   }).format(date);
 };
 
-const normalizeStatus = (value?: string | null) =>
-  value?.trim().toUpperCase() ?? "";
-
 const safeValue = (value?: string | number | null) => {
   if (value === null || value === undefined) return "-";
   const text = String(value).trim();
   return text ? text : "-";
 };
 
+const formatYn = (value?: string | null) => {
+  const normalized = value?.trim().toUpperCase();
+
+  if (normalized === "Y") return "예";
+  if (normalized === "N") return "아니오";
+
+  return safeValue(value);
+};
+
+const formatStatus = (value?: string | null) => {
+  const normalized = value?.trim().toUpperCase();
+
+  if (normalized === "ACTIVE") return "활성화";
+  if (normalized === "INACTIVE") return "비활성화";
+
+  return safeValue(value);
+};
+
 const getStatusColor = (
-  status?: string | null
-): "default" | "info" | "success" => {
-  const normalized = normalizeStatus(status);
+  value?: string | null
+): "default" | "success" => {
+  const normalized = value?.trim().toUpperCase();
 
-  if (DONE_STATUSES.includes(normalized)) return "success";
-  if (ACTIVE_STATUSES.includes(normalized)) return "info";
-
+  if (normalized === "ACTIVE") return "success";
   return "default";
 };
 
-const getStatusSx = (status?: string | null) => {
-  const normalized = normalizeStatus(status);
+const getStatusSx = (value?: string | null) => {
+  const normalized = value?.trim().toUpperCase();
 
-  if (normalized === "WAITING") {
+  if (normalized === "ACTIVE") {
     return {
-      backgroundColor: "#616161",
-      color: "#ffffff",
       fontWeight: 600,
     };
   }
 
-  if (normalized === "CANCELLED") {
-    return {
-      backgroundColor: "#eeeeee",
-      color: "#757575",
-      fontWeight: 500,
-    };
-  }
-
   return {
-    fontWeight: 600,
+    backgroundColor: "#eeeeee",
+    color: "#757575",
+    fontWeight: 500,
   };
 };
 
@@ -107,30 +109,24 @@ export default function EndoscopyList() {
   const [selectedId, setSelectedId] = React.useState<string | null>(null);
 
   const { list: items, loading, error } = useSelector(
-    (state: RootState) => state.testexecutions
+    (state: RootState) => state.endoscopies
   );
 
   React.useEffect(() => {
-    dispatch(
-      TestExecutionActions.fetchTestExecutionsRequest({
-        executionType: "ENDOSCOPY",
-      })
-    );
+    dispatch(EndoscopyActions.fetchEndoscopiesRequest());
   }, [dispatch]);
 
-  const completedCount = React.useMemo(
+  const activeCount = React.useMemo(
     () =>
-      items.filter((item) =>
-        DONE_STATUSES.includes(normalizeStatus(item.progressStatus))
-      ).length,
+      items.filter((item) => item.status?.trim().toUpperCase() === "ACTIVE")
+        .length,
     [items]
   );
 
-  const inProgressCount = React.useMemo(
+  const inactiveCount = React.useMemo(
     () =>
-      items.filter((item) =>
-        ACTIVE_STATUSES.includes(normalizeStatus(item.progressStatus))
-      ).length,
+      items.filter((item) => item.status?.trim().toUpperCase() === "INACTIVE")
+        .length,
     [items]
   );
 
@@ -148,7 +144,7 @@ export default function EndoscopyList() {
 
   const selected = React.useMemo(
     () =>
-      items.find((item) => String(item.testExecutionId) === String(selectedId)) ??
+      items.find((item) => String(item.endoscopyExamId) === String(selectedId)) ??
       null,
     [items, selectedId]
   );
@@ -166,8 +162,8 @@ export default function EndoscopyList() {
     setPage(0);
   };
 
-  const handleSelect = (item: TestExecution) => {
-    setSelectedId(String(item.testExecutionId));
+  const handleSelect = (item: EndoscopyExam) => {
+    setSelectedId(String(item.endoscopyExamId));
   };
 
   return (
@@ -189,7 +185,7 @@ export default function EndoscopyList() {
                   내시경 검사 워크스테이션
                 </Typography>
                 <Typography sx={{ color: "var(--muted)" }}>
-                  내시경 검사 수행 목록을 조회하고 선택한 항목의 상세 정보를 확인하는 화면입니다.
+                  내시경 검사 목록을 조회하고 선택한 항목의 상세 정보를 확인하는 화면입니다.
                 </Typography>
               </Stack>
 
@@ -197,13 +193,7 @@ export default function EndoscopyList() {
                 <Button
                   variant="outlined"
                   startIcon={<RefreshIcon />}
-                  onClick={() =>
-                    dispatch(
-                      TestExecutionActions.fetchTestExecutionsRequest({
-                        executionType: "ENDOSCOPY",
-                      })
-                    )
-                  }
+                  onClick={() => dispatch(EndoscopyActions.fetchEndoscopiesRequest())}
                   disabled={loading}
                 >
                   새로고침
@@ -215,8 +205,8 @@ export default function EndoscopyList() {
 
         <Stack direction="row" spacing={1} sx={{ flexWrap: "wrap" }}>
           <Chip label={`전체 ${items.length}`} color="primary" />
-          <Chip label={`진행 중 ${inProgressCount}`} color="info" variant="outlined" />
-          <Chip label={`완료 ${completedCount}`} color="success" variant="outlined" />
+          <Chip label={`활성화 ${activeCount}`} color="success" variant="outlined" />
+          <Chip label={`비활성화 ${inactiveCount}`} variant="outlined" />
           {loading && <Chip label="불러오는 중" variant="outlined" />}
           {error && <Chip label={`오류: ${error}`} color="error" />}
         </Stack>
@@ -225,12 +215,12 @@ export default function EndoscopyList() {
           sx={{
             display: "grid",
             gap: 2,
-            gridTemplateColumns: { xs: "1fr", lg: "2.2fr 1.2fr" },
+            gridTemplateColumns: { xs: "1fr", lg: "2.3fr 1fr" },
             alignItems: "stretch",
           }}
         >
           <Card sx={{ borderRadius: 3, border: "1px solid var(--line)" }}>
-            <CardContent sx={{ p: 2.5 }}>
+            <CardContent sx={{ p: 2 }}>
               <Stack direction="row" spacing={1} alignItems="center" justifyContent="space-between">
                 <Stack direction="row" spacing={1} alignItems="center">
                   <ScienceOutlinedIcon sx={{ color: "var(--brand)" }} />
@@ -261,24 +251,40 @@ export default function EndoscopyList() {
                     overflow: "hidden",
                   }}
                 >
-                  <TableContainer>
-                    <Table size="small" stickyHeader>
+                  <TableContainer sx={{ overflowX: "auto" }}>
+                    <Table
+                      size="small"
+                      stickyHeader
+                      sx={{
+                        minWidth: 1050,
+                        "& .MuiTableCell-root": {
+                          px: 1,
+                          py: 1,
+                          fontSize: 13,
+                          whiteSpace: "nowrap",
+                        },
+                      }}
+                    >
                       <TableHead>
                         <TableRow>
                           <TableCell align="center">번호</TableCell>
-                          <TableCell align="center">검사수행 ID</TableCell>
-                          <TableCell align="center">오더항목 ID</TableCell>
-                          <TableCell align="center">검사유형</TableCell>
-                          <TableCell align="center">진행상태</TableCell>
-                          <TableCell align="center">시작일시</TableCell>
-                          <TableCell align="center">완료일시</TableCell>
+                          <TableCell align="center">내시경검사아이디</TableCell>
+                          <TableCell align="center">검사수행아이디</TableCell>
+                          <TableCell align="center">시술실</TableCell>
+                          <TableCell align="center">장비</TableCell>
+                          <TableCell align="center">진정여부</TableCell>
+                          <TableCell align="center">시술자아이디</TableCell>
+                          <TableCell align="center">시술일시</TableCell>
+                          <TableCell align="center">상태</TableCell>
+                          <TableCell align="center">생성일시</TableCell>
+                          <TableCell align="center">수정일시</TableCell>
                         </TableRow>
                       </TableHead>
 
                       <TableBody>
                         {paginatedItems.length === 0 && (
                           <TableRow>
-                            <TableCell colSpan={7} align="center" sx={{ py: 5 }}>
+                            <TableCell colSpan={11} align="center" sx={{ py: 5 }}>
                               내시경 검사 데이터가 없습니다.
                             </TableCell>
                           </TableRow>
@@ -286,16 +292,15 @@ export default function EndoscopyList() {
 
                         {paginatedItems.map((item, index) => (
                           <TableRow
-                            key={String(item.testExecutionId)}
+                            key={String(item.endoscopyExamId)}
                             hover
                             onClick={() => handleSelect(item)}
                             sx={{
                               cursor: "pointer",
-                              "& td": { py: 1.25, whiteSpace: "nowrap" },
                               "&:hover": { backgroundColor: "#f9fbff" },
                               backgroundColor:
-                                String(activeSelected?.testExecutionId) ===
-                                String(item.testExecutionId)
+                                String(activeSelected?.endoscopyExamId) ===
+                                String(item.endoscopyExamId)
                                   ? "rgba(11, 91, 143, 0.08)"
                                   : "transparent",
                             }}
@@ -303,29 +308,23 @@ export default function EndoscopyList() {
                             <TableCell align="center">
                               {currentPage * rowsPerPage + index + 1}
                             </TableCell>
-                            <TableCell align="center">
-                              {safeValue(item.testExecutionId)}
-                            </TableCell>
-                            <TableCell align="center">
-                              {safeValue(item.orderItemId)}
-                            </TableCell>
-                            <TableCell align="center">
-                              {safeValue(item.executionType)}
-                            </TableCell>
+                            <TableCell align="center">{safeValue(item.endoscopyExamId)}</TableCell>
+                            <TableCell align="center">{safeValue(item.testExecutionId)}</TableCell>
+                            <TableCell align="center">{safeValue(item.procedureRoom)}</TableCell>
+                            <TableCell align="center">{safeValue(item.equipment)}</TableCell>
+                            <TableCell align="center">{formatYn(item.sedationYn)}</TableCell>
+                            <TableCell align="center">{safeValue(item.operationId)}</TableCell>
+                            <TableCell align="center">{formatDateTime(item.procedureAt)}</TableCell>
                             <TableCell align="center">
                               <Chip
-                                label={safeValue(item.progressStatus)}
-                                color={getStatusColor(item.progressStatus)}
+                                label={formatStatus(item.status)}
+                                color={getStatusColor(item.status)}
                                 size="small"
-                                sx={getStatusSx(item.progressStatus)}
+                                sx={getStatusSx(item.status)}
                               />
                             </TableCell>
-                            <TableCell align="center">
-                              {formatDateTime(item.startedAt)}
-                            </TableCell>
-                            <TableCell align="center">
-                              {formatDateTime(item.completedAt)}
-                            </TableCell>
+                            <TableCell align="center">{formatDateTime(item.createdAt)}</TableCell>
+                            <TableCell align="center">{formatDateTime(item.updatedAt)}</TableCell>
                           </TableRow>
                         ))}
                       </TableBody>
@@ -356,20 +355,20 @@ export default function EndoscopyList() {
                 <Stack direction="row" spacing={1} alignItems="center" justifyContent="space-between">
                   <Stack direction="row" spacing={1} alignItems="center">
                     <ScienceOutlinedIcon sx={{ color: "var(--brand-strong)" }} />
-                    <Typography fontWeight={800}>선택 내시경 검사 수행</Typography>
+                    <Typography fontWeight={800}>선택 내시경 검사</Typography>
                   </Stack>
 
                   {activeSelected && (
                     <Stack direction="row" spacing={1}>
                       <Chip
-                        label={safeValue(activeSelected.progressStatus)}
+                        label={formatStatus(activeSelected.status)}
                         size="small"
-                        color={getStatusColor(activeSelected.progressStatus)}
-                        sx={getStatusSx(activeSelected.progressStatus)}
+                        color={getStatusColor(activeSelected.status)}
+                        sx={getStatusSx(activeSelected.status)}
                       />
                       <Button
                         component={Link}
-                        href={`/medical_support/testExecution/edit/${activeSelected.testExecutionId}`}
+                        href={`/medical_support/endoscopy/edit/${activeSelected.endoscopyExamId}`}
                         variant="outlined"
                         size="small"
                         startIcon={<EditOutlinedIcon />}
@@ -381,13 +380,15 @@ export default function EndoscopyList() {
                 </Stack>
 
                 <Box sx={{ mt: 2, p: 2, borderRadius: 2, bgcolor: "rgba(255,255,255,0.7)" }}>
-                  <Row label="검사수행 ID" value={safeValue(activeSelected?.testExecutionId)} />
-                  <Row label="오더항목 ID" value={safeValue(activeSelected?.orderItemId)} />
-                  <Row label="검사유형" value={safeValue(activeSelected?.executionType)} />
-                  <Row label="진행상태" value={safeValue(activeSelected?.progressStatus)} />
-                  <Row label="시작일시" value={formatDateTime(activeSelected?.startedAt)} />
-                  <Row label="완료일시" value={formatDateTime(activeSelected?.completedAt)} />
-                  <Row label="수행자 ID" value={safeValue(activeSelected?.performerId)} />
+                  <Row label="내시경검사아이디" value={safeValue(activeSelected?.endoscopyExamId)} />
+                  <Row label="검사수행아이디" value={safeValue(activeSelected?.testExecutionId)} />
+                  <Row label="시술실" value={safeValue(activeSelected?.procedureRoom)} />
+                  <Row label="장비" value={safeValue(activeSelected?.equipment)} />
+                  <Row label="진정여부" value={formatYn(activeSelected?.sedationYn)} />
+                  <Row label="시술자아이디" value={safeValue(activeSelected?.operationId)} />
+                  <Row label="시술일시" value={formatDateTime(activeSelected?.procedureAt)} />
+                  <Row label="상태" value={formatStatus(activeSelected?.status)} />
+                  <Row label="생성일시" value={formatDateTime(activeSelected?.createdAt)} />
                   <Row label="수정일시" value={formatDateTime(activeSelected?.updatedAt)} />
                 </Box>
               </CardContent>
@@ -401,8 +402,8 @@ export default function EndoscopyList() {
                 </Stack>
                 <Stack spacing={1.25} sx={{ mt: 2 }}>
                   <SummaryRow label="전체 항목" value={items.length} />
-                  <SummaryRow label="진행 중 항목" value={inProgressCount} />
-                  <SummaryRow label="완료 항목" value={completedCount} />
+                  <SummaryRow label="활성화 항목" value={activeCount} />
+                  <SummaryRow label="비활성화 항목" value={inactiveCount} />
                 </Stack>
               </CardContent>
             </Card>
@@ -415,9 +416,9 @@ export default function EndoscopyList() {
                 </Stack>
                 <Stack spacing={1} sx={{ mt: 2 }}>
                   {[
-                    "좌측 목록: ENDOSCOPY 타입의 검사 수행 목록 조회",
-                    "행 클릭: 우측 선택 검사 수행 정보 갱신",
-                    "수정 버튼: 검사 수행 수정 화면으로 이동",
+                    "좌측 목록: 내시경 검사 항목 조회",
+                    "행 클릭: 우측 상세 정보 갱신",
+                    "수정 버튼: 내시경 검사 수정 화면으로 이동",
                   ].map((text) => (
                     <Box
                       key={text}

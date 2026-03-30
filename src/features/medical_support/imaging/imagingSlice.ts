@@ -96,7 +96,7 @@ const imagingSlice = createSlice({
       state.updateSuccess = true;
       state.selected = action.payload;
       state.list = state.list.map((item) =>
-        String(item.IMAGING_EXAM_ID) === String(action.payload.IMAGING_EXAM_ID)
+        String(item.imagingExamId) === String(action.payload.imagingExamId)
           ? action.payload
           : item
       );
