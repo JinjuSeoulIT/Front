@@ -65,7 +65,7 @@ export type AssessmentCreatePayload = {
 };
 
 export async function fetchVitalsApi(clinicalId: number): Promise<VitalSignsRes | null> {
-  const res = await fetch(`${CLINICAL_API_BASE}/api/clinicals/${clinicalId}/vitals`, {
+  const res = await fetch(`${CLINICAL_API_BASE}/api/visits/${clinicalId}/vitals`, {
     cache: "no-store",
   });
   if (!res.ok) return null;
@@ -77,7 +77,7 @@ export async function saveVitalsApi(
   clinicalId: number,
   payload: VitalSignsCreatePayload
 ): Promise<VitalSignsRes> {
-  const res = await fetch(`${CLINICAL_API_BASE}/api/clinicals/${clinicalId}/vitals`, {
+  const res = await fetch(`${CLINICAL_API_BASE}/api/visits/${clinicalId}/vitals`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
@@ -90,7 +90,7 @@ export async function saveVitalsApi(
 }
 
 export async function fetchAssessmentApi(clinicalId: number): Promise<AssessmentRes | null> {
-  const res = await fetch(`${CLINICAL_API_BASE}/api/clinicals/${clinicalId}/assessment`, {
+  const res = await fetch(`${CLINICAL_API_BASE}/api/visits/${clinicalId}/assessment`, {
     cache: "no-store",
   });
   if (!res.ok) return null;
@@ -102,7 +102,7 @@ export async function saveAssessmentApi(
   clinicalId: number,
   payload: AssessmentCreatePayload
 ): Promise<AssessmentRes> {
-  const res = await fetch(`${CLINICAL_API_BASE}/api/clinicals/${clinicalId}/assessment`, {
+  const res = await fetch(`${CLINICAL_API_BASE}/api/visits/${clinicalId}/assessment`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),

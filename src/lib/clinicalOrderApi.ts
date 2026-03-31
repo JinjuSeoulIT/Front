@@ -26,9 +26,6 @@ export type ClinicalOrderCreatePayload = {
   orderName: string;
 };
 
-export const ORDER_STATUSES = ["REQUESTED", "REQUEST", "IN_PROGRESS", "COMPLETED", "CANCELLED"] as const;
-export type OrderStatus = (typeof ORDER_STATUSES)[number];
-
 type ApiEnvelope<T> = {
   success?: boolean;
   message?: string | null;
@@ -124,22 +121,17 @@ export async function createClinicalOrderApi(
   const value = await parseJson<OrderRaw>(res);
   return mapOrderToClinical(value as OrderRaw);
 }
-export async function updateClinicalOrderStatusApi(
+export async function cancelClinicalOrderApi(
   clinicalId: number,
-  orderId: number,
-  status: OrderStatus
+  orderId: number
 ): Promise<ClinicalOrder> {
   const res = await fetch(
-    `${CLINICAL_API_BASE}/api/visits/${clinicalId}/orders/${orderId}/status`,
-    {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ orderStatus: status }),
-    }
+    `${CLINICAL_API_BASE}/api/visits/${clinicalId}/orders/${orderId}/cancel`,
+    { method: "POST", headers: { "Content-Type": "application/json" } }
   );
   if (!res.ok) {
     const body = await res.json().catch(() => ({})) as { message?: string };
-    throw new Error(body?.message ?? `검사 상태 변경 실패 (${res.status})`);
+    throw new Error(body?.message ?? `검사 오더 취소 실패 (${res.status})`);
   }
   const value = await parseJson<OrderRaw>(res);
   return mapOrderToClinical(value as OrderRaw);

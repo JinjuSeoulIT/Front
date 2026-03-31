@@ -170,3 +170,20 @@ export async function startVisitApi(
   if (!result?.visitId) throw new Error("진료 시작 응답이 올바르지 않습니다.");
   return result;
 }
+
+export async function endVisitApi(visitId: number): Promise<void> {
+  let res: Response;
+  try {
+    res = await fetch(`${CLINICAL_API_BASE}/api/visits/${visitId}/end`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+    });
+  } catch (e) {
+    if (isNetworkError(e)) throw new Error(clinicalConnectionMessage());
+    throw e;
+  }
+  if (!res.ok) {
+    const err = (await res.json().catch(() => ({}))) as { message?: string };
+    throw new Error(err?.message ?? `진료 완료 실패 (${res.status})`);
+  }
+}

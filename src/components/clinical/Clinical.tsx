@@ -3,7 +3,7 @@
 import * as React from "react";
 import { useSearchParams } from "next/navigation";
 import MainLayout from "@/components/layout/MainLayout";
-import { Alert, Box, Stack } from "@mui/material";
+import { Alert, Box, Snackbar, Stack } from "@mui/material";
 import { fetchPatientsApi } from "@/lib/patient/patientApi";
 import type { Patient } from "@/features/patients/patientTypes";
 import {
@@ -30,6 +30,7 @@ import {
   fetchClinicalApi,
   fetchReceptionQueueApi,
   startVisitApi,
+  endVisitApi,
   isNetworkError,
   clinicalConnectionMessage,
   type ReceptionQueueItem,
@@ -39,6 +40,7 @@ import { ClinicalToolbar } from "./ClinicalEncounter";
 import { ClinicalPatientList } from "./ClinicalList";
 import { ClinicalRightPanel } from "./ClinicalOrder";
 import { ClinicalChartCenter } from "./chart/ClinicalChartCenter";
+import type { PriorSubjectiveApplyMode } from "./chart/ClinicalPastVisitsCard";
 import { ClinicalOrderDialog } from "./dialogs/ClinicalOrderDialog";
 import {
   ClinicalPastHistoryDialog,
@@ -103,9 +105,8 @@ export default function ClinicalPage() {
   const [prescriptions, setPrescriptions] = React.useState<
     Awaited<ReturnType<typeof fetchPrescriptionsApi>>
   >([]);
-  const [symptomText, setSymptomText] = React.useState("");
-  const [diagnosisCodeInput, setDiagnosisCodeInput] = React.useState("");
-  const [diagnosisNameInput, setDiagnosisNameInput] = React.useState("");
+  const [chiefComplaintText, setChiefComplaintText] = React.useState("");
+  const [presentIllnessText, setPresentIllnessText] = React.useState("");
   const [prescriptionNameInput, setPrescriptionNameInput] = React.useState("");
   const [prescriptionDosageInput, setPrescriptionDosageInput] = React.useState("");
   const [prescriptionDaysInput, setPrescriptionDaysInput] = React.useState("");
@@ -116,6 +117,14 @@ export default function ClinicalPage() {
   const [pastClinicalSummaries, setPastClinicalSummaries] = React.useState<Record<number, string>>(
     {}
   );
+  const [pastVisitNotesById, setPastVisitNotesById] = React.useState<
+    Record<number, DoctorNoteRes | null>
+  >({});
+  const [pastVisitNotesLoading, setPastVisitNotesLoading] = React.useState(false);
+  const [clinicalSnackbar, setClinicalSnackbar] = React.useState<{
+    message: string;
+    severity: "info" | "error";
+  } | null>(null);
   const [pastClinicalPage, setPastClinicalPage] = React.useState(1);
   const [repeatingFromClinicalId, setRepeatingFromClinicalId] = React.useState<number | null>(
     null
@@ -175,15 +184,18 @@ export default function ClinicalPage() {
       const data = await fetchDoctorNoteApi(visitId);
       setDoctorNote(data ?? null);
       if (data) {
-        setSymptomText(data.presentIllness ?? data.chiefComplaint ?? "");
+        setChiefComplaintText(data.chiefComplaint ?? "");
+        setPresentIllnessText(data.presentIllness ?? "");
         setAdditionalMemo(data.clinicalMemo ?? "");
       } else {
-        setSymptomText("");
+        setChiefComplaintText("");
+        setPresentIllnessText("");
         setAdditionalMemo("");
       }
     } catch {
       setDoctorNote(null);
-      setSymptomText("");
+      setChiefComplaintText("");
+      setPresentIllnessText("");
       setAdditionalMemo("");
     }
   }, []);
@@ -399,6 +411,64 @@ export default function ClinicalPage() {
       );
   }, [clinicals, selectedPatient, currentClinicalId]);
 
+  const handleApplyPriorSubjective = React.useCallback(
+    async (priorVisitId: number, mode: PriorSubjectiveApplyMode): Promise<boolean> => {
+      const targetsCc = mode === "CC" || mode === "BOTH";
+      const targetsPi = mode === "PI" || mode === "BOTH";
+      const wouldOverwriteCc = targetsCc && chiefComplaintText.trim().length > 0;
+      const wouldOverwritePi = targetsPi && presentIllnessText.trim().length > 0;
+      if (
+        (wouldOverwriteCc || wouldOverwritePi) &&
+        !window.confirm("선택한 칸의 내용을 해당 방문 기록으로 바꿉니다. 계속할까요?")
+      ) {
+        return false;
+      }
+      const toast = (message: string, severity: "info" | "error" = "info") =>
+        setClinicalSnackbar({ message, severity });
+      try {
+        const note = await fetchDoctorNoteApi(priorVisitId);
+        if (!note) {
+          toast(
+            "저장된 진료노트가 없어 반영할 주관적 기록이 없습니다. 진료 저장 후 다시 시도해 보세요."
+          );
+          return false;
+        }
+        const cc = note.chiefComplaint ?? "";
+        const pi = note.presentIllness ?? "";
+        if (mode === "CC") {
+          if (!cc.trim()) {
+            toast("해당 방문에 입력된 주호소가 없습니다.");
+            return false;
+          }
+          setChiefComplaintText(cc);
+          toast("주호소를 현재 차트에 반영했습니다.");
+          return true;
+        }
+        if (mode === "PI") {
+          if (!pi.trim()) {
+            toast("해당 방문에 입력된 현병력이 없습니다.");
+            return false;
+          }
+          setPresentIllnessText(pi);
+          toast("현병력을 현재 차트에 반영했습니다.");
+          return true;
+        }
+        if (!cc.trim() && !pi.trim()) {
+          toast("해당 방문에 입력된 주호소·현병력이 없습니다.");
+          return false;
+        }
+        setChiefComplaintText(cc);
+        setPresentIllnessText(pi);
+        toast("주호소·현병력을 현재 차트에 반영했습니다.");
+        return true;
+      } catch (e) {
+        toast(e instanceof Error ? e.message : "불러오기에 실패했습니다.", "error");
+        return false;
+      }
+    },
+    [chiefComplaintText, presentIllnessText]
+  );
+
   const totalPastClinicalPages = Math.max(
     1,
     Math.ceil(pastClinicalsForPatient.length / PAST_CLINICAL_PAGE_SIZE)
@@ -416,24 +486,39 @@ export default function ClinicalPage() {
   React.useEffect(() => {
     if (pastClinicalsForPatient.length === 0) {
       setPastClinicalSummaries({});
+      setPastVisitNotesById({});
+      setPastVisitNotesLoading(false);
       return;
     }
     let cancelled = false;
     const ids = pastClinicalsForPatient
       .map((c) => c.clinicalId ?? c.id)
       .filter((x): x is number => x != null);
+    setPastVisitNotesLoading(true);
     Promise.all(ids.map((id) => fetchDoctorNoteApi(id)))
       .then((notes) => {
         if (cancelled) return;
-        const next: Record<number, string> = {};
+        const nextSummary: Record<number, string> = {};
+        const nextNotes: Record<number, DoctorNoteRes | null> = {};
         ids.forEach((id, i) => {
-          const note = notes[i];
-          next[id] = (note?.presentIllness ?? note?.chiefComplaint ?? "").trim() || "-";
+          const note = notes[i] ?? null;
+          nextNotes[id] = note;
+          const cc = (note?.chiefComplaint ?? "").trim();
+          const pi = (note?.presentIllness ?? "").trim();
+          const parts = [cc, pi].filter(Boolean);
+          nextSummary[id] = parts.length ? parts.join(" · ") : "-";
         });
-        setPastClinicalSummaries(next);
+        setPastClinicalSummaries(nextSummary);
+        setPastVisitNotesById(nextNotes);
       })
       .catch(() => {
-        if (!cancelled) setPastClinicalSummaries({});
+        if (!cancelled) {
+          setPastClinicalSummaries({});
+          setPastVisitNotesById({});
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setPastVisitNotesLoading(false);
       });
     return () => {
       cancelled = true;
@@ -456,7 +541,8 @@ export default function ClinicalPage() {
       setDoctorNote(null);
       setDiagnoses([]);
       setPrescriptions([]);
-      setSymptomText("");
+      setChiefComplaintText("");
+      setPresentIllnessText("");
       setAdditionalMemo("");
       setPastHistoryList([]);
     }
@@ -588,6 +674,13 @@ export default function ClinicalPage() {
     [currentClinicalId, loadPrescriptions]
   );
 
+  const handleVisitCompleted = React.useCallback(async () => {
+    if (currentClinicalId == null) return;
+    await endVisitApi(currentClinicalId);
+    await loadData();
+    await loadReceptionQueue();
+  }, [currentClinicalId, loadData, loadReceptionQueue]);
+
   const now = new Date();
   const calendarYear = now.getFullYear();
   const calendarMonth = now.getMonth();
@@ -669,20 +762,21 @@ export default function ClinicalPage() {
             pastClinicalsForPatient={pastClinicalsForPatient}
             paginatedPastClinicals={paginatedPastClinicals}
             pastClinicalSummaries={pastClinicalSummaries}
+            pastVisitNotesById={pastVisitNotesById}
+            pastVisitNotesLoading={pastVisitNotesLoading}
             pastClinicalPageSafe={pastClinicalPageSafe}
             totalPastClinicalPages={totalPastClinicalPages}
             onPastClinicalPageChange={setPastClinicalPage}
             repeatingFromClinicalId={repeatingFromClinicalId}
             onRepeatPrescription={handleRepeatPrescription}
+            onApplyPriorSubjective={handleApplyPriorSubjective}
             doctorNote={doctorNote}
             diagnoses={diagnoses}
             prescriptions={prescriptions}
-            symptomText={symptomText}
-            onSymptomTextChange={setSymptomText}
-            diagnosisCodeInput={diagnosisCodeInput}
-            onDiagnosisCodeInputChange={setDiagnosisCodeInput}
-            diagnosisNameInput={diagnosisNameInput}
-            onDiagnosisNameInputChange={setDiagnosisNameInput}
+            chiefComplaintText={chiefComplaintText}
+            onChiefComplaintTextChange={setChiefComplaintText}
+            presentIllnessText={presentIllnessText}
+            onPresentIllnessTextChange={setPresentIllnessText}
             prescriptionNameInput={prescriptionNameInput}
             onPrescriptionNameInputChange={setPrescriptionNameInput}
             prescriptionDosageInput={prescriptionDosageInput}
@@ -702,6 +796,7 @@ export default function ClinicalPage() {
             onPrescriptionsReload={() =>
               currentClinicalId != null ? loadPrescriptions(currentClinicalId) : Promise.resolve()
             }
+            onVisitCompleted={handleVisitCompleted}
           />
 
           <ClinicalRightPanel
@@ -765,6 +860,22 @@ export default function ClinicalPage() {
           }
         }}
       />
+
+      <Snackbar
+        open={clinicalSnackbar != null}
+        autoHideDuration={clinicalSnackbar?.severity === "error" ? 8000 : 5500}
+        onClose={() => setClinicalSnackbar(null)}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+      >
+        <Alert
+          severity={clinicalSnackbar?.severity ?? "info"}
+          variant="filled"
+          onClose={() => setClinicalSnackbar(null)}
+          sx={{ width: "100%", maxWidth: 480 }}
+        >
+          {clinicalSnackbar?.message ?? ""}
+        </Alert>
+      </Snackbar>
     </MainLayout>
   );
 }
