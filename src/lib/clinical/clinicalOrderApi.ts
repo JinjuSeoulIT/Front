@@ -1,4 +1,4 @@
-import { CLINICAL_API_BASE } from "./clinicalApiBase";
+import { CLINICAL_API_BASE } from "../clinicalApiBase";
 
 export type LabOrderType =
   | "BLOOD"

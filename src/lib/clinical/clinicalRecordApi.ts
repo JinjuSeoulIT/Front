@@ -1,4 +1,4 @@
-import { CLINICAL_API_BASE } from "./clinicalApiBase";
+import { CLINICAL_API_BASE } from "../clinicalApiBase";
 
 type ApiEnvelope<T> = { success?: boolean; message?: string | null; data?: T; result?: T };
 
