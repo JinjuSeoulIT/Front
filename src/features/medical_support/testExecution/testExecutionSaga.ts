@@ -13,9 +13,12 @@ const getErrorMessage = (err: unknown, fallback: string) => {
   return fallback;
 };
 
-function* fetchTestExecutionsSaga(): SagaIterator {
+function* fetchTestExecutionsSaga(
+  action: PayloadAction<{ executionType?: string } | undefined>
+): SagaIterator {
   try {
-    const items: TestExecution[] = yield call(api.fetchTestExecutionsApi);
+    const executionType = action.payload?.executionType;
+    const items: TestExecution[] = yield call(api.fetchTestExecutionsApi, executionType);
     yield put(actions.fetchTestExecutionsSuccess(items));
   } catch (err: unknown) {
     yield put(
@@ -47,7 +50,7 @@ function* createTestExecutionSaga(
   try {
     const item: TestExecution = yield call(api.createTestExecutionApi, action.payload);
     yield put(actions.createTestExecutionSuccess(item));
-    yield put(actions.fetchTestExecutionsRequest());
+    yield put(actions.fetchTestExecutionsRequest(undefined));
   } catch (err: unknown) {
     yield put(
       actions.createTestExecutionFailure(
@@ -68,7 +71,7 @@ function* updateTestExecutionSaga(
       form
     );
     yield put(actions.updateTestExecutionSuccess(item));
-    yield put(actions.fetchTestExecutionsRequest());
+    yield put(actions.fetchTestExecutionsRequest(undefined));
     yield put(actions.fetchTestExecutionRequest(testExecutionId));
   } catch (err: unknown) {
     yield put(

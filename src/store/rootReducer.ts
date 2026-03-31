@@ -7,6 +7,7 @@ import inpatientReceptionsReducer from "@/features/InpatientReception/InpatientR
 import patientsReducer from "@/features/patients/patientSlice";
 import recordsReducer from "@/features/medical_support/record/recordSlice";
 import testexecutionsReducer from "@/features/medical_support/testExecution/testExecutionSlice";
+<<<<<<< HEAD
 import receptionsReducer from "@/features/Reception/ReceptionSlice";
 import reservationsReducer from "@/features/Reservations/ReservationSlice";
 import employeeNurseReducer from "@/features/staff/nurse/nurseSlice"
@@ -17,6 +18,21 @@ import StaffdepartmentReducer from "@/features/staff/department/departmentSlisct
 import StafflocationReducer from "@/features/staff/location/locationSlice"
 import StaffpositionReducer from "@/features/staff/position/positionSlice"
 
+=======
+import imagingsReducer from "@/features/medical_support/imaging/imagingSlice";
+import specimensReducer from "@/features/medical_support/specimen/specimenSlice";
+import pathologiesReducer from "@/features/medical_support/pathology/pathologySlice";
+import endoscopiesReducer from "@/features/medical_support/endoscopy/endoscopySlice";
+import physiologicalsReducer from "@/features/medical_support/physiological/physiologicalSlice";
+import medicationRecordsReducer from "@/features/medical_support/medicationRecord/medicationRecordSlice";
+import treatmentResultsReducer from "@/features/medical_support/treatmentResult/treatmentResultSlice";
+import receptionsReducer from "@/features/Reception/ReceptionSlice";
+import reservationsReducer from "@/features/Reservations/ReservationSlice";
+import employeeNurseReducer from "@/features/staff/nurse/nurseSlice";
+import employeedoctorReducer from "@/features/staff/doctor/doctorSlice";
+import employeeBasiclnfoReducer from "@/features/staff/Basiclnfo/BasiclnfoSlict";
+import receptionReducer from "@/features/staff/reception/receptionSlice";
+>>>>>>> refactor/hyj
 
 const rootReducer = combineReducers({
   consent: consentReducer,
@@ -27,17 +43,29 @@ const rootReducer = combineReducers({
   patients: patientsReducer,
   records: recordsReducer,
   testexecutions: testexecutionsReducer,
+  imagings: imagingsReducer,
+  specimens: specimensReducer,
+  pathologies: pathologiesReducer,
+  endoscopies: endoscopiesReducer,
+  physiologicals: physiologicalsReducer,
+  medicationRecords: medicationRecordsReducer,
+  treatmentResults: treatmentResultsReducer,
   receptions: receptionsReducer,
   reservations: reservationsReducer,
   nurse: employeeNurseReducer,
+<<<<<<< HEAD
   doctor :employeeDoctorReducer,
   staff: employeeBasiclnfoReducer,
   reception: employeeReceptionReducer,
   department: StaffdepartmentReducer,
   location: StafflocationReducer,
   position: StaffpositionReducer,
+=======
+  doctor: employeedoctorReducer,
+  staff: employeeBasiclnfoReducer,
+  reception: receptionReducer,
+>>>>>>> refactor/hyj
 });
 
 export type RootState = ReturnType<typeof rootReducer>;
 export default rootReducer;
-
