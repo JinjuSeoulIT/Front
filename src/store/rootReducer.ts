@@ -12,6 +12,8 @@ import specimensReducer from "@/features/medical_support/specimen/specimenSlice"
 import pathologiesReducer from "@/features/medical_support/pathology/pathologySlice";
 import endoscopiesReducer from "@/features/medical_support/endoscopy/endoscopySlice";
 import physiologicalsReducer from "@/features/medical_support/physiological/physiologicalSlice";
+import medicationRecordsReducer from "@/features/medical_support/medicationRecord/medicationRecordSlice";
+import treatmentResultsReducer from "@/features/medical_support/treatmentResult/treatmentResultSlice";
 import receptionsReducer from "@/features/Reception/ReceptionSlice";
 import reservationsReducer from "@/features/Reservations/ReservationSlice";
 import employeeNurseReducer from "@/features/staff/nurse/nurseSlice";
@@ -33,6 +35,8 @@ const rootReducer = combineReducers({
   pathologies: pathologiesReducer,
   endoscopies: endoscopiesReducer,
   physiologicals: physiologicalsReducer,
+  medicationRecords: medicationRecordsReducer,
+  treatmentResults: treatmentResultsReducer,
   receptions: receptionsReducer,
   reservations: reservationsReducer,
   nurse: employeeNurseReducer,

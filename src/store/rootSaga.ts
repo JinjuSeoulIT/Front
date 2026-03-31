@@ -12,6 +12,8 @@ import { watchSpecimenSaga } from "@/features/medical_support/specimen/specimenS
 import { watchPathologySaga } from "@/features/medical_support/pathology/pathologySaga";
 import { watchEndoscopySaga } from "@/features/medical_support/endoscopy/endoscopySaga";
 import { watchPhysiologicalSaga } from "@/features/medical_support/physiological/physiologicalSaga";
+import { watchMedicationRecordSaga } from "@/features/medical_support/medicationRecord/medicationRecordSaga";
+import { watchTreatmentResultSaga } from "@/features/medical_support/treatmentResult/treatmentResultSaga";
 import { watchReceptionSaga as watchReceptionsSaga } from "@/features/Reception/ReceptionSaga";
 import { watchReservationSaga } from "@/features/Reservations/ReservationSaga";
 import { watchEmployeeNurseSaga } from "@/features/staff/nurse/nurseSaga";
@@ -31,6 +33,8 @@ export default function* rootSaga() {
     fork(watchPathologySaga),
     fork(watchEndoscopySaga),
     fork(watchPhysiologicalSaga),
+    fork(watchMedicationRecordSaga),
+    fork(watchTreatmentResultSaga),
     fork(watchInsuranceSaga),
     fork(watchConsentSaga),
     fork(watchReceptionsSaga),

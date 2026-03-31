@@ -33,7 +33,7 @@ const Dashboard = () => {
       key: "medicationrecord",
       label: "투약 기록",
       desc: "투약 기록 관리",
-      path: "/medical_support/medicationRecord",
+      path: "/medical_support/medicationRecord/list",
       tone:
         "linear-gradient(135deg, rgba(23, 162, 142, 0.22), rgba(23, 162, 142, 0))",
     },
@@ -41,7 +41,7 @@ const Dashboard = () => {
       key: "treatmentresult",
       label: "처치 결과",
       desc: "처치 결과 관리",
-      path: "/medical_support/treatmentResult",
+      path: "/medical_support/treatmentResult/list",
       tone:
         "linear-gradient(135deg, rgba(23, 162, 142, 0.22), rgba(23, 162, 142, 0))",
     },
