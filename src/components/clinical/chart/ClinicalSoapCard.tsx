@@ -345,7 +345,7 @@ export function ClinicalSoapCard({
             <TextField
               {...params}
               label="표준 상병 검색"
-              placeholder="선택 시 목록에 바로 등록 (마스터 API 연동 시 검색)"
+              placeholder="질병명 입력 후 목록에서 선택하면 상병이 등록됩니다"
             />
           )}
           sx={{ mb: 1.25, maxWidth: 560, "& .MuiOutlinedInput-root": { bgcolor: "#fff" } }}
@@ -643,43 +643,8 @@ export function ClinicalSoapCard({
           onChange={(e) => onAdditionalMemoChange(e.target.value)}
           sx={{ mb: 2, "& .MuiOutlinedInput-root": { bgcolor: "#fff" } }}
         />
-        <Stack direction="row" spacing={2} alignItems="center" justifyContent="space-between" flexWrap="wrap">
-          <Stack direction="row" spacing={1} alignItems="center">
-            <Button size="small" variant="outlined" onClick={() => window.alert("사전심사 예정")}>
-              사전심사
-            </Button>
-            <Button
-              size="small"
-              variant="contained"
-              sx={{ bgcolor: "var(--brand)" }}
-              disabled={visitId == null || savingRecord}
-              onClick={async () => {
-                if (visitId == null) return;
-                onSavingRecordChange(true);
-                try {
-                  if (doctorNote) {
-                    await updateDoctorNoteApi(visitId, {
-                      presentIllness: symptomText,
-                      clinicalMemo: additionalMemo,
-                    });
-                  } else {
-                    await createDoctorNoteApi(visitId, {
-                      presentIllness: symptomText,
-                      clinicalMemo: additionalMemo,
-                    });
-                  }
-                  await onDoctorNoteReload();
-                  window.alert("진료기록이 저장되었습니다.");
-                } catch (e) {
-                  window.alert(e instanceof Error ? e.message : "저장 실패");
-                } finally {
-                  onSavingRecordChange(false);
-                }
-              }}
-            >
-              {savingRecord ? "저장 중…" : "진료 저장"}
-            </Button>
-          </Stack>
+        <Stack direction="row-reverse" spacing={2} alignItems="center" justifyContent="space-between" flexWrap="wrap">
+          
           <Stack direction="row" spacing={1} alignItems="center">
             <FormControl size="small" sx={{ minWidth: 100 }}>
               <InputLabel>전달</InputLabel>

@@ -6,7 +6,12 @@ import type { ClinicalRes } from "./types";
 export const ORDER_TYPE_LABELS: Record<LabOrderType, string> = {
   BLOOD: "혈액검사",
   IMAGING: "영상검사",
+  PATHOLOGY: "병리검사",
+  SPECIMEN: "검체검사",
+  ENDOSCOPY: "내시경검사",
+  PHYSIOLOGY: "생리기능검사",
   PROCEDURE: "처치",
+  MEDICATION: "투약",
 };
 
 export function formatDateTime(iso?: string | null) {

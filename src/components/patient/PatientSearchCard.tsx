@@ -65,7 +65,11 @@ export default function PatientSearchCard({
       <CardContent sx={{ p: 2 }}>
         <Typography sx={{ fontWeight: 800, mb: 1 }}>검색</Typography>
         <Stack spacing={1.25}>
-          <Stack spacing={1} direction="row">
+          <Stack
+            spacing={1}
+            direction={{ xs: "column", md: "row" }}
+            alignItems={{ xs: "stretch", md: "center" }}
+          >
             <TextField
               select
               size="small"
@@ -73,7 +77,10 @@ export default function PatientSearchCard({
               onChange={(e) =>
                 onSearchTypeChange(e.target.value as PatientSearchPayload["type"])
               }
-              sx={{ width: 130 }}
+              sx={{
+                width: { xs: "100%", md: 150 },
+                minWidth: { md: 140 },
+              }}
             >
               {SEARCH_OPTIONS.map((o) => (
                 <MenuItem key={o.value} value={o.value}>
@@ -81,21 +88,23 @@ export default function PatientSearchCard({
                 </MenuItem>
               ))}
             </TextField>
-            <TextField
-              size="small"
-              placeholder="검색어"
-              value={keyword}
-              onChange={(e) => onKeywordChange(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && onSearch()}
-              fullWidth
-            />
-            <Tooltip title="검색">
-              <span>
-                <IconButton onClick={onSearch} disabled={loading}>
-                  <SearchIcon />
-                </IconButton>
-              </span>
-            </Tooltip>
+            <Stack direction="row" spacing={1} sx={{ flex: 1 }}>
+              <TextField
+                size="small"
+                placeholder="검색어"
+                value={keyword}
+                onChange={(e) => onKeywordChange(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && onSearch()}
+                fullWidth
+              />
+              <Tooltip title="검색">
+                <span>
+                  <IconButton onClick={onSearch} disabled={loading}>
+                    <SearchIcon />
+                  </IconButton>
+                </span>
+              </Tooltip>
+            </Stack>
           </Stack>
 
           <Divider />
@@ -138,7 +147,7 @@ export default function PatientSearchCard({
           <Typography sx={{ color: "text.secondary", fontSize: 12, lineHeight: 1.5 }}>
             · 실무에서는 <b>이름+생년월일+연락처</b> 조합으로 중복 환자(동명이인) 등록을 줄입니다.
             <br />
-            · 목록에서 환자를 클릭하면 우측에 상세가 바로 표시됩니다.
+            · 목록에서 환자 기본 정보를 빠르게 확인하고 상세 페이지로 이동할 수 있습니다.
           </Typography>
         </Stack>
       </CardContent>

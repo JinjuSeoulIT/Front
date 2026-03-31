@@ -150,7 +150,8 @@ export function ClinicalRightPanel({
                 }}
               >
                 <Typography sx={{ fontSize: 12, fontWeight: 600 }}>
-                  {ord.orderName && !["BLOOD", "IMAGING", "PROCEDURE"].includes(ord.orderName)
+                  {ord.orderName &&
+                  !(Object.keys(ORDER_TYPE_LABELS) as string[]).includes(ord.orderName)
                     ? ord.orderName
                     : ORDER_TYPE_LABELS[ord.orderType]}
                 </Typography>
