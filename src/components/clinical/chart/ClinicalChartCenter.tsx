@@ -9,7 +9,7 @@ import type { DoctorNoteRes, DiagnosisRes, PrescriptionRes } from "@/lib/clinica
 import type { ClinicalRes } from "../types";
 import { ClinicalVitalsCard } from "./ClinicalVitalsCard";
 import { ClinicalPastHistoryCard } from "./ClinicalPastHistoryCard";
-import { ClinicalPastVisitsCard } from "./ClinicalPastVisitsCard";
+import { ClinicalPastVisitsCard, type PriorSubjectiveApplyMode } from "./ClinicalPastVisitsCard";
 import { ClinicalSoapCard } from "./ClinicalSoapCard";
 
 type Props = {
@@ -28,20 +28,21 @@ type Props = {
   pastClinicalsForPatient: ClinicalRes[];
   paginatedPastClinicals: ClinicalRes[];
   pastClinicalSummaries: Record<number, string>;
+  pastVisitNotesById: Record<number, DoctorNoteRes | null>;
+  pastVisitNotesLoading: boolean;
   pastClinicalPageSafe: number;
   totalPastClinicalPages: number;
   onPastClinicalPageChange: (page: number) => void;
   repeatingFromClinicalId: number | null;
   onRepeatPrescription: (fromVisitId: number) => Promise<void>;
+  onApplyPriorSubjective: (fromVisitId: number, mode: PriorSubjectiveApplyMode) => Promise<boolean>;
   doctorNote: DoctorNoteRes | null;
   diagnoses: DiagnosisRes[];
   prescriptions: PrescriptionRes[];
-  symptomText: string;
-  onSymptomTextChange: (v: string) => void;
-  diagnosisCodeInput: string;
-  onDiagnosisCodeInputChange: (v: string) => void;
-  diagnosisNameInput: string;
-  onDiagnosisNameInputChange: (v: string) => void;
+  chiefComplaintText: string;
+  onChiefComplaintTextChange: (v: string) => void;
+  presentIllnessText: string;
+  onPresentIllnessTextChange: (v: string) => void;
   prescriptionNameInput: string;
   onPrescriptionNameInputChange: (v: string) => void;
   prescriptionDosageInput: string;
@@ -55,6 +56,7 @@ type Props = {
   onDoctorNoteReload: () => void;
   onDiagnosesReload: () => void;
   onPrescriptionsReload: () => void;
+  onVisitCompleted: () => Promise<void>;
 };
 
 export function ClinicalChartCenter(p: Props) {
@@ -102,12 +104,15 @@ export function ClinicalChartCenter(p: Props) {
               pastClinicalsForPatient={p.pastClinicalsForPatient}
               paginatedPastClinicals={p.paginatedPastClinicals}
               pastClinicalSummaries={p.pastClinicalSummaries}
+              pastVisitNotesById={p.pastVisitNotesById}
+              pastVisitNotesLoading={p.pastVisitNotesLoading}
               visitId={p.visitId}
               pastClinicalPageSafe={p.pastClinicalPageSafe}
               totalPastClinicalPages={p.totalPastClinicalPages}
               onPastClinicalPageChange={p.onPastClinicalPageChange}
               repeatingFromClinicalId={p.repeatingFromClinicalId}
               onRepeatPrescription={p.onRepeatPrescription}
+              onApplyPriorSubjective={p.onApplyPriorSubjective}
             />
           </Stack>
 
@@ -117,12 +122,10 @@ export function ClinicalChartCenter(p: Props) {
               doctorNote={p.doctorNote}
               diagnoses={p.diagnoses}
               prescriptions={p.prescriptions}
-              symptomText={p.symptomText}
-              onSymptomTextChange={p.onSymptomTextChange}
-              diagnosisCodeInput={p.diagnosisCodeInput}
-              onDiagnosisCodeInputChange={p.onDiagnosisCodeInputChange}
-              diagnosisNameInput={p.diagnosisNameInput}
-              onDiagnosisNameInputChange={p.onDiagnosisNameInputChange}
+              chiefComplaintText={p.chiefComplaintText}
+              onChiefComplaintTextChange={p.onChiefComplaintTextChange}
+              presentIllnessText={p.presentIllnessText}
+              onPresentIllnessTextChange={p.onPresentIllnessTextChange}
               prescriptionNameInput={p.prescriptionNameInput}
               onPrescriptionNameInputChange={p.onPrescriptionNameInputChange}
               prescriptionDosageInput={p.prescriptionDosageInput}
@@ -136,6 +139,7 @@ export function ClinicalChartCenter(p: Props) {
               onDoctorNoteReload={p.onDoctorNoteReload}
               onDiagnosesReload={p.onDiagnosesReload}
               onPrescriptionsReload={p.onPrescriptionsReload}
+              onVisitCompleted={p.onVisitCompleted}
             />
           </Stack>
         </Stack>
