@@ -24,6 +24,10 @@ import {
 } from "@/features/billing/billingSlice";
 
 import type { PaymentMethod } from "@/lib/billing/billingApi";
+import {
+  getDisplayBillingStatusLabel,
+  getDisplayBillingStatusColor,
+} from "@/lib/billing/billingStatus";
 
 /* MUI UI */
 import {
@@ -34,23 +38,8 @@ import {
   Typography,
   Button,
   Box,
+  Divider,
 } from "@mui/material";
-
-/* Bill 상태 색상 */
-const getBillStatusColor = (status: string) => {
-  switch (status) {
-    case "READY":
-      return "default";
-    case "CONFIRMED":
-      return "warning";
-    case "PAID":
-      return "success";
-    case "CANCELED":
-      return "error";
-    default:
-      return "default";
-  }
-};
 
 /* 결제 상태 색상 */
 const getPaymentStatusColor = (status: string) => {
@@ -203,14 +192,8 @@ export default function BillingDetailPage() {
   );
 
   const [payAmount, setPayAmount] = useState<number>(0);
-
-  // 결제수단 상태
-  const [paymentMethod, setPaymentMethod] =
-    useState<PaymentMethod>("CASH");
-
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("CASH");
   const [refundTargetId, setRefundTargetId] = useState<number | null>(null);
-
-  /* number + 0 기본값 대신 문자열 입력값으로 관리 */
   const [refundAmountInput, setRefundAmountInput] = useState<string>("");
 
   useEffect(() => {
@@ -220,8 +203,8 @@ export default function BillingDetailPage() {
     }
   }, [billId, dispatch]);
 
-  // toss
   const tossClientKey = process.env.NEXT_PUBLIC_TOSS_CLIENT_KEY;
+
   const createOrderId = (billId: number) => {
     return `bill-${billId}-${Date.now()}`;
   };
@@ -276,11 +259,7 @@ export default function BillingDetailPage() {
 
   useEffect(() => {
     setPayAmount(0);
-
-    // 상세가 바뀌면 기본 결제수단도 초기화
     setPaymentMethod("CASH");
-
-    // 상세 변경 시 환불 입력 상태도 초기화
     setRefundTargetId(null);
     setRefundAmountInput("");
   }, [billingDetail]);
@@ -381,6 +360,9 @@ export default function BillingDetailPage() {
     (p) => p.status === "REFUNDED"
   );
 
+  const billItemsTotal =
+    billingDetail?.billItems?.reduce((sum, item) => sum + item.amount, 0) ?? 0;
+
   return (
     <MainLayout>
       <main
@@ -390,13 +372,11 @@ export default function BillingDetailPage() {
           minHeight: "100vh",
         }}
       >
-        {/* 토스 sdk 스크립트 */}
         <Script
           src="https://js.tosspayments.com/v2/standard"
           strategy="afterInteractive"
         />
 
-        {/* 제목 여백/굵기 보강 */}
         <Typography variant="h5" sx={{ fontWeight: 700, mb: 1 }}>
           청구 상세
         </Typography>
@@ -404,7 +384,6 @@ export default function BillingDetailPage() {
         {loading && <p>로딩 중...</p>}
         {error && <p style={{ color: "red" }}>{error}</p>}
 
-        {/* 상단 KPI 요약 카드 */}
         {billingDetail && (
           <Card
             sx={{
@@ -458,8 +437,18 @@ export default function BillingDetailPage() {
                     현재 상태
                   </Typography>
                   <Chip
-                    label={billingDetail.status}
-                    color={getBillStatusColor(billingDetail.status) as any}
+                    label={getDisplayBillingStatusLabel(
+                      billingDetail.paidAmount,
+                      billingDetail.remainingAmount,
+                      billingDetail.status
+                    )}
+                    color={
+                      getDisplayBillingStatusColor(
+                        billingDetail.paidAmount,
+                        billingDetail.remainingAmount,
+                        billingDetail.status
+                      ) as any
+                    }
                     sx={{ mt: 0.5 }}
                   />
                 </Box>
@@ -470,7 +459,6 @@ export default function BillingDetailPage() {
 
         {billingDetail && (
           <section style={{ marginTop: "24px" }}>
-            {/* 청구 요약 카드 */}
             <Card
               sx={{
                 mb: 3,
@@ -486,7 +474,6 @@ export default function BillingDetailPage() {
 
                 <Stack spacing={1}>
                   <Typography>청구 ID: {billingDetail.billId}</Typography>
-
                   <Typography>환자 ID: {billingDetail.patientId}</Typography>
 
                   <Typography>
@@ -516,17 +503,24 @@ export default function BillingDetailPage() {
                   <Typography component="div">
                     상태:
                     <Chip
-                      label={billingDetail.status}
-                      color={getBillStatusColor(
+                      label={getDisplayBillingStatusLabel(
+                        billingDetail.paidAmount,
+                        billingDetail.remainingAmount,
                         billingDetail.status
-                      ) as any}
+                      )}
+                      color={
+                        getDisplayBillingStatusColor(
+                          billingDetail.paidAmount,
+                          billingDetail.remainingAmount,
+                          billingDetail.status
+                        ) as any
+                      }
                       size="small"
                       sx={{ ml: 1 }}
                     />
                   </Typography>
                 </Stack>
 
-                {/* 청구 확정 버튼 */}
                 {billingDetail.status === "READY" && (
                   <div style={{ marginTop: "12px" }}>
                     <Button
@@ -544,8 +538,87 @@ export default function BillingDetailPage() {
               </CardContent>
             </Card>
 
-            {/* 수납 처리 영역 제목 카드 */}
-            {billingDetail.remainingAmount > 0 && (
+            <Card
+              sx={{
+                mb: 3,
+                borderRadius: 3,
+                boxShadow: 2,
+                backgroundColor: "#ffffff",
+              }}
+            >
+              <CardContent>
+                <Stack
+                  direction={{ xs: "column", md: "row" }}
+                  justifyContent="space-between"
+                  alignItems={{ xs: "flex-start", md: "center" }}
+                  sx={{ mb: 2 }}
+                >
+                  <Box>
+                    <Typography variant="h6">청구 항목</Typography>
+                    <Typography
+                      sx={{ fontSize: 13, color: "text.secondary", mt: 0.5 }}
+                    >
+                      현재 청구에 포함된 항목별 금액입니다.
+                    </Typography>
+                  </Box>
+
+                  <Box sx={{ mt: { xs: 1, md: 0 } }}>
+                    <Typography sx={{ fontSize: 12, color: "text.secondary" }}>
+                      항목 합계
+                    </Typography>
+                    <Typography sx={{ fontWeight: 700, fontSize: 18 }}>
+                      {billItemsTotal.toLocaleString()} 원
+                    </Typography>
+                  </Box>
+                </Stack>
+
+                {billingDetail.billItems.length === 0 ? (
+                  <Typography sx={{ color: "text.secondary" }}>
+                    등록된 청구 항목이 없습니다.
+                  </Typography>
+                ) : (
+                  <Stack spacing={1.5}>
+                    {billingDetail.billItems.map((item, index) => (
+                      <Box key={item.billItemId}>
+                        <Stack
+                          direction={{ xs: "column", md: "row" }}
+                          justifyContent="space-between"
+                          alignItems={{ xs: "flex-start", md: "center" }}
+                          spacing={1}
+                          sx={{ py: 1 }}
+                        >
+                          <Box>
+                            <Typography sx={{ fontWeight: 600 }}>
+                              {item.itemName}
+                            </Typography>
+                            <Typography
+                              sx={{
+                                fontSize: 12,
+                                color: "text.secondary",
+                                mt: 0.5,
+                              }}
+                            >
+                              항목 ID: {item.billItemId}
+                            </Typography>
+                          </Box>
+
+                          <Typography sx={{ fontWeight: 700 }}>
+                            {item.amount.toLocaleString()} 원
+                          </Typography>
+                        </Stack>
+
+                        {index !== billingDetail.billItems.length - 1 && (
+                          <Divider />
+                        )}
+                      </Box>
+                    ))}
+                  </Stack>
+                )}
+              </CardContent>
+            </Card>
+
+            {billingDetail.status !== "READY" &&
+            billingDetail.remainingAmount > 0 && (
               <Card
                 sx={{
                   mb: 2,
@@ -567,8 +640,8 @@ export default function BillingDetailPage() {
               </Card>
             )}
 
-            {/* 결제 입력 */}
-            {billingDetail.remainingAmount > 0 && (
+            {billingDetail.status !== "READY" &&
+            billingDetail.remainingAmount > 0 && (
               <div style={{ marginBottom: "24px" }}>
                 <input
                   type="text"
@@ -586,7 +659,6 @@ export default function BillingDetailPage() {
                   style={inputStyle}
                 />
 
-                {/* 결제 수단 선택 */}
                 <div style={methodBoxStyle}>
                   <label>
                     <input
@@ -647,12 +719,10 @@ export default function BillingDetailPage() {
               </div>
             )}
 
-            {/* 수납 내역 제목 */}
             <Typography variant="h6" sx={{ mb: 2, mt: 4 }}>
               수납 내역
             </Typography>
 
-            {/* 수납 내역 상단 요약 카드 */}
             <Card
               sx={{
                 mb: 2,

@@ -6,19 +6,13 @@ import { useDispatch, useSelector } from "react-redux";
 import type { RootState, AppDispatch } from "@/store/store";
 
 import MainLayout from "@/components/layout/MainLayout";
-
-/* 청구번호 클릭 시 상세 페이지 이동 */
 import Link from "next/link";
 
 import {
   Box,
-  Card,
-  CardContent,
   Typography,
   Stack,
   Chip,
-
-  /* Table UI  */
   Table,
   TableHead,
   TableRow,
@@ -28,8 +22,8 @@ import {
   Paper,
 } from "@mui/material";
 
-/*  API import  */
 import { fetchBillsRequest } from "@/features/billing/billingSlice";
+import { getBillingStatusLabel } from "@/lib/billing/billingStatus";
 
 export default function BillingListPage() {
   const searchParams = useSearchParams();
@@ -37,19 +31,29 @@ export default function BillingListPage() {
 
   const status = searchParams.get("status");
 
-  /*   billingList 사용  */
   const { billingList, loading, error } = useSelector(
     (state: RootState) => state.billing
   );
 
   const STATUS_OPTIONS = ["READY", "CONFIRMED", "PAID"] as const;
 
-  /*상태 기반 목록 조회  */
   useEffect(() => {
     if (status) {
       dispatch(fetchBillsRequest(status));
     }
   }, [dispatch, status]);
+
+  /* 
+     진료일 최신순(내림차순) 정렬용 목록
+     - 원본 billingList는 건드리지 않고
+     - 화면 출력용으로만 복사 후 정렬
+   */
+  const sortedBillingList = [...(billingList ?? [])].sort((a, b) => {
+    return (
+      new Date(b.treatmentDate).getTime() -
+      new Date(a.treatmentDate).getTime()
+    );
+  });
 
   return (
     <MainLayout>
@@ -66,7 +70,7 @@ export default function BillingListPage() {
           {STATUS_OPTIONS.map((s) => (
             <Chip
               key={s}
-              label={s}
+              label={getBillingStatusLabel(s)}
               component={Link}
               href={`/billing/list?status=${s}`}
               clickable
@@ -83,18 +87,16 @@ export default function BillingListPage() {
           )}
         </Stack>
 
-        {/* 현재 필터 상태 표시 */}
         {status && (
           <Stack direction="row" spacing={1} alignItems="center">
             <Typography variant="subtitle1">현재 필터 상태:</Typography>
-            <Chip label={status} color="primary" />
+            <Chip label={getBillingStatusLabel(status)} color="primary" />
           </Stack>
         )}
 
         {loading && <Typography>로딩 중...</Typography>}
         {error && <Typography color="error">{error}</Typography>}
 
-        {/* 청구 목록 Table  */}
         <TableContainer component={Paper}>
           <Table>
             <TableHead>
@@ -108,10 +110,12 @@ export default function BillingListPage() {
             </TableHead>
 
             <TableBody>
-              {(billingList ?? []).map((bill) => (
+              {/* 
+                 수정: 화면에는 최신 진료일 순으로 정렬된 목록 사용
+               */}
+              {sortedBillingList.map((bill) => (
                 <TableRow key={bill.billId}>
                   <TableCell>
-                    {/* 청구번호 클릭 시 BillingDetailPage 이동 */}
                     <Link
                       href={`/billing/${bill.billId}`}
                       style={{
@@ -125,14 +129,12 @@ export default function BillingListPage() {
                   </TableCell>
 
                   <TableCell>{bill.patientId}</TableCell>
-
                   <TableCell>{bill.treatmentDate}</TableCell>
-
                   <TableCell>{bill.totalAmount.toLocaleString()} 원</TableCell>
 
                   <TableCell>
                     <Chip
-                      label={bill.status}
+                      label={getBillingStatusLabel(bill.status)}
                       color={
                         bill.status === "PAID"
                           ? "success"
@@ -145,8 +147,10 @@ export default function BillingListPage() {
                 </TableRow>
               ))}
 
-              {/* 조회 결과 없을 때 메시지 표시 */}
-              {(billingList ?? []).length === 0 && !loading && (
+              {/* 
+                 수정: 정렬된 목록 기준으로 빈 결과 여부 판단
+               */}
+              {sortedBillingList.length === 0 && !loading && (
                 <TableRow>
                   <TableCell colSpan={5} align="center">
                     조회 결과가 없습니다
