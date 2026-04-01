@@ -14,7 +14,6 @@ const RECEPTION_STATUS_EVENT_NAME = "reception-status-changed";
 const NOTIFY_TARGET_STATUS = "IN_PROGRESS";
 const DISPLAY_POLICY = {
   showCalledStatus: true,
-  maxRowsPerCard: 7,
 } as const;
 
 type ReceptionStatusNormalized = "WAITING" | "CALLED" | "IN_PROGRESS" | "DONE";
@@ -28,28 +27,28 @@ type ReceptionStatusChangedEvent = {
 };
 
 const TEXT = {
-  title: "\uBCD1\uC6D0 \uC9C4\uB8CC \uB300\uAE30 \uD604\uD669",
-  subtitle: "\uC2E4\uC2DC\uAC04 \uC811\uC218 \uB300\uAE30 \uB514\uC2A4\uD50C\uB808\uC774",
-  unitPeople: "\uBA85",
-  labelWaiting: "\uB300\uAE30",
-  labelInProgress: "\uC9C4\uB8CC\uC911",
-  statusWaiting: "\uB300\uAE30",
-  statusCalled: "\uD638\uCD9C",
-  statusInProgress: "\uC9C4\uB8CC\uC911",
-  statusDone: "\uC644\uB8CC",
-  noName: "\uC774\uB984\uC5C6\uC74C",
-  noPatient: "\uC624\uB298 \uC678\uB798 \uC811\uC218 \uD658\uC790\uAC00 \uC5C6\uC2B5\uB2C8\uB2E4.",
+  title: "병원 진료 대기 현황",
+  subtitle: "실시간 접수 대기 디스플레이",
+  unitPeople: "명",
+  labelWaiting: "대기",
+  labelInProgress: "진료중",
+  statusWaiting: "대기",
+  statusCalled: "호출",
+  statusInProgress: "진료중",
+  statusDone: "완료",
+  noName: "이름없음",
+  noPatient: "오늘 외래 접수 환자가 없습니다.",
   noDepartment:
-    "\uD45C\uC2DC\uD560 \uC9C4\uB8CC\uACFC \uB370\uC774\uD130\uAC00 \uC5C6\uC2B5\uB2C8\uB2E4.",
-  loading: "\uBD88\uB7EC\uC624\uB294 \uC911...",
-  loadError: "\uC811\uC218 \uBAA9\uB85D\uC744 \uBD88\uB7EC\uC624\uC9C0 \uBABB\uD588\uC2B5\uB2C8\uB2E4.",
+    "표시할 진료과 데이터가 없습니다.",
+  loading: "불러오는 중...",
+  loadError: "접수 목록을 불러오지 못했습니다.",
 } as const;
 
 const normalizeStatus = (value?: string | null): ReceptionStatusNormalized => {
   const status = (value ?? "").trim().toUpperCase();
-  if (status === "WAITING" || status === "\uB300\uAE30") return "WAITING";
-  if (status === "CALLED" || status === "\uD638\uCD9C") return "CALLED";
-  if (status === "IN_PROGRESS" || status === "\uC9C4\uB8CC\uC911") return "IN_PROGRESS";
+  if (status === "WAITING" || status === "대기") return "WAITING";
+  if (status === "CALLED" || status === "호출") return "CALLED";
+  if (status === "IN_PROGRESS" || status === "진료중") return "IN_PROGRESS";
   return "DONE";
 };
 
@@ -95,7 +94,7 @@ const isTodayReception = (item: Reception, todayKey: string) => {
 
 const isOutpatientVisit = (visitType?: string | null) => {
   const normalized = (visitType ?? "").trim().toUpperCase();
-  return normalized === "OUTPATIENT" || normalized === "\uC678\uB798";
+  return normalized === "OUTPATIENT" || normalized === "외래";
 };
 
 const maskPatientName = (name?: string | null) => {
@@ -109,6 +108,13 @@ const statusLabel = (status: ReceptionStatusNormalized) => {
   if (status === "CALLED") return TEXT.statusCalled;
   if (status === "IN_PROGRESS") return TEXT.statusInProgress;
   return TEXT.statusDone;
+};
+
+const statusPriority = (status: ReceptionStatusNormalized) => {
+  if (status === "IN_PROGRESS") return 0;
+  if (status === "CALLED") return 1;
+  if (status === "WAITING") return 2;
+  return 3;
 };
 
 const getDepartmentName = (item: DepartmentOption) => (item.departmentName ?? "").trim();
@@ -125,16 +131,16 @@ export default function ReceptionDisplay() {
   const announcementTimerRef = React.useRef<number | null>(null);
 
   const showAnnouncement = React.useCallback((patientName: string, departmentName: string) => {
-    const safePatientName = patientName.trim() || "\uD658\uC790";
-    const safeDepartmentName = departmentName.trim() || "\uC9C4\uB8CC\uACFC";
-    setAnnouncementText(`${safePatientName}\uB2D8 ${safeDepartmentName}\uC5D0 \uBAA8\uC2DC\uACA0\uC2B5\uB2C8\uB2E4`);
+    const safePatientName = patientName.trim() || "환자";
+    const safeDepartmentName = departmentName.trim() || "진료과";
+    setAnnouncementText(`${safePatientName}님 ${safeDepartmentName}에 모시겠습니다`);
     if (announcementTimerRef.current != null) {
       window.clearTimeout(announcementTimerRef.current);
     }
     announcementTimerRef.current = window.setTimeout(() => {
       setAnnouncementText(null);
       announcementTimerRef.current = null;
-    }, 3600);
+    }, 5000);
   }, []);
 
   const loadDisplayData = React.useCallback(async () => {
@@ -188,7 +194,7 @@ export default function ReceptionDisplay() {
         const payload = JSON.parse(event.data) as ReceptionStatusChangedEvent;
         const nextStatus = (payload.toStatus ?? "").trim().toUpperCase();
         if (nextStatus !== NOTIFY_TARGET_STATUS) return;
-        const patientName = payload.patientName?.trim() || "\uD658\uC790";
+        const patientName = payload.patientName?.trim() || "환자";
         let departmentName = payload.departmentName?.trim() || "";
         if (!departmentName && payload.receptionId != null) {
           const found = list.find((item) => item.receptionId === payload.receptionId);
@@ -200,7 +206,7 @@ export default function ReceptionDisplay() {
           );
           departmentName = found?.departmentName?.trim() || "";
         }
-        showAnnouncement(patientName, departmentName || "\uD574\uB2F9 \uC9C4\uB8CC\uACFC");
+        showAnnouncement(patientName, departmentName || "해당 진료과");
         scheduleRefresh();
       } catch {
         // ignore malformed event payload
@@ -294,6 +300,10 @@ export default function ReceptionDisplay() {
 
     for (const [department, receptions] of map.entries()) {
       const sorted = [...receptions].sort((a, b) => {
+        const statusDiff =
+          statusPriority(normalizeStatus(a.status)) -
+          statusPriority(normalizeStatus(b.status));
+        if (statusDiff !== 0) return statusDiff;
         const createdDiff = parseMillis(a.createdAt) - parseMillis(b.createdAt);
         if (createdDiff !== 0) return createdDiff;
         return a.receptionId - b.receptionId;
@@ -499,7 +509,7 @@ export default function ReceptionDisplay() {
                 </Box>
 
                 <Stack spacing={0.7} sx={{ px: 2, py: 1.5, minHeight: 320 }}>
-                  {items.slice(0, DISPLAY_POLICY.maxRowsPerCard).map((item, idx) => {
+                  {items.map((item, idx) => {
                     const normalized = normalizeStatus(item.status);
                     return (
                       <Box

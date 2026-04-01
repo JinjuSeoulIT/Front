@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import * as React from "react";
 import Link from "next/link";
@@ -803,7 +803,7 @@ export default function ReceptionList({
 
   const onSearch = () => {
     const kw = keyword.trim();
-    if (!kw) return alert("\uAC80\uC0C9\uC5B4\uB294 \uD544\uC218\uC785\uB2C8\uB2E4.");
+    if (!kw) return alert("검색어는 필수입니다.");
     if (patientCatalogLoading) return;
     const normalized = kw.toLowerCase();
     const patients = patientCatalog.filter((patient) => {
@@ -955,7 +955,7 @@ export default function ReceptionList({
   const onCreateModalSubmit = () => {
     const patientName = createTargetPatient.patientName.trim();
     if (!patientName) {
-      alert("\uD658\uC790 \uC774\uB984\uC744 \uC785\uB825\uD574\uC8FC\uC138\uC694.");
+      alert("환자 이름을 입력해주세요.");
       return;
     }
 
@@ -1077,16 +1077,16 @@ export default function ReceptionList({
           <Stack direction={{ xs: "column", md: "row" }} spacing={2} alignItems={{ md: "center" }}>
             <Stack spacing={0.35} sx={{ minWidth: 120 }}>
               <Typography fontWeight={900} sx={{ color: "#1f4f95", letterSpacing: -0.1 }}>
-                {"\uD658\uC790 \uAC80\uC0C9"}
+                {"환자 검색"}
               </Typography>
               <Typography sx={{ color: "#6f819f", fontSize: 12, fontWeight: 600 }}>
-                {"\uC774\uB984 \uC870\uD68C \uD6C4 \uBC14\uB85C \uC811\uC218 \uB4F1\uB85D"}
+                {"이름 조회 후 바로 접수 등록"}
               </Typography>
             </Stack>
             <Box sx={{ width: { xs: "100%", md: 380 }, position: "relative" }}>
               <TextField
                 size="small"
-                placeholder={"\uD658\uC790 \uC774\uB984 \uC785\uB825"}
+                placeholder={"환자 이름 입력"}
                 value={keyword}
                 onChange={(e) => {
                   setKeyword(e.target.value);
@@ -1109,8 +1109,8 @@ export default function ReceptionList({
                   patientSearchResultCount === null
                     ? " "
                     : patientSearchResultCount === 0
-                    ? "\uC77C\uCE58 \uD658\uC790 \uC5C6\uC74C"
-                    : `\uAC80\uC0C9 \uACB0\uACFC ${patientSearchResultCount}\uBA85`
+                    ? "일치 환자 없음"
+                    : `검색 결과 ${patientSearchResultCount}명`
                 }
                 FormHelperTextProps={{
                   sx: {
@@ -1655,13 +1655,13 @@ export default function ReceptionList({
         <DialogContent sx={{ p: 3 }}>
           <Stack spacing={1.75}>
             <Typography variant="h5" fontWeight={900}>
-              {"\uC811\uC218 \uB4F1\uB85D"}
+              {"접수 등록"}
             </Typography>
 
             <TextField
               select
               size="small"
-              label={"\uC9C4\uB8CC\uACFC"}
+              label={"진료과"}
               value={createModalForm.departmentId}
               onChange={(e) => {
                 const departmentId = Number(e.target.value);
@@ -1686,7 +1686,7 @@ export default function ReceptionList({
             <TextField
               select
               size="small"
-              label={"\uB2F4\uB2F9\uC758"}
+              label={"담당의"}
               value={createModalForm.doctorId ?? ""}
               onChange={(e) => {
                 const doctorId = Number(e.target.value);
@@ -1719,20 +1719,20 @@ export default function ReceptionList({
 
             <TextField
               size="small"
-              label={"\uB0B4\uC6D0\uC720\uD615"}
-              value={"\uC678\uB798"}
+              label={"내원유형"}
+              value={"외래"}
               InputProps={{ readOnly: true }}
               fullWidth
             />
 
             <Typography sx={{ color: "#7b8aa9", fontSize: 13 }}>
-              {"\uC811\uC218 \uB4F1\uB85D\uC740 \uC678\uB798 \uC811\uC218\uB9CC \uC9C0\uC6D0\uD569\uB2C8\uB2E4."}
+              {"접수 등록은 외래 접수만 지원합니다."}
             </Typography>
 
             <TextField
               size="small"
               type="time"
-              label={"\uB0B4\uC6D0 \uC2DC\uAC04(\uC120\uD0DD)"}
+              label={"내원 시간(선택)"}
               value={createModalForm.arrivedTime}
               onChange={(e) =>
                 setCreateModalForm((prev) => ({
@@ -1745,12 +1745,12 @@ export default function ReceptionList({
             />
 
             <Typography sx={{ color: "#7b8aa9", fontSize: 13 }}>
-              {`\uC801\uC6A9 \uB0A0\uC9DC: ${todayKey} (\uC624\uB298)`}
+              {`적용 날짜: ${todayKey} (오늘)`}
             </Typography>
 
             <TextField
               size="small"
-              label={"\uC811\uC218 \uBA54\uBAA8(\uC120\uD0DD)"}
+              label={"접수 메모(선택)"}
               value={createModalForm.note}
               onChange={(e) =>
                 setCreateModalForm((prev) => ({
@@ -1763,7 +1763,7 @@ export default function ReceptionList({
 
             <Stack direction="row" spacing={1} justifyContent="flex-end" sx={{ pt: 1 }}>
               <Button variant="text" onClick={onCreateModalClose} disabled={loading}>
-                {"\uCDE8\uC18C"}
+                {"취소"}
               </Button>
               <Button
                 variant="contained"
@@ -1776,7 +1776,7 @@ export default function ReceptionList({
                 }
                 sx={{ bgcolor: "#2b5aa9" }}
               >
-                {"\uC800\uC7A5"}
+                {"저장"}
               </Button>
             </Stack>
           </Stack>
