@@ -23,11 +23,14 @@ const testexecutionSlice = createSlice({
   name: "testexecutions",
   initialState,
   reducers: {
-    fetchTestExecutionsRequest: (state) => {
+    fetchTestExecutionsRequest: (
+      state,
+      action: PayloadAction<{ executionType?: string } | undefined>
+    ) => {
+      void action;
       state.loading = true;
       state.error = null;
       state.createSuccess = false;
-      state.updateSuccess = false;
     },
     fetchTestExecutionsSuccess: (
       state,

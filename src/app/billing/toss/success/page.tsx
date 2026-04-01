@@ -120,7 +120,7 @@ useEffect(() => {
         typeof window !== "undefined" &&
         window.location.hostname !== "localhost"
           ? `http://${window.location.hostname}:8081`
-          : "http://localhost:8081";
+          : "http://192.168.1.68:8081";
 
       const response = await fetch(`${baseUrl}/api/billing/toss/approve`, {
         method: "POST",

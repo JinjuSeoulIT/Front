@@ -1,1 +1,1 @@
-export type { ClinicalRes, ApiEnvelope } from "@/lib/visitApi";
+export type { ClinicalRes, ApiEnvelope } from "@/lib/clinical/visitApi";

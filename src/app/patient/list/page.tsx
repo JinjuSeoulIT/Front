@@ -15,7 +15,6 @@ import { createConsentApi } from "@/lib/patient/consentApi";
 import MainLayout from "@/components/layout/MainLayout";
 import PatientSearchCard from "@/components/patient/PatientSearchCard";
 import PatientTable from "@/components/patient/PatientTable";
-import PatientDetailPanel from "@/components/patient/PatientDetailPanel";
 import PatientFormModal from "@/components/patient/PatientFormModal";
 
 function resolveErrorMessage(err: unknown, fallback: string) {
@@ -54,14 +53,19 @@ export default function PatientsPage() {
     dispatch(patientActions.fetchPatientsRequest());
   }, [dispatch]);
 
+  const prioritizedList = React.useMemo(
+    () => [...list].sort((a, b) => b.patientId - a.patientId),
+    [list]
+  );
+
   React.useEffect(() => {
-    if (!list.length) return;
+    if (!prioritizedList.length) return;
     if (selected) {
-      const still = list.find((p) => p.patientId === selected.patientId);
+      const still = prioritizedList.find((p) => p.patientId === selected.patientId);
       if (still) return;
     }
-    dispatch(patientActions.fetchPatientSuccess(list[0]));
-  }, [list, selected, dispatch]);
+    dispatch(patientActions.fetchPatientSuccess(prioritizedList[0]));
+  }, [prioritizedList, selected, dispatch]);
 
   const onSelect = (p: Patient) => {
     dispatch(patientActions.fetchPatientSuccess(p));
@@ -153,9 +157,9 @@ export default function PatientsPage() {
     }
   };
 
-  const primary = selected ?? list[0] ?? null;
-  const totalCount = list.length;
-  const vipCount = list.filter((p) => p.isVip).length;
+  const primary = selected ?? prioritizedList[0] ?? null;
+  const totalCount = prioritizedList.length;
+  const vipCount = prioritizedList.filter((p) => p.isVip).length;
 
   return (
     <MainLayout>
@@ -191,10 +195,20 @@ export default function PatientsPage() {
             alignItems: "start",
             gridTemplateColumns: {
               xs: "1fr",
-              lg: "320px minmax(0, 1fr) 380px",
+              lg: "minmax(0, 1fr) 380px",
             },
           }}
         >
+          <Box sx={{ width: "100%", mx: "auto" }}>
+            <PatientTable
+              list={prioritizedList}
+              selected={primary}
+              onSelect={onSelect}
+              onDeactivate={onDeactivate}
+              onNavigateToDetail={(id) => router.push(`/patient/${id}`)}
+            />
+          </Box>
+
           <PatientSearchCard
             searchType={searchType}
             onSearchTypeChange={setSearchType}
@@ -212,16 +226,6 @@ export default function PatientsPage() {
             onMultiReset={onMultiReset}
             loading={loading}
           />
-
-          <PatientTable
-            list={list}
-            selected={primary}
-            onSelect={onSelect}
-            onDeactivate={onDeactivate}
-            onNavigateToDetail={(id) => router.push(`/patient/${id}`)}
-          />
-
-          <PatientDetailPanel primary={primary} />
         </Box>
 
         <PatientFormModal

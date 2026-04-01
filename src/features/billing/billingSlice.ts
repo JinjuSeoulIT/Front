@@ -5,11 +5,8 @@ import {
   Payment,
   BillingStats,
   PaymentMethod,
-<<<<<<< HEAD
-=======
   BillingClaimRequest,
   BillingClaimResult,
->>>>>>> feature/billing
 } from "@/lib/billing/billingApi";
 
 // 상태 필터 payload 타입

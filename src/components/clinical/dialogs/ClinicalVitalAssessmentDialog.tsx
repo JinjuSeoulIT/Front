@@ -12,7 +12,7 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import { saveVitalsApi, saveAssessmentApi } from "@/lib/clinicalVitalsApi";
+import { saveVitalsApi, saveAssessmentApi } from "@/lib/clinical/clinicalVitalsApi";
 
 export type VitalsFormState = {
   temperature: string;

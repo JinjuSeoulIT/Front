@@ -3,7 +3,7 @@
 import * as React from "react";
 import { Box, Button, Chip, Stack, TextField, Typography } from "@mui/material";
 import CalendarMonthOutlinedIcon from "@mui/icons-material/CalendarMonthOutlined";
-import { cancelClinicalOrderApi, type ClinicalOrder } from "@/lib/clinicalOrderApi";
+import { cancelClinicalOrderApi, type ClinicalOrder } from "@/lib/clinical/clinicalOrderApi";
 import { ORDER_TYPE_LABELS, orderStatusView } from "./clinicalDocumentation";
 
 function normalizedOrderStatus(s: string | null | undefined): string {

@@ -17,7 +17,7 @@ import {
 import {
   createClinicalOrderApi,
   type LabOrderType,
-} from "@/lib/clinicalOrderApi";
+} from "@/lib/clinical/clinicalOrderApi";
 import { ORDER_TYPE_LABELS } from "../clinicalDocumentation";
 
 type Props = {

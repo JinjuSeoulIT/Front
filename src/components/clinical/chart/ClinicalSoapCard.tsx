@@ -40,12 +40,12 @@ import {
   updatePrescriptionApi,
   type DiagnosisRes,
   type PrescriptionRes,
-} from "@/lib/clinicalRecordApi";
-import { searchMasterDiagnosesApi, type MasterDiagnosisItem } from "@/lib/diagnosisMasterApi";
+} from "@/lib/clinical/clinicalRecordApi";
+import { searchMasterDiagnosesApi, type MasterDiagnosisItem } from "@/lib/clinical/diagnosisMasterApi";
 import {
   searchDrugsForChoseongMatch,
   searchDrugsForVisit,
-} from "@/lib/drugSearchApi";
+} from "@/lib/clinical/drugSearchApi";
 import { isChoseongOnlyQuery } from "@/lib/koreanChoseong";
 
 const DRUG_SEARCH_MIN_CHARS = 2;

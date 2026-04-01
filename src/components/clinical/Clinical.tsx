@@ -14,25 +14,25 @@ import {
   fetchPrescriptionsApi,
   addPrescriptionApi,
   type DoctorNoteRes,
-} from "@/lib/clinicalRecordApi";
-import { deletePastHistoryApi } from "@/lib/clinicalPastHistoryApi";
-import { fetchClinicalOrdersApi, type ClinicalOrder } from "@/lib/clinicalOrderApi";
+} from "@/lib/clinical/clinicalRecordApi";
+import { deletePastHistoryApi } from "@/lib/clinical/clinicalPastHistoryApi";
+import { fetchClinicalOrdersApi, type ClinicalOrder } from "@/lib/clinical/clinicalOrderApi";
 import {
   fetchVitalsApi,
   fetchAssessmentApi,
   type VitalSignsRes,
   type AssessmentRes,
-} from "@/lib/clinicalVitalsApi";
+} from "@/lib/clinical/clinicalVitalsApi";
 import {
   fetchPastHistoryApi,
   type PastHistoryItem,
-} from "@/lib/clinicalPastHistoryApi";
+} from "@/lib/clinical/clinicalPastHistoryApi";
 import type { ClinicalRes } from "./types";
 import {
   isNetworkError,
   clinicalConnectionMessage,
   type ReceptionQueueItem,
-} from "@/lib/visitApi";
+} from "@/lib/clinical/visitApi";
 import { resolveClinicalStatus } from "./clinicalDocumentation";
 import { ClinicalToolbar } from "./ClinicalEncounter";
 import { ClinicalPatientList } from "./ClinicalList";

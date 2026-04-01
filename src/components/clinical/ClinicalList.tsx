@@ -16,9 +16,9 @@ import {
 } from "@mui/material";
 import SearchOutlinedIcon from "@mui/icons-material/SearchOutlined";
 import type { ClinicalRes } from "./types";
-import type { ReceptionQueueItem } from "@/lib/visitApi";
+import type { ReceptionQueueItem } from "@/lib/clinical/visitApi";
 import { clinicalStatusView, resolveClinicalStatus } from "./clinicalDocumentation";
-import { formatDepartmentName } from "@/lib/departmentLabel";
+import { formatDepartmentName } from "@/lib/clinical/departmentLabel";
 
 function receptionStatusLabel(status?: string | null): string {
   switch (status?.toUpperCase?.()) {

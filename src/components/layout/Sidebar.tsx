@@ -31,8 +31,9 @@ import PersonAddIcon from "@mui/icons-material/PersonAdd";
 import PolicyIcon from "@mui/icons-material/Policy";
 import TaskAltIcon from "@mui/icons-material/TaskAlt";
 
-import { fetchMenusApi } from "@/lib/menuApi";
+
 import type { MenuNode } from "@/types/menu";
+import { fetchMenusApi } from "@/lib/admin/menuApi";
 
 const iconMap: Record<string, React.ReactNode> = {
   Home: <HomeRoundedIcon fontSize="small" />,

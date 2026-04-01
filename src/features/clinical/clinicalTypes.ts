@@ -1,5 +1,5 @@
 import type { Patient } from "@/features/patients/patientTypes";
-import type { ClinicalRes, ReceptionQueueItem } from "@/lib/visitApi";
+import type { ClinicalRes, ReceptionQueueItem } from "@/lib/clinical/visitApi";
 
 export type { Patient, ClinicalRes, ReceptionQueueItem };
 

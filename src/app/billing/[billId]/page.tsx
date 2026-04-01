@@ -7,14 +7,11 @@ import type { RootState, AppDispatch } from "@/store/store";
 import toast from "react-hot-toast";
 import Script from "next/script";
 import MainLayout from "@/components/layout/MainLayout";
+import {
+  getDisplayBillingStatusLabel,
+  getDisplayBillingStatusColor,
+} from "@/lib/billing/billingStatus";
 
-declare global {
-  interface Window {
-    TossPayments?: any;
-  }
-}
-
-import Script from "next/script";
 declare global {
   interface Window {
     TossPayments?: any;
@@ -31,13 +28,6 @@ import {
 } from "@/features/billing/billingSlice";
 
 import type { PaymentMethod } from "@/lib/billing/billingApi";
-<<<<<<< HEAD
-=======
-import {
-  getDisplayBillingStatusLabel,
-  getDisplayBillingStatusColor,
-} from "@/lib/billing/billingStatus";
->>>>>>> feature/billing
 
 /* MUI UI */
 import {
@@ -213,61 +203,6 @@ export default function BillingDetailPage() {
     }
   }, [billId, dispatch]);
 
-<<<<<<< HEAD
-//toss
-const tossClientKey = process.env.NEXT_PUBLIC_TOSS_CLIENT_KEY;
-const createOrderId = (billId: number) => {
-  return `bill-${billId}-${Date.now()}`;
-};
-
-const requestTossCardPayment = async (amount: number) => {
-  if (!billingDetail) return;
-
-  if (!tossClientKey) {
-    toast.error("토스 클라이언트 키가 없습니다.");
-    return;
-  }
-
-  if (!window.TossPayments) {
-    toast.error("토스 SDK가 아직 로드되지 않았습니다.");
-    return;
-  }
-
-  const orderId = createOrderId(billingDetail.billId);
-
-  sessionStorage.setItem(
-    "tossPaymentContext",
-    JSON.stringify({
-      billId: billingDetail.billId,
-      patientId: billingDetail.patientId,
-      requestedAmount: amount,
-      orderId,
-    })
-  );
-
-  try {
-    const tossPayments = window.TossPayments(tossClientKey);
-    const payment = tossPayments.payment({
-      customerKey: `patient-${billingDetail.patientId}`,
-    });
-
-    await payment.requestPayment({
-      method: "CARD",
-      amount: {
-        currency: "KRW",
-        value: amount,
-      },
-      orderId,
-      orderName: `진료비 수납 - bill ${billingDetail.billId}`,
-      successUrl: `${window.location.origin}/billing/toss/success`,
-      failUrl: `${window.location.origin}/billing/toss/fail`,
-    });
-  } catch (error) {
-    console.error("[toss] requestPayment error", error);
-    toast.error("토스 결제창 호출 중 오류가 발생했습니다.");
-  }
-};
-=======
   const tossClientKey = process.env.NEXT_PUBLIC_TOSS_CLIENT_KEY;
 
   const createOrderId = (billId: number) => {
@@ -321,7 +256,6 @@ const requestTossCardPayment = async (amount: number) => {
       toast.error("토스 결제창 호출 중 오류가 발생했습니다.");
     }
   };
->>>>>>> feature/billing
 
   useEffect(() => {
     setPayAmount(0);
@@ -344,15 +278,9 @@ const requestTossCardPayment = async (amount: number) => {
     }
 
     if (paymentMethod === "CARD") {
-<<<<<<< HEAD
-        requestTossCardPayment(payAmount);
-        return;
-  }
-=======
       requestTossCardPayment(payAmount);
       return;
     }
->>>>>>> feature/billing
 
     dispatch(
       createPaymentRequest({
@@ -386,19 +314,10 @@ const requestTossCardPayment = async (amount: number) => {
       toast.error("이미 전액 수납 완료되었습니다.");
       return;
     }
-<<<<<<< HEAD
-    if (paymentMethod === "CARD") {
-      requestTossCardPayment(billingDetail.remainingAmount);
-      return;
-  }
-=======
-
     if (paymentMethod === "CARD") {
       requestTossCardPayment(billingDetail.remainingAmount);
       return;
     }
-
->>>>>>> feature/billing
     dispatch(
       createPaymentRequest({
         billId: billingDetail.billId,
@@ -443,26 +362,6 @@ const requestTossCardPayment = async (amount: number) => {
     billingDetail?.billItems?.reduce((sum, item) => sum + item.amount, 0) ?? 0;
 
   return (
-<<<<<<< HEAD
-    /* 화면 전체 배경색 추가 */
-    <main
-      style={{
-        padding: "24px",
-        backgroundColor: "#f4f6f8",
-        minHeight: "100vh",
-      }}
-    >
-      {/* 토스 sdk 스크립트 */}
-    <Script
-      src="https://js.tosspayments.com/v2/standard"
-      strategy="afterInteractive"
-    /> 
-
-      {/*제목 여백/굵기 보강 */}
-      <Typography variant="h5" sx={{ fontWeight: 700, mb: 1 }}>
-        청구 상세
-      </Typography>
-=======
     <MainLayout>
       <main
         style={{
@@ -475,7 +374,6 @@ const requestTossCardPayment = async (amount: number) => {
           src="https://js.tosspayments.com/v2/standard"
           strategy="afterInteractive"
         />
->>>>>>> feature/billing
 
         <Typography variant="h5" sx={{ fontWeight: 700, mb: 1 }}>
           청구 상세
@@ -574,6 +472,7 @@ const requestTossCardPayment = async (amount: number) => {
 
                 <Stack spacing={1}>
                   <Typography>청구 ID: {billingDetail.billId}</Typography>
+
                   <Typography>환자 ID: {billingDetail.patientId}</Typography>
 
                   <Typography>
@@ -621,6 +520,7 @@ const requestTossCardPayment = async (amount: number) => {
                   </Typography>
                 </Stack>
 
+                {/* 청구 확정 버튼 */}
                 {billingDetail.status === "READY" && (
                   <div style={{ marginTop: "12px" }}>
                     <Button

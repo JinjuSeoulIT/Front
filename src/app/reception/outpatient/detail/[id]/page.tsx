@@ -8,7 +8,7 @@ import type { RootState, AppDispatch } from "@/store/store";
 import { receptionActions } from "@/features/Reception/ReceptionSlice";
 import type { Reception, ReceptionForm, ReceptionStatus } from "@/features/Reception/ReceptionTypes";
 import { fetchReceptionStatusHistoryApi } from "@/lib/reception/receptionHistoryApi";
-import { fetchAuditLogsByReceptionApi } from "@/lib/auditLogApi";
+import { fetchAuditLogsByReceptionApi } from "@/lib/reception/auditLogApi";
 import ReceptionExtensionsPanel from "@/components/reception/ReceptionExtensionsPanel";
 import {
   Box,

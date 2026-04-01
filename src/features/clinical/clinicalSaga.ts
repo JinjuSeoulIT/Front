@@ -3,8 +3,8 @@ import type { PayloadAction } from "@reduxjs/toolkit";
 import { clinicalActions as actions } from "./clinicalSlice";
 import type { VisitNotePersistPayload } from "./clinicalTypes";
 import { fetchPatientsApi } from "@/lib/patient/patientApi";
-import { fetchClinicalApi, fetchReceptionQueueApi, startVisitApi, endVisitApi } from "@/lib/visitApi";
-import { updateDoctorNoteApi } from "@/lib/clinicalRecordApi";
+import { fetchClinicalApi, fetchReceptionQueueApi, startVisitApi, endVisitApi } from "@/lib/clinical/visitApi";
+import { updateDoctorNoteApi } from "@/lib/clinical/clinicalRecordApi";
 
 function toDateKey(d: Date) {
   const y = d.getFullYear();

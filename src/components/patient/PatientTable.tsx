@@ -3,7 +3,6 @@
 import * as React from "react";
 import Link from "next/link";
 import {
-  Avatar,
   Box,
   Card,
   CardContent,
@@ -24,7 +23,7 @@ import {
 import OpenInNewIcon from "@mui/icons-material/OpenInNew";
 import BlockOutlinedIcon from "@mui/icons-material/BlockOutlined";
 import type { Patient } from "@/features/patients/patientTypes";
-import { patientStatusMeta, resolvePhotoUrl, sexLabel, safe } from "./PatientListUtils";
+import { patientStatusMeta, sexLabel, safe } from "./PatientListUtils";
 
 type Props = {
   list: Patient[];
@@ -44,6 +43,17 @@ export default function PatientTable({
   const primary = selected ?? list[0] ?? null;
   const ROWS_PER_PAGE = 10;
   const [page, setPage] = React.useState(1);
+  const cellSx = { whiteSpace: "nowrap" };
+  const columnWidths = {
+    patientNo: 120,
+    name: 110,
+    gender: 70,
+    birthDate: 120,
+    phone: 140,
+    status: 110,
+    action: 120,
+  } as const;
+  const tableMinWidth = Object.values(columnWidths).reduce((sum, width) => sum + width, 0);
 
   React.useEffect(() => {
     const maxPage = Math.max(1, Math.ceil(list.length / ROWS_PER_PAGE));
@@ -74,19 +84,46 @@ export default function PatientTable({
 
         <Divider />
 
-        <TableContainer sx={{ maxHeight: { xs: 420, lg: 640 } }}>
-          <Table stickyHeader size="small" aria-label="patient list">
+        <TableContainer
+          sx={{
+            maxHeight: { xs: 380, md: 460, lg: 520, xl: 640 },
+            overflowX: "auto",
+          }}
+        >
+          <Table
+            stickyHeader
+            size="small"
+            aria-label="patient list"
+            sx={{
+              minWidth: tableMinWidth,
+              tableLayout: "fixed",
+              "& .MuiTableCell-root": {
+                ...cellSx,
+                textAlign: "center",
+                verticalAlign: "middle",
+              },
+            }}
+          >
+            <colgroup>
+              <col style={{ width: columnWidths.patientNo }} />
+              <col style={{ width: columnWidths.name }} />
+              <col style={{ width: columnWidths.gender }} />
+              <col style={{ width: columnWidths.birthDate }} />
+              <col style={{ width: columnWidths.phone }} />
+              <col style={{ width: columnWidths.status }} />
+              <col style={{ width: columnWidths.action }} />
+            </colgroup>
             <TableHead>
               <TableRow>
-                <TableCell sx={{ width: 56 }}>사진</TableCell>
-                <TableCell sx={{ width: 120 }}>환자번호</TableCell>
-                <TableCell sx={{ width: 110 }}>이름</TableCell>
-                <TableCell sx={{ width: 70 }}>성별</TableCell>
-                <TableCell sx={{ width: 120 }}>생년월일</TableCell>
-                <TableCell sx={{ width: 140 }}>연락처</TableCell>
-                <TableCell sx={{ width: 110 }}>상태</TableCell>
-                <TableCell sx={{ width: 110 }}>구분</TableCell>
-                <TableCell align="right" sx={{ width: 120 }}>액션</TableCell>
+                <TableCell>환자번호</TableCell>
+                <TableCell>이름</TableCell>
+                <TableCell>성별</TableCell>
+                <TableCell>생년월일</TableCell>
+                <TableCell>연락처</TableCell>
+                <TableCell>상태</TableCell>
+                <TableCell>
+                  액션
+                </TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -105,16 +142,10 @@ export default function PatientTable({
                     onClick={() => onSelect(p)}
                     onDoubleClick={() => onNavigateToDetail(p.patientId)}
                   >
-                    <TableCell>
-                      <Avatar
-                        src={resolvePhotoUrl(p.photoUrl) || undefined}
-                        sx={{ width: 28, height: 28 }}
-                      >
-                        {p.name?.slice(0, 1) ?? "?"}
-                      </Avatar>
-                    </TableCell>
                     <TableCell>{safe(p.patientNo)}</TableCell>
-                    <TableCell sx={{ fontWeight: 700 }}>{p.name}</TableCell>
+                    <TableCell sx={{ fontWeight: 700, maxWidth: 120, overflow: "hidden", textOverflow: "ellipsis" }}>
+                      {p.name}
+                    </TableCell>
                     <TableCell>{sexLabel(p.gender)}</TableCell>
                     <TableCell>{safe(p.birthDate)}</TableCell>
                     <TableCell>{safe(p.phone)}</TableCell>
@@ -127,36 +158,30 @@ export default function PatientTable({
                       />
                     </TableCell>
                     <TableCell>
-                      <Stack direction="row" spacing={0.5} sx={{ flexWrap: "wrap" }}>
-                        {p.isVip && <Chip size="small" label="VIP" color="primary" />}
-                        {p.isForeigner && (
-                          <Chip size="small" label="외국인" variant="outlined" />
-                        )}
+                      <Stack direction="row" spacing={0.5} justifyContent="center">
+                        <Tooltip title="상세 페이지">
+                          <IconButton
+                            size="small"
+                            component={Link}
+                            href={`/patient/${p.patientId}`}
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <OpenInNewIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                        <Tooltip title="비활성 처리">
+                          <IconButton
+                            size="small"
+                            color="warning"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onDeactivate(p.patientId);
+                            }}
+                          >
+                            <BlockOutlinedIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
                       </Stack>
-                    </TableCell>
-                    <TableCell align="right">
-                      <Tooltip title="상세 페이지">
-                        <IconButton
-                          size="small"
-                          component={Link}
-                          href={`/patient/${p.patientId}`}
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          <OpenInNewIcon fontSize="small" />
-                        </IconButton>
-                      </Tooltip>
-                      <Tooltip title="비활성 처리">
-                        <IconButton
-                          size="small"
-                          color="warning"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onDeactivate(p.patientId);
-                          }}
-                        >
-                          <BlockOutlinedIcon fontSize="small" />
-                        </IconButton>
-                      </Tooltip>
                     </TableCell>
                   </TableRow>
                 );
@@ -164,7 +189,7 @@ export default function PatientTable({
 
               {list.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={9}>
+                  <TableCell colSpan={7}>
                     <Typography sx={{ color: "text.secondary" }}>
                       조회된 환자가 없습니다.
                     </Typography>

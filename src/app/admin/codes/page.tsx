@@ -34,7 +34,7 @@ import {
   fetchCodeGroupsApi,
   type CodeDetailItem,
   type CodeGroupItem,
-} from "@/lib/codeAdminApi";
+} from "@/lib/admin/codeAdminApi";
 
 type DetailForm = {
   groupCode: string;

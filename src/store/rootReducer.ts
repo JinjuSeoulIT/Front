@@ -1,4 +1,4 @@
-import { combineReducers } from "@reduxjs/toolkit";
+﻿import { combineReducers } from "@reduxjs/toolkit";
 import consentReducer from "@/features/consent/consentSlice";
 import billingReducer from "@/features/billing/billingSlice";
 import emergencyReceptionsReducer from "@/features/EmergencyReception/EmergencyReceptionSlice";
@@ -16,7 +16,14 @@ import employeeReceptionReducer from "@/features/staff/reception/receptionSlice"
 import StaffdepartmentReducer from "@/features/staff/department/departmentSlisct"
 import StafflocationReducer from "@/features/staff/location/locationSlice"
 import StaffpositionReducer from "@/features/staff/position/positionSlice"
-import clinicalReducer from "@/features/clinical/clinicalSlice"
+import imagingsReducer from "@/features/medical_support/imaging/imagingSlice";
+import specimensReducer from "@/features/medical_support/specimen/specimenSlice";
+import pathologiesReducer from "@/features/medical_support/pathology/pathologySlice";
+import endoscopiesReducer from "@/features/medical_support/endoscopy/endoscopySlice";
+import physiologicalsReducer from "@/features/medical_support/physiological/physiologicalSlice";
+import medicationRecordsReducer from "@/features/medical_support/medicationRecord/medicationRecordSlice";
+import treatmentResultsReducer from "@/features/medical_support/treatmentResult/treatmentResultSlice";
+import clinicalReducer from "@/features/clinical/clinicalSlice";
 import { medicalReducer, specialtyReducer } from "@/features/staff/doctor/MedicalSpecialty/medicalSpecialtySlice";
 
 
@@ -29,6 +36,13 @@ const rootReducer = combineReducers({
   patients: patientsReducer,
   records: recordsReducer,
   testexecutions: testexecutionsReducer,
+  imagings: imagingsReducer,
+  specimens: specimensReducer,
+  pathologies: pathologiesReducer,
+  endoscopies: endoscopiesReducer,
+  physiologicals: physiologicalsReducer,
+  medicationRecords: medicationRecordsReducer,
+  treatmentResults: treatmentResultsReducer,
   receptions: receptionsReducer,
   reservations: reservationsReducer,
   nurse: employeeNurseReducer,
@@ -45,4 +59,3 @@ const rootReducer = combineReducers({
 
 export type RootState = ReturnType<typeof rootReducer>;
 export default rootReducer;
-
