@@ -16,7 +16,6 @@ import employeeReceptionReducer from "@/features/staff/reception/receptionSlice"
 import StaffdepartmentReducer from "@/features/staff/department/departmentSlisct"
 import StafflocationReducer from "@/features/staff/location/locationSlice"
 import StaffpositionReducer from "@/features/staff/position/positionSlice"
-<<<<<<< HEAD
 import imagingsReducer from "@/features/medical_support/imaging/imagingSlice";
 import specimensReducer from "@/features/medical_support/specimen/specimenSlice";
 import pathologiesReducer from "@/features/medical_support/pathology/pathologySlice";
@@ -25,9 +24,6 @@ import physiologicalsReducer from "@/features/medical_support/physiological/phys
 import medicationRecordsReducer from "@/features/medical_support/medicationRecord/medicationRecordSlice";
 import treatmentResultsReducer from "@/features/medical_support/treatmentResult/treatmentResultSlice";
 import clinicalReducer from "@/features/clinical/clinicalSlice";
-=======
-import { medicalReducer, specialtyReducer } from "@/features/staff/doctor/MedicalSpecialty/medicalSpecialtySlice";
->>>>>>> develop
 
 
 const rootReducer = combineReducers({
@@ -55,12 +51,7 @@ const rootReducer = combineReducers({
   department: StaffdepartmentReducer,
   location: StafflocationReducer,
   position: StaffpositionReducer,
-<<<<<<< HEAD
   clinical: clinicalReducer,
-=======
-  medical: medicalReducer,
-  specialty: specialtyReducer,
->>>>>>> develop
 });
 
 export type RootState = ReturnType<typeof rootReducer>;
