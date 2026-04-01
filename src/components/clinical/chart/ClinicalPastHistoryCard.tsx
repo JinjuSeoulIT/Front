@@ -44,6 +44,7 @@ type Props = {
   onAddPhx: () => void;
   onEditPhx: (row: PastHistoryItem) => void;
   onDeletePhx: (rowId: number) => Promise<void>;
+  embedded?: boolean;
 };
 
 export function ClinicalPastHistoryCard({
@@ -57,17 +58,29 @@ export function ClinicalPastHistoryCard({
   onAddPhx,
   onEditPhx,
   onDeletePhx,
+  embedded = false,
 }: Props) {
   return (
-    <Card sx={{ borderRadius: 2, border: "1px solid var(--line)", bgcolor: "#fff" }}>
-      <CardContent sx={{ py: 1.5, "&:last-child": { pb: 1.5 } }}>
-        <Stack direction="row" alignItems="center" spacing={0.75} sx={{ mb: 1 }} flexWrap="wrap" useFlexGap>
-          <MedicalInformationOutlinedIcon sx={{ fontSize: 18, color: "var(--brand)" }} />
-          <Typography fontWeight={800} sx={{ fontSize: 15 }}>
-            과거력 (PHx)
-          </Typography>
-          <Chip label="배경 과거" size="small" variant="outlined" sx={{ height: 22, fontSize: 10 }} />
-        </Stack>
+    <Card
+      variant={embedded ? "outlined" : undefined}
+      elevation={embedded ? 0 : undefined}
+      sx={{
+        borderRadius: 2,
+        border: embedded ? "none" : "1px solid var(--line)",
+        bgcolor: "#fff",
+        boxShadow: embedded ? "none" : undefined,
+      }}
+    >
+      <CardContent sx={{ py: embedded ? 0 : 1.5, "&:last-child": { pb: embedded ? 0 : 1.5 } }}>
+        {!embedded ? (
+          <Stack direction="row" alignItems="center" spacing={0.75} sx={{ mb: 1 }} flexWrap="wrap" useFlexGap>
+            <MedicalInformationOutlinedIcon sx={{ fontSize: 18, color: "var(--brand)" }} />
+            <Typography fontWeight={800} sx={{ fontSize: 15 }}>
+              과거력 (PHx)
+            </Typography>
+            <Chip label="배경 과거" size="small" variant="outlined" sx={{ height: 22, fontSize: 10 }} />
+          </Stack>
+        ) : null}
         {!selectedPatient ? (
           <Typography color="text.secondary" sx={{ fontSize: 13 }}>
             환자를 선택하면 표시합니다.

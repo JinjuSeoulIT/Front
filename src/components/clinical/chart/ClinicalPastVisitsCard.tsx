@@ -43,6 +43,7 @@ type Props = {
   repeatingFromClinicalId: number | null;
   onRepeatPrescription: (fromVisitId: number) => Promise<void>;
   onApplyPriorSubjective: (fromVisitId: number, mode: PriorSubjectiveApplyMode) => Promise<boolean>;
+  embedded?: boolean;
 };
 
 function noteMeta(note: DoctorNoteRes | null | undefined) {
@@ -66,6 +67,7 @@ export function ClinicalPastVisitsCard({
   repeatingFromClinicalId,
   onRepeatPrescription,
   onApplyPriorSubjective,
+  embedded = false,
 }: Props) {
   const [noteDialog, setNoteDialog] = React.useState<{
     visitId: number;
@@ -84,14 +86,25 @@ export function ClinicalPastVisitsCard({
   };
 
   return (
-    <Card sx={{ borderRadius: 2, border: "1px solid var(--line)", bgcolor: "#fff" }}>
-      <CardContent sx={{ py: 1.5, "&:last-child": { pb: 1.5 } }}>
-        <Stack direction="row" alignItems="center" spacing={0.75} sx={{ mb: 1 }} flexWrap="wrap" useFlexGap>
-          <Typography fontWeight={800} sx={{ fontSize: 15 }}>
-            과거 진료기록
-          </Typography>
-          <Chip label="이전 방문" size="small" variant="outlined" sx={{ height: 22, fontSize: 10 }} />
-        </Stack>
+    <Card
+      variant={embedded ? "outlined" : undefined}
+      elevation={embedded ? 0 : undefined}
+      sx={{
+        borderRadius: 2,
+        border: embedded ? "none" : "1px solid var(--line)",
+        bgcolor: "#fff",
+        boxShadow: embedded ? "none" : undefined,
+      }}
+    >
+      <CardContent sx={{ py: embedded ? 0 : 1.5, "&:last-child": { pb: embedded ? 0 : 1.5 } }}>
+        {!embedded ? (
+          <Stack direction="row" alignItems="center" spacing={0.75} sx={{ mb: 1 }} flexWrap="wrap" useFlexGap>
+            <Typography fontWeight={800} sx={{ fontSize: 15 }}>
+              과거 진료기록
+            </Typography>
+            <Chip label="이전 방문" size="small" variant="outlined" sx={{ height: 22, fontSize: 10 }} />
+          </Stack>
+        ) : null}
         {pastClinicalsForPatient.length === 0 ? (
           <TableContainer component={Paper} variant="outlined" sx={{ borderRadius: 1 }}>
             <Table size="small">

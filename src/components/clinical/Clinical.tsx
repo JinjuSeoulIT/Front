@@ -71,7 +71,6 @@ export default function ClinicalPage() {
   const endVisitError = useSelector((s: RootState) => s.clinical.endVisitError);
 
   const [selectedReception, setSelectedReception] = React.useState<ReceptionQueueItem | null>(null);
-  const [query, setQuery] = React.useState("");
   const [leftPage, setLeftPage] = React.useState(1);
   const [selectedPatientId, setSelectedPatientId] = React.useState<number | null>(null);
   const [creatingClinical, setCreatingClinical] = React.useState(false);
@@ -285,16 +284,9 @@ export default function ClinicalPage() {
   }, [patients]);
 
   const listForLeft = React.useMemo(() => {
-    const k = query.trim().toLowerCase();
-    let filtered = receptions.filter(
-      (r) =>
-        r.status !== "CANCELLED" &&
-        (!k || [r.patientName, r.receptionNo].some((v) => (v ?? "").toLowerCase().includes(k)))
-    );
+    let filtered = receptions.filter((r) => r.status !== "CANCELLED");
     if (department) {
-      filtered = filtered.filter(
-        (r) => (r.departmentName ?? "").includes(department)
-      );
+      filtered = filtered.filter((r) => (r.departmentName ?? "").includes(department));
     }
     return filtered.filter(
       (r) =>
@@ -302,7 +294,7 @@ export default function ClinicalPage() {
         r.status === "CALLED" ||
         r.status === "IN_PROGRESS"
     );
-  }, [receptions, query, department]);
+  }, [receptions, department]);
 
   const selectedPatient = React.useMemo((): Patient | null => {
     if (!selectedReception) return null;
@@ -600,7 +592,7 @@ export default function ClinicalPage() {
 
   React.useEffect(() => {
     setLeftPage(1);
-  }, [query]);
+  }, [department]);
 
   React.useEffect(() => {
     if (leftPage > totalLeftPages) setLeftPage(totalLeftPages);
@@ -727,8 +719,6 @@ export default function ClinicalPage() {
           </Alert>
         )}
         <ClinicalToolbar
-          query={query}
-          onQueryChange={setQuery}
           creatingClinical={creatingClinical}
           selectedPatient={selectedReception ? selectedPatient : null}
           onStartNewClinical={handleStartNewClinical}
@@ -737,7 +727,11 @@ export default function ClinicalPage() {
         <Box
           sx={{
             display: "grid",
-            gridTemplateColumns: { xs: "1fr", lg: "280px 1fr 260px" },
+            gridTemplateColumns: {
+              xs: "1fr",
+              lg: "minmax(200px, 15rem) minmax(0, 1fr) minmax(176px, 13.5rem)",
+              xl: "minmax(188px, 14rem) minmax(0, 1fr) minmax(168px, 12.5rem)",
+            },
             minHeight: "calc(100vh - 120px)",
             alignItems: "stretch",
           }}
@@ -745,8 +739,6 @@ export default function ClinicalPage() {
           <ClinicalPatientList
             department={department}
             onDepartmentChange={setDepartment}
-            query={query}
-            onQueryChange={setQuery}
             paginatedLeftList={paginatedLeftList}
             listForLeft={listForLeft}
             leftPage={leftPage}

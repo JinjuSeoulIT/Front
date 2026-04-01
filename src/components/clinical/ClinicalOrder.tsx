@@ -53,10 +53,10 @@ export function ClinicalRightPanel({
     <Box
       sx={{
         borderLeft: "1px solid var(--line)",
-        p: 1.5,
+        p: 1,
         display: "flex",
         flexDirection: "column",
-        gap: 2,
+        gap: 1.25,
         bgcolor: "rgba(255,255,255,0.9)",
       }}
     >

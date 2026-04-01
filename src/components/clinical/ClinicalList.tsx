@@ -5,16 +5,13 @@ import {
   Box,
   Chip,
   FormControl,
-  InputAdornment,
   InputLabel,
   MenuItem,
   Pagination,
   Select,
   Stack,
-  TextField,
   Typography,
 } from "@mui/material";
-import SearchOutlinedIcon from "@mui/icons-material/SearchOutlined";
 import type { ClinicalRes } from "./types";
 import type { ReceptionQueueItem } from "@/lib/visitApi";
 import { clinicalStatusView, resolveClinicalStatus } from "./clinicalDocumentation";
@@ -55,8 +52,6 @@ function receptionStatusColor(
 type Props = {
   department: string;
   onDepartmentChange: (v: string) => void;
-  query: string;
-  onQueryChange: (v: string) => void;
   paginatedLeftList: ReceptionQueueItem[];
   listForLeft: ReceptionQueueItem[];
   leftPage: number;
@@ -71,8 +66,6 @@ type Props = {
 export function ClinicalPatientList({
   department,
   onDepartmentChange,
-  query,
-  onQueryChange,
   paginatedLeftList,
   listForLeft,
   leftPage,
@@ -92,7 +85,7 @@ export function ClinicalPatientList({
         overflow: "hidden",
       }}
     >
-      <Box sx={{ p: 1.5, borderBottom: "1px solid var(--line)" }}>
+      <Box sx={{ p: 1.25, borderBottom: "1px solid var(--line)" }}>
         <FormControl size="small" fullWidth>
           <InputLabel>진료실</InputLabel>
           <Select value={department} label="진료실" onChange={(e) => onDepartmentChange(e.target.value)}>
@@ -104,21 +97,6 @@ export function ClinicalPatientList({
             <MenuItem value="피부과">피부과</MenuItem>
           </Select>
         </FormControl>
-        <TextField
-          size="small"
-          fullWidth
-          placeholder="환자검색 (F5)"
-          value={query}
-          onChange={(e) => onQueryChange(e.target.value)}
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <SearchOutlinedIcon fontSize="small" />
-              </InputAdornment>
-            ),
-          }}
-          sx={{ mt: 1, "& .MuiOutlinedInput-root": { bgcolor: "#fff" } }}
-        />
       </Box>
       <Typography sx={{ px: 1.5, py: 1, fontWeight: 700, fontSize: 13 }}>
         진료 대기 환자목록
@@ -140,7 +118,7 @@ export function ClinicalPatientList({
               key={r.receptionId}
               onClick={() => onSelectReception(r)}
               sx={{
-                p: 1.25,
+                p: 1,
                 borderRadius: 1.5,
                 border: "1px solid var(--line)",
                 bgcolor: isSelected ? "rgba(11, 91, 143, 0.12)" : "#fff",
