@@ -23,7 +23,7 @@ import { fetchPatientRestrictionsApi } from "@/lib/patient/restrictionApi";
 import type { PatientFlag } from "@/lib/patient/flagApi";
 import { fetchPatientFlagsApi } from "@/lib/patient/flagApi";
 import { changePatientStatusApi } from "@/lib/reception/patientApi";
-import { fetchCodesApi } from "@/lib/codeApi";
+import { fetchCodesApi } from "@/lib/admin/codeApi";
 import { createReservationApi } from "@/lib/reception/reservationAdminApi";
 import { createReceptionApi } from "@/lib/reception/receptionApi";
 

@@ -32,7 +32,7 @@ import {
   fetchPatientFlagsApi,
   updatePatientFlagApi,
 } from "@/lib/patient/flagApi";
-import { fetchCodesApi } from "@/lib/codeApi";
+import { fetchCodesApi } from "@/lib/admin/codeApi";
 
 type FlagFormState = {
   flagType: string;

@@ -32,7 +32,7 @@ import {
   fetchPatientRestrictionsApi,
   updatePatientRestrictionApi,
 } from "@/lib/patient/restrictionApi";
-import { fetchCodesApi } from "@/lib/codeApi";
+import { fetchCodesApi } from "@/lib/admin/codeApi";
 
 type RestrictionFormState = {
   restrictionType: string;
