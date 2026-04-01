@@ -16,6 +16,10 @@ import { watchEmployeeReceptionSaga } from "@/features/staff/reception/reception
 import watchStaffDepartmentSaga from "@/features/staff/department/departmentSaga";
 import watchStaffLocationSaga from "@/features/staff/location/locationSaga";
 import watchStaffPositionSaga from "@/features/staff/position/positionSaga";
+import {
+  watchDoctorMedicalSaga,
+  watchDoctorSpecialtySaga,
+} from "@/features/staff/doctor/MedicalSpecialty/medicalSpecialtySaga";
 
 
 export default function* rootSaga() {
@@ -36,6 +40,8 @@ export default function* rootSaga() {
     fork(watchEmployeeReceptionSaga),
     fork(watchStaffDepartmentSaga),
     fork(watchStaffLocationSaga),
-    fork(watchStaffPositionSaga)
+    fork(watchStaffPositionSaga),
+    fork(watchDoctorMedicalSaga),
+    fork(watchDoctorSpecialtySaga)
   ]);
 }

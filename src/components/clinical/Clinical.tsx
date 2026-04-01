@@ -2,10 +2,12 @@
 
 import * as React from "react";
 import { useSearchParams } from "next/navigation";
+import { useDispatch, useSelector } from "react-redux";
 import MainLayout from "@/components/layout/MainLayout";
-import { Alert, Box, Stack } from "@mui/material";
-import { fetchPatientsApi } from "@/lib/patient/patientApi";
+import { Alert, Box, Snackbar, Stack } from "@mui/material";
 import type { Patient } from "@/features/patients/patientTypes";
+import { clinicalActions } from "@/features/clinical/clinicalSlice";
+import type { RootState } from "@/store/store";
 import {
   fetchDoctorNoteApi,
   fetchDiagnosesApi,
@@ -25,11 +27,8 @@ import {
   fetchPastHistoryApi,
   type PastHistoryItem,
 } from "@/lib/clinicalPastHistoryApi";
-import type { ClinicalRes, ClinicalTab } from "./types";
+import type { ClinicalRes } from "./types";
 import {
-  fetchClinicalApi,
-  fetchReceptionQueueApi,
-  startVisitApi,
   isNetworkError,
   clinicalConnectionMessage,
   type ReceptionQueueItem,
@@ -39,6 +38,7 @@ import { ClinicalToolbar } from "./ClinicalEncounter";
 import { ClinicalPatientList } from "./ClinicalList";
 import { ClinicalRightPanel } from "./ClinicalOrder";
 import { ClinicalChartCenter } from "./chart/ClinicalChartCenter";
+import type { PriorSubjectiveApplyMode } from "./chart/ClinicalPastVisitsCard";
 import { ClinicalOrderDialog } from "./dialogs/ClinicalOrderDialog";
 import {
   ClinicalPastHistoryDialog,
@@ -50,21 +50,30 @@ import {
   type AssessmentFormState,
 } from "./dialogs/ClinicalVitalAssessmentDialog";
 
+const NOTE_AUTOSAVE_MS = 750;
+
 export default function ClinicalPage() {
+  const dispatch = useDispatch();
   const searchParams = useSearchParams();
   const LEFT_LIST_PAGE_SIZE = 10;
   const PAST_CLINICAL_PAGE_SIZE = 10;
 
-  const [patients, setPatients] = React.useState<Patient[]>([]);
-  const [clinicals, setClinicals] = React.useState<ClinicalRes[]>([]);
-  const [receptions, setReceptions] = React.useState<ReceptionQueueItem[]>([]);
-  const [receptionLoading, setReceptionLoading] = React.useState(false);
+  const patients = useSelector((s: RootState) => s.clinical.patients);
+  const clinicals = useSelector((s: RootState) => s.clinical.clinicals);
+  const receptions = useSelector((s: RootState) => s.clinical.receptions);
+  const receptionLoading = useSelector((s: RootState) => s.clinical.receptionLoading);
+  const errorMessage = useSelector((s: RootState) => s.clinical.errorMessage);
+  const noteSaveInflight = useSelector((s: RootState) => s.clinical.noteSaveInflight);
+  const persistNoteError = useSelector((s: RootState) => s.clinical.persistNoteError);
+  const startVisitPhase = useSelector((s: RootState) => s.clinical.startVisitPhase);
+  const startVisitError = useSelector((s: RootState) => s.clinical.startVisitError);
+  const endVisitPhase = useSelector((s: RootState) => s.clinical.endVisitPhase);
+  const endVisitError = useSelector((s: RootState) => s.clinical.endVisitError);
+
   const [selectedReception, setSelectedReception] = React.useState<ReceptionQueueItem | null>(null);
   const [query, setQuery] = React.useState("");
-  const [tab, setTab] = React.useState<ClinicalTab>("ALL");
   const [leftPage, setLeftPage] = React.useState(1);
   const [selectedPatientId, setSelectedPatientId] = React.useState<number | null>(null);
-  const [errorMessage, setErrorMessage] = React.useState<string | null>(null);
   const [creatingClinical, setCreatingClinical] = React.useState(false);
   const creatingClinicalRef = React.useRef(false);
 
@@ -97,26 +106,43 @@ export default function ClinicalPage() {
   });
 
   const [department, setDepartment] = React.useState("");
-  const [doctorNote, setDoctorNote] = React.useState<DoctorNoteRes | null>(null);
   const [diagnoses, setDiagnoses] = React.useState<
     Awaited<ReturnType<typeof fetchDiagnosesApi>>
   >([]);
   const [prescriptions, setPrescriptions] = React.useState<
     Awaited<ReturnType<typeof fetchPrescriptionsApi>>
   >([]);
-  const [symptomText, setSymptomText] = React.useState("");
-  const [diagnosisCodeInput, setDiagnosisCodeInput] = React.useState("");
-  const [diagnosisNameInput, setDiagnosisNameInput] = React.useState("");
+  const [chiefComplaintText, setChiefComplaintText] = React.useState("");
+  const [presentIllnessText, setPresentIllnessText] = React.useState("");
   const [prescriptionNameInput, setPrescriptionNameInput] = React.useState("");
   const [prescriptionDosageInput, setPrescriptionDosageInput] = React.useState("");
+  const [prescriptionFrequencyInput, setPrescriptionFrequencyInput] = React.useState("");
   const [prescriptionDaysInput, setPrescriptionDaysInput] = React.useState("");
   const [additionalMemo, setAdditionalMemo] = React.useState("");
   const [groupOrderText, setGroupOrderText] = React.useState("");
   const [chartTemplateText, setChartTemplateText] = React.useState("");
-  const [savingRecord, setSavingRecord] = React.useState(false);
+  const savingRecord = noteSaveInflight > 0;
+  const noteLastSavedRef = React.useRef({ cc: "", pi: "", memo: "" });
+  const activeVisitIdRef = React.useRef<number | null>(null);
+  const pendingPersistSnapshotRef = React.useRef<{ cc: string; pi: string; memo: string } | null>(
+    null
+  );
+  const prevNoteSaveInflightRef = React.useRef(0);
+  const endVisitPromiseRef = React.useRef<{ resolve: () => void; reject: (e: Error) => void } | null>(
+    null
+  );
+  const startVisitPatientIdRef = React.useRef<number | null>(null);
   const [pastClinicalSummaries, setPastClinicalSummaries] = React.useState<Record<number, string>>(
     {}
   );
+  const [pastVisitNotesById, setPastVisitNotesById] = React.useState<
+    Record<number, DoctorNoteRes | null>
+  >({});
+  const [pastVisitNotesLoading, setPastVisitNotesLoading] = React.useState(false);
+  const [clinicalSnackbar, setClinicalSnackbar] = React.useState<{
+    message: string;
+    severity: "info" | "error";
+  } | null>(null);
   const [pastClinicalPage, setPastClinicalPage] = React.useState(1);
   const [repeatingFromClinicalId, setRepeatingFromClinicalId] = React.useState<number | null>(
     null
@@ -174,18 +200,29 @@ export default function ClinicalPage() {
   const loadDoctorNote = React.useCallback(async (visitId: number) => {
     try {
       const data = await fetchDoctorNoteApi(visitId);
-      setDoctorNote(data ?? null);
       if (data) {
-        setSymptomText(data.presentIllness ?? data.chiefComplaint ?? "");
-        setAdditionalMemo(data.clinicalMemo ?? "");
+        const ccRaw = data.chiefComplaint ?? "";
+        const piRaw = data.presentIllness ?? "";
+        const memoRaw = data.clinicalMemo ?? "";
+        setChiefComplaintText(ccRaw);
+        setPresentIllnessText(piRaw);
+        setAdditionalMemo(memoRaw);
+        noteLastSavedRef.current = {
+          cc: ccRaw.trim(),
+          pi: piRaw.trim(),
+          memo: memoRaw.trim(),
+        };
       } else {
-        setSymptomText("");
+        setChiefComplaintText("");
+        setPresentIllnessText("");
         setAdditionalMemo("");
+        noteLastSavedRef.current = { cc: "", pi: "", memo: "" };
       }
     } catch {
-      setDoctorNote(null);
-      setSymptomText("");
+      setChiefComplaintText("");
+      setPresentIllnessText("");
       setAdditionalMemo("");
+      noteLastSavedRef.current = { cc: "", pi: "", memo: "" };
     }
   }, []);
 
@@ -216,79 +253,15 @@ export default function ClinicalPage() {
     }
   }, []);
 
-  const loadData = React.useCallback(async () => {
-    try {
-      setErrorMessage(null);
-      const [patientsResult, clinicalsResult] = await Promise.allSettled([
-        fetchPatientsApi(),
-        fetchClinicalApi(),
-      ]);
-      if (patientsResult.status === "fulfilled") {
-        setPatients(patientsResult.value);
-      } else {
-        setPatients([]);
-        setErrorMessage("환자 목록을 불러오지 못했습니다.");
-      }
-      if (clinicalsResult.status === "fulfilled") {
-        setClinicals(clinicalsResult.value);
-      } else {
-        setClinicals([]);
-        setErrorMessage("진료 목록 연결에 실패했습니다. 환자 목록만 표시합니다.");
-      }
-    } catch (err) {
-      setErrorMessage(err instanceof Error ? err.message : "데이터를 불러오지 못했습니다.");
-    }
-  }, []);
-
-  const toDateKey = React.useCallback((d: Date) => {
-    const y = d.getFullYear();
-    const m = String(d.getMonth() + 1).padStart(2, "0");
-    const day = String(d.getDate()).padStart(2, "0");
-    return `${y}-${m}-${day}`;
-  }, []);
-
-  const loadReceptionQueue = React.useCallback(async () => {
-    setReceptionLoading(true);
-    setErrorMessage(null);
-    try {
-      const today = toDateKey(new Date());
-      let list = await fetchReceptionQueueApi({ date: today });
-      if (list.length === 0) {
-        try {
-          const anyList = await fetchReceptionQueueApi({});
-          const todayPrefix = today.replace(/-/g, "");
-          list = anyList.filter(
-            (r) =>
-              (r.receptionNo && r.receptionNo.startsWith(todayPrefix)) ||
-              (r as { arrivedAt?: string; createdAt?: string }).arrivedAt?.startsWith?.(today) ||
-              (r as { arrivedAt?: string; createdAt?: string }).createdAt?.startsWith?.(today)
-          );
-        } catch {
-          list = [];
-        }
-      }
-      setReceptions(list);
-    } catch (err) {
-      setReceptions([]);
-      setErrorMessage(err instanceof Error ? err.message : "접수 대기열을 불러오지 못했습니다.");
-    } finally {
-      setReceptionLoading(false);
-    }
-  }, [toDateKey]);
-
   React.useEffect(() => {
-    loadData();
-  }, [loadData]);
-
-  React.useEffect(() => {
-    loadReceptionQueue();
-  }, [loadReceptionQueue]);
+    dispatch(clinicalActions.fetchClinicalBootstrapRequest());
+    dispatch(clinicalActions.fetchReceptionQueueRequest());
+  }, [dispatch]);
 
   React.useEffect(() => {
     if (!queryPatientId) return;
     const r = receptions.find((x) => x.patientId === queryPatientId);
     if (r) {
-      setTab("ALL");
       setSelectedReception(r);
       setSelectedPatientId(queryPatientId);
     }
@@ -323,16 +296,13 @@ export default function ClinicalPage() {
         (r) => (r.departmentName ?? "").includes(department)
       );
     }
-    if (tab === "WAIT") {
-      return filtered.filter(
-        (r) =>
-          r.status === "WAITING" ||
-          r.status === "CALLED" ||
-          r.status === "IN_PROGRESS"
-      );
-    }
-    return filtered;
-  }, [receptions, query, tab, department]);
+    return filtered.filter(
+      (r) =>
+        r.status === "WAITING" ||
+        r.status === "CALLED" ||
+        r.status === "IN_PROGRESS"
+    );
+  }, [receptions, query, department]);
 
   const selectedPatient = React.useMemo((): Patient | null => {
     if (!selectedReception) return null;
@@ -366,9 +336,6 @@ export default function ClinicalPage() {
     setSelectedPatientId(r.patientId);
   }, []);
 
-  const selectedClinical = selectedPatient
-    ? clinicalByPatientId.get(selectedPatient.patientId) ?? null
-    : null;
   const activeVisitClinical = React.useMemo(() => {
     if (!selectedReception || selectedReception.status !== "IN_PROGRESS") return null;
     const byReception = clinicals
@@ -403,6 +370,62 @@ export default function ClinicalPage() {
       );
   }, [clinicals, selectedPatient, currentClinicalId]);
 
+  const handleApplyPriorSubjective = React.useCallback(
+    async (priorVisitId: number, mode: PriorSubjectiveApplyMode): Promise<boolean> => {
+      const targetsCc = mode === "CC" || mode === "BOTH";
+      const targetsPi = mode === "PI" || mode === "BOTH";
+      const wouldOverwriteCc = targetsCc && chiefComplaintText.trim().length > 0;
+      const wouldOverwritePi = targetsPi && presentIllnessText.trim().length > 0;
+      if (
+        (wouldOverwriteCc || wouldOverwritePi) &&
+        !window.confirm("선택한 칸의 내용을 해당 방문 기록으로 바꿉니다. 계속할까요?")
+      ) {
+        return false;
+      }
+      const toast = (message: string, severity: "info" | "error" = "info") =>
+        setClinicalSnackbar({ message, severity });
+      try {
+        const note = await fetchDoctorNoteApi(priorVisitId);
+        if (!note) {
+          toast("해당 방문에 서버에 남아 있는 진료노트가 없어 반영할 주관적 기록이 없습니다.");
+          return false;
+        }
+        const cc = note.chiefComplaint ?? "";
+        const pi = note.presentIllness ?? "";
+        if (mode === "CC") {
+          if (!cc.trim()) {
+            toast("해당 방문에 입력된 주호소가 없습니다.");
+            return false;
+          }
+          setChiefComplaintText(cc);
+          toast("주호소를 현재 차트에 반영했습니다.");
+          return true;
+        }
+        if (mode === "PI") {
+          if (!pi.trim()) {
+            toast("해당 방문에 입력된 현병력이 없습니다.");
+            return false;
+          }
+          setPresentIllnessText(pi);
+          toast("현병력을 현재 차트에 반영했습니다.");
+          return true;
+        }
+        if (!cc.trim() && !pi.trim()) {
+          toast("해당 방문에 입력된 주호소·현병력이 없습니다.");
+          return false;
+        }
+        setChiefComplaintText(cc);
+        setPresentIllnessText(pi);
+        toast("주호소·현병력을 현재 차트에 반영했습니다.");
+        return true;
+      } catch (e) {
+        toast(e instanceof Error ? e.message : "불러오기에 실패했습니다.", "error");
+        return false;
+      }
+    },
+    [chiefComplaintText, presentIllnessText]
+  );
+
   const totalPastClinicalPages = Math.max(
     1,
     Math.ceil(pastClinicalsForPatient.length / PAST_CLINICAL_PAGE_SIZE)
@@ -420,24 +443,39 @@ export default function ClinicalPage() {
   React.useEffect(() => {
     if (pastClinicalsForPatient.length === 0) {
       setPastClinicalSummaries({});
+      setPastVisitNotesById({});
+      setPastVisitNotesLoading(false);
       return;
     }
     let cancelled = false;
     const ids = pastClinicalsForPatient
       .map((c) => c.clinicalId ?? c.id)
       .filter((x): x is number => x != null);
+    setPastVisitNotesLoading(true);
     Promise.all(ids.map((id) => fetchDoctorNoteApi(id)))
       .then((notes) => {
         if (cancelled) return;
-        const next: Record<number, string> = {};
+        const nextSummary: Record<number, string> = {};
+        const nextNotes: Record<number, DoctorNoteRes | null> = {};
         ids.forEach((id, i) => {
-          const note = notes[i];
-          next[id] = (note?.presentIllness ?? note?.chiefComplaint ?? "").trim() || "-";
+          const note = notes[i] ?? null;
+          nextNotes[id] = note;
+          const cc = (note?.chiefComplaint ?? "").trim();
+          const pi = (note?.presentIllness ?? "").trim();
+          const parts = [cc, pi].filter(Boolean);
+          nextSummary[id] = parts.length ? parts.join(" · ") : "-";
         });
-        setPastClinicalSummaries(next);
+        setPastClinicalSummaries(nextSummary);
+        setPastVisitNotesById(nextNotes);
       })
       .catch(() => {
-        if (!cancelled) setPastClinicalSummaries({});
+        if (!cancelled) {
+          setPastClinicalSummaries({});
+          setPastVisitNotesById({});
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setPastVisitNotesLoading(false);
       });
     return () => {
       cancelled = true;
@@ -457,12 +495,13 @@ export default function ClinicalPage() {
       setOrders([]);
       setVitals(null);
       setAssessment(null);
-      setDoctorNote(null);
       setDiagnoses([]);
       setPrescriptions([]);
-      setSymptomText("");
+      setChiefComplaintText("");
+      setPresentIllnessText("");
       setAdditionalMemo("");
       setPastHistoryList([]);
+      noteLastSavedRef.current = { cc: "", pi: "", memo: "" };
     }
   }, [
     currentClinicalId,
@@ -476,14 +515,98 @@ export default function ClinicalPage() {
   ]);
 
   React.useEffect(() => {
+    activeVisitIdRef.current = currentClinicalId;
+  }, [currentClinicalId]);
+
+  const persistVisitNoteFields = React.useCallback(
+    (visitId: number, cc: string, pi: string, memo: string) => {
+      pendingPersistSnapshotRef.current = { cc, pi, memo };
+      dispatch(
+        clinicalActions.persistVisitNoteRequest({
+          visitId,
+          chiefComplaint: cc,
+          presentIllness: pi,
+          clinicalMemo: memo,
+        })
+      );
+    },
+    [dispatch]
+  );
+
+  React.useEffect(() => {
+    if (prevNoteSaveInflightRef.current > 0 && noteSaveInflight === 0 && !persistNoteError) {
+      const snap = pendingPersistSnapshotRef.current;
+      if (snap && activeVisitIdRef.current != null) {
+        noteLastSavedRef.current = snap;
+      }
+      pendingPersistSnapshotRef.current = null;
+    }
+    prevNoteSaveInflightRef.current = noteSaveInflight;
+  }, [noteSaveInflight, persistNoteError]);
+
+  React.useEffect(() => {
+    if (!persistNoteError) return;
+    pendingPersistSnapshotRef.current = null;
+    setClinicalSnackbar({ message: persistNoteError, severity: "error" });
+    dispatch(clinicalActions.clearPersistVisitNoteError());
+  }, [persistNoteError, dispatch]);
+
+  React.useEffect(() => {
+    if (currentClinicalId == null) return;
+    const t = window.setTimeout(() => {
+      const cc = chiefComplaintText.trim();
+      const pi = presentIllnessText.trim();
+      const memo = additionalMemo.trim();
+      const last = noteLastSavedRef.current;
+      if (cc === last.cc && pi === last.pi && memo === last.memo) return;
+      const vid = currentClinicalId;
+      persistVisitNoteFields(vid, cc, pi, memo);
+    }, NOTE_AUTOSAVE_MS);
+    return () => window.clearTimeout(t);
+  }, [chiefComplaintText, presentIllnessText, additionalMemo, currentClinicalId, persistVisitNoteFields]);
+
+  React.useEffect(() => {
+    if (endVisitPhase !== "success" && endVisitPhase !== "error") return;
+    const p = endVisitPromiseRef.current;
+    endVisitPromiseRef.current = null;
+    if (p) {
+      if (endVisitPhase === "success") p.resolve();
+      else p.reject(new Error(endVisitError ?? "진료 완료 실패"));
+    }
+    dispatch(clinicalActions.clearEndVisitOutcome());
+  }, [endVisitPhase, endVisitError, dispatch]);
+
+  React.useEffect(() => {
+    if (startVisitPhase === "success") {
+      const pid = startVisitPatientIdRef.current;
+      if (pid != null) setSelectedPatientId(pid);
+      setSelectedReception((prev) => (prev ? { ...prev, status: "IN_PROGRESS" } : prev));
+      window.alert("진료가 시작되었습니다.");
+      startVisitPatientIdRef.current = null;
+      dispatch(clinicalActions.clearStartVisitOutcome());
+    } else if (startVisitPhase === "error" && startVisitError) {
+      const message = isNetworkError(new Error(startVisitError))
+        ? clinicalConnectionMessage()
+        : startVisitError;
+      window.alert(message);
+      startVisitPatientIdRef.current = null;
+      dispatch(clinicalActions.clearStartVisitOutcome());
+    }
+    if (startVisitPhase === "success" || startVisitPhase === "error") {
+      creatingClinicalRef.current = false;
+      setCreatingClinical(false);
+    }
+  }, [startVisitPhase, startVisitError, dispatch]);
+
+  React.useEffect(() => {
     setLeftPage(1);
-  }, [query, tab]);
+  }, [query]);
 
   React.useEffect(() => {
     if (leftPage > totalLeftPages) setLeftPage(totalLeftPages);
   }, [leftPage, totalLeftPages]);
 
-  const handleStartNewClinical = React.useCallback(async () => {
+  const handleStartNewClinical = React.useCallback(() => {
     if (!selectedReception) {
       window.alert("접수 환자를 먼저 선택해 주세요.");
       return;
@@ -491,31 +614,9 @@ export default function ClinicalPage() {
     if (creatingClinicalRef.current) return;
     creatingClinicalRef.current = true;
     setCreatingClinical(true);
-    try {
-      setErrorMessage(null);
-      await startVisitApi(selectedReception.receptionId);
-      const currentReceptionId = selectedReception.receptionId;
-      await Promise.all([loadData(), loadReceptionQueue()]);
-      setSelectedPatientId(selectedReception.patientId);
-      setSelectedReception((prev) => {
-        if (!prev) return prev;
-        return { ...prev, status: "IN_PROGRESS" };
-      });
-      window.alert("진료가 시작되었습니다.");
-    } catch (err) {
-      const message =
-        err instanceof Error
-          ? isNetworkError(err)
-            ? clinicalConnectionMessage()
-            : err.message
-          : "진료 시작에 실패했습니다.";
-      setErrorMessage(message);
-      window.alert(message);
-    } finally {
-      creatingClinicalRef.current = false;
-      setCreatingClinical(false);
-    }
-  }, [selectedReception, loadData, loadReceptionQueue]);
+    startVisitPatientIdRef.current = selectedReception.patientId;
+    dispatch(clinicalActions.startVisitRequest({ receptionId: selectedReception.receptionId }));
+  }, [selectedReception, dispatch]);
 
   const openVitalDialog = React.useCallback(
     (mode: "new" | "edit") => {
@@ -576,6 +677,7 @@ export default function ClinicalPage() {
           await addPrescriptionApi(currentClinicalId, {
             medicationName: rx.medicationName ?? undefined,
             dosage: rx.dosage ?? undefined,
+            frequency: rx.frequency ?? undefined,
             days: rx.days ?? undefined,
           });
         }
@@ -591,6 +693,21 @@ export default function ClinicalPage() {
     },
     [currentClinicalId, loadPrescriptions]
   );
+
+  const handleVisitCompleted = React.useCallback(async () => {
+    if (currentClinicalId == null) return;
+    await new Promise<void>((resolve, reject) => {
+      endVisitPromiseRef.current = { resolve, reject };
+      dispatch(
+        clinicalActions.endVisitRequest({
+          visitId: currentClinicalId,
+          chiefComplaint: chiefComplaintText.trim(),
+          presentIllness: presentIllnessText.trim(),
+          clinicalMemo: additionalMemo.trim(),
+        })
+      );
+    });
+  }, [dispatch, currentClinicalId, chiefComplaintText, presentIllnessText, additionalMemo]);
 
   const now = new Date();
   const calendarYear = now.getFullYear();
@@ -630,8 +747,6 @@ export default function ClinicalPage() {
             onDepartmentChange={setDepartment}
             query={query}
             onQueryChange={setQuery}
-            tab={tab}
-            onTabChange={setTab}
             paginatedLeftList={paginatedLeftList}
             listForLeft={listForLeft}
             leftPage={leftPage}
@@ -675,39 +790,38 @@ export default function ClinicalPage() {
             pastClinicalsForPatient={pastClinicalsForPatient}
             paginatedPastClinicals={paginatedPastClinicals}
             pastClinicalSummaries={pastClinicalSummaries}
+            pastVisitNotesById={pastVisitNotesById}
+            pastVisitNotesLoading={pastVisitNotesLoading}
             pastClinicalPageSafe={pastClinicalPageSafe}
             totalPastClinicalPages={totalPastClinicalPages}
             onPastClinicalPageChange={setPastClinicalPage}
             repeatingFromClinicalId={repeatingFromClinicalId}
             onRepeatPrescription={handleRepeatPrescription}
-            doctorNote={doctorNote}
+            onApplyPriorSubjective={handleApplyPriorSubjective}
             diagnoses={diagnoses}
             prescriptions={prescriptions}
-            symptomText={symptomText}
-            onSymptomTextChange={setSymptomText}
-            diagnosisCodeInput={diagnosisCodeInput}
-            onDiagnosisCodeInputChange={setDiagnosisCodeInput}
-            diagnosisNameInput={diagnosisNameInput}
-            onDiagnosisNameInputChange={setDiagnosisNameInput}
+            chiefComplaintText={chiefComplaintText}
+            onChiefComplaintTextChange={setChiefComplaintText}
+            presentIllnessText={presentIllnessText}
+            onPresentIllnessTextChange={setPresentIllnessText}
             prescriptionNameInput={prescriptionNameInput}
             onPrescriptionNameInputChange={setPrescriptionNameInput}
             prescriptionDosageInput={prescriptionDosageInput}
             onPrescriptionDosageInputChange={setPrescriptionDosageInput}
+            prescriptionFrequencyInput={prescriptionFrequencyInput}
+            onPrescriptionFrequencyInputChange={setPrescriptionFrequencyInput}
             prescriptionDaysInput={prescriptionDaysInput}
             onPrescriptionDaysInputChange={setPrescriptionDaysInput}
             additionalMemo={additionalMemo}
             onAdditionalMemoChange={setAdditionalMemo}
             savingRecord={savingRecord}
-            onSavingRecordChange={setSavingRecord}
-            onDoctorNoteReload={() =>
-              currentClinicalId != null ? loadDoctorNote(currentClinicalId) : Promise.resolve()
-            }
             onDiagnosesReload={() =>
               currentClinicalId != null ? loadDiagnoses(currentClinicalId) : Promise.resolve()
             }
             onPrescriptionsReload={() =>
               currentClinicalId != null ? loadPrescriptions(currentClinicalId) : Promise.resolve()
             }
+            onVisitCompleted={handleVisitCompleted}
           />
 
           <ClinicalRightPanel
@@ -771,6 +885,22 @@ export default function ClinicalPage() {
           }
         }}
       />
+
+      <Snackbar
+        open={clinicalSnackbar != null}
+        autoHideDuration={clinicalSnackbar?.severity === "error" ? 8000 : 5500}
+        onClose={() => setClinicalSnackbar(null)}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+      >
+        <Alert
+          severity={clinicalSnackbar?.severity ?? "info"}
+          variant="filled"
+          onClose={() => setClinicalSnackbar(null)}
+          sx={{ width: "100%", maxWidth: 480 }}
+        >
+          {clinicalSnackbar?.message ?? ""}
+        </Alert>
+      </Snackbar>
     </MainLayout>
   );
 }

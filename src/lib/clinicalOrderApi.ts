@@ -1,6 +1,14 @@
 import { CLINICAL_API_BASE } from "./clinicalApiBase";
 
-export type LabOrderType = "BLOOD" | "IMAGING" | "PROCEDURE";
+export type LabOrderType =
+  | "BLOOD"
+  | "IMAGING"
+  | "PATHOLOGY"
+  | "SPECIMEN"
+  | "ENDOSCOPY"
+  | "PHYSIOLOGICAL"
+  | "PROCEDURE"
+  | "MEDICATION";
 
 export type ClinicalOrder = {
   id: number;
@@ -17,9 +25,6 @@ export type ClinicalOrderCreatePayload = {
   orderCode?: string | null;
   orderName: string;
 };
-
-export const ORDER_STATUSES = ["REQUESTED", "REQUEST", "IN_PROGRESS", "COMPLETED", "CANCELLED"] as const;
-export type OrderStatus = (typeof ORDER_STATUSES)[number];
 
 type ApiEnvelope<T> = {
   success?: boolean;
@@ -38,22 +43,40 @@ async function parseJson<T>(res: Response): Promise<T> {
   return body as T;
 };
 
-type OrderItemRaw = { itemName?: string | null; itemCode?: string | null };
+type OrderItemRaw = {
+  orderItemId?: number;
+  itemName?: string | null;
+  itemCode?: string | null;
+};
 type OrderRaw = {
   orderId: number;
-  clinicalId: number;
+  visitId?: number;
+  clinicalId?: number;
   orderType?: string | null;
   orderStatus?: string | null;
   items?: OrderItemRaw[] | null;
 };
 
+const KNOWN_ORDER_TYPES: LabOrderType[] = [
+  "BLOOD",
+  "IMAGING",
+  "PATHOLOGY",
+  "SPECIMEN",
+  "ENDOSCOPY",
+  "PHYSIOLOGICAL",
+  "PROCEDURE",
+  "MEDICATION",
+];
+
 function mapOrderToClinical(o: OrderRaw): ClinicalOrder {
-  const orderType = (o.orderType ?? "BLOOD") as LabOrderType;
+  const raw = (o.orderType ?? "SPECIMEN") as string;
+  const orderType = (KNOWN_ORDER_TYPES.includes(raw as LabOrderType) ? raw : "SPECIMEN") as LabOrderType;
+  const visitId = o.visitId ?? o.clinicalId ?? 0;
   const orderName = o.items?.[0]?.itemName ?? o.items?.[0]?.itemCode ?? orderType;
   return {
     id: o.orderId,
-    clinicalId: o.clinicalId,
-    orderType: orderType === "BLOOD" || orderType === "IMAGING" || orderType === "PROCEDURE" ? orderType : "BLOOD",
+    clinicalId: visitId,
+    orderType,
     orderName: orderName || orderType,
     status: o.orderStatus ?? null,
   };
@@ -62,7 +85,7 @@ export async function fetchClinicalOrdersApi(
   clinicalId: number
 ): Promise<ClinicalOrder[]> {
   const res = await fetch(
-    `${CLINICAL_API_BASE}/api/clinicals/${clinicalId}/orders`,
+    `${CLINICAL_API_BASE}/api/visits/${clinicalId}/orders`,
     { cache: "no-store" }
   );
   if (!res.ok) {
@@ -71,19 +94,22 @@ export async function fetchClinicalOrdersApi(
   }
   const value = await parseJson<OrderRaw[]>(res);
   const list = Array.isArray(value) ? value : [];
-  return list.map(mapOrderToClinical);
+  return list
+    .filter((o) => (o.orderType ?? "").toUpperCase() !== "PRESCRIPTION")
+    .map(mapOrderToClinical);
 }
 
 export async function createClinicalOrderApi(
   clinicalId: number,
   payload: ClinicalOrderCreatePayload
 ): Promise<ClinicalOrder> {
+  const itemCode = (payload.orderCode ?? payload.orderName ?? payload.orderType).trim();
   const body = {
     orderType: payload.orderType,
-    items: [{ itemCode: payload.orderCode ?? payload.orderType, itemName: payload.orderName }],
+    items: [{ itemCode }],
   };
   const res = await fetch(
-    `${CLINICAL_API_BASE}/api/clinicals/${clinicalId}/orders`,
+    `${CLINICAL_API_BASE}/api/visits/${clinicalId}/orders`,
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -97,22 +123,17 @@ export async function createClinicalOrderApi(
   const value = await parseJson<OrderRaw>(res);
   return mapOrderToClinical(value as OrderRaw);
 }
-export async function updateClinicalOrderStatusApi(
+export async function cancelClinicalOrderApi(
   clinicalId: number,
-  orderId: number,
-  status: OrderStatus
+  orderId: number
 ): Promise<ClinicalOrder> {
   const res = await fetch(
-    `${CLINICAL_API_BASE}/api/clinicals/${clinicalId}/orders/${orderId}/status`,
-    {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status }),
-    }
+    `${CLINICAL_API_BASE}/api/visits/${clinicalId}/orders/${orderId}/cancel`,
+    { method: "POST", headers: { "Content-Type": "application/json" } }
   );
   if (!res.ok) {
     const body = await res.json().catch(() => ({})) as { message?: string };
-    throw new Error(body?.message ?? `검사 상태 변경 실패 (${res.status})`);
+    throw new Error(body?.message ?? `검사 오더 취소 실패 (${res.status})`);
   }
   const value = await parseJson<OrderRaw>(res);
   return mapOrderToClinical(value as OrderRaw);

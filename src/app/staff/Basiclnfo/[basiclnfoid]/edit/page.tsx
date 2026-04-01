@@ -3,7 +3,8 @@ import BasicInfoUpdate from "@/components/staff/BasiclnfoDashboard/Basiclnfo/Bas
 
 export default async function StaffEditPage({ params }: { params: Promise<{ basiclnfoid: string }> }) {
   const { basiclnfoid } = await params;
-  const staffId = basiclnfoid;
+  const basiclnfoidNum = Number(basiclnfoid);
+  const staffId = basiclnfoidNum;
   
   return (
     <MainLayout showSidebar={false}>

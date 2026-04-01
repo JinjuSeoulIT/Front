@@ -3,9 +3,10 @@ import ReceptionDetail from "@/components/staff/receptionDashboard/reception/rec
 
 export default async function ReceptionDetailPage({ params }: { params: Promise<{ receptionid: string }> }) {
   const { receptionid } = await params;
+  const receptionidNum = Number(receptionid);
   return (
     <MainLayout showSidebar={false}>
-      <ReceptionDetail staffId={receptionid} />
+      <ReceptionDetail staffId={receptionidNum} />
     </MainLayout>
   );
 }

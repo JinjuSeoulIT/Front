@@ -3,9 +3,14 @@
 import * as React from "react";
 import {
   Autocomplete,
+  Box,
   Button,
   Card,
   CardContent,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
   FormControl,
   InputLabel,
   MenuItem,
@@ -32,9 +37,7 @@ import {
   setDiagnosisMainApi,
   addPrescriptionApi,
   removePrescriptionApi,
-  createDoctorNoteApi,
-  updateDoctorNoteApi,
-  type DoctorNoteRes,
+  updatePrescriptionApi,
   type DiagnosisRes,
   type PrescriptionRes,
 } from "@/lib/clinicalRecordApi";
@@ -60,61 +63,64 @@ type DrugSuggestOption = {
 
 type Props = {
   visitId: number | null;
-  doctorNote: DoctorNoteRes | null;
   diagnoses: DiagnosisRes[];
   prescriptions: PrescriptionRes[];
-  symptomText: string;
-  onSymptomTextChange: (v: string) => void;
-  diagnosisCodeInput: string;
-  onDiagnosisCodeInputChange: (v: string) => void;
-  diagnosisNameInput: string;
-  onDiagnosisNameInputChange: (v: string) => void;
+  chiefComplaintText: string;
+  onChiefComplaintTextChange: (v: string) => void;
+  presentIllnessText: string;
+  onPresentIllnessTextChange: (v: string) => void;
   prescriptionNameInput: string;
   onPrescriptionNameInputChange: (v: string) => void;
   prescriptionDosageInput: string;
   onPrescriptionDosageInputChange: (v: string) => void;
+  prescriptionFrequencyInput: string;
+  onPrescriptionFrequencyInputChange: (v: string) => void;
   prescriptionDaysInput: string;
   onPrescriptionDaysInputChange: (v: string) => void;
   additionalMemo: string;
   onAdditionalMemoChange: (v: string) => void;
   savingRecord: boolean;
-  onSavingRecordChange: (v: boolean) => void;
-  onDoctorNoteReload: () => void;
   onDiagnosesReload: () => void;
   onPrescriptionsReload: () => void;
+  onVisitCompleted: () => Promise<void>;
 };
 
 export function ClinicalSoapCard({
   visitId,
-  doctorNote,
   diagnoses,
   prescriptions,
-  symptomText,
-  onSymptomTextChange,
-  diagnosisCodeInput,
-  onDiagnosisCodeInputChange,
-  diagnosisNameInput,
-  onDiagnosisNameInputChange,
+  chiefComplaintText,
+  onChiefComplaintTextChange,
+  presentIllnessText,
+  onPresentIllnessTextChange,
   prescriptionNameInput,
   onPrescriptionNameInputChange,
   prescriptionDosageInput,
   onPrescriptionDosageInputChange,
+  prescriptionFrequencyInput,
+  onPrescriptionFrequencyInputChange,
   prescriptionDaysInput,
   onPrescriptionDaysInputChange,
   additionalMemo,
   onAdditionalMemoChange,
   savingRecord,
-  onSavingRecordChange,
-  onDoctorNoteReload,
   onDiagnosesReload,
   onPrescriptionsReload,
+  onVisitCompleted,
 }: Props) {
+  const [completingVisit, setCompletingVisit] = React.useState(false);
   const [drugOptions, setDrugOptions] = React.useState<DrugSuggestOption[]>([]);
   const [drugLoading, setDrugLoading] = React.useState(false);
   const [drugHint, setDrugHint] = React.useState<string | null>(null);
   const [masterInput, setMasterInput] = React.useState("");
   const [masterOptions, setMasterOptions] = React.useState<MasterDiagnosisItem[]>([]);
   const [masterLoading, setMasterLoading] = React.useState(false);
+  const [rxEditOpen, setRxEditOpen] = React.useState(false);
+  const [rxEditTarget, setRxEditTarget] = React.useState<PrescriptionRes | null>(null);
+  const [rxEditName, setRxEditName] = React.useState("");
+  const [rxEditDosage, setRxEditDosage] = React.useState("");
+  const [rxEditFrequency, setRxEditFrequency] = React.useState("");
+  const [rxEditDuration, setRxEditDuration] = React.useState("");
 
   const sortedDiagnoses = React.useMemo(
     () =>
@@ -153,13 +159,14 @@ export function ClinicalSoapCard({
       }
       const c = code.trim();
       const n = name.trim();
-      if (!c && !n) return false;
+      if (!c || !n) return false;
       const addAsMain =
         diagnoses.length === 0 || !diagnoses.some((d) => d.mainYn === "Y");
       try {
         await addDiagnosisApi(visitId, {
           dxCode: c || null,
           dxName: n || null,
+          dxSource: "PUBLIC_MASTER",
           main: addAsMain,
         });
         onDiagnosesReload();
@@ -299,6 +306,7 @@ export function ClinicalSoapCard({
   }, [visitId, prescriptionNameInput]);
 
   return (
+    <>
     <Card sx={{ borderRadius: 2, border: "1px solid var(--line)" }}>
       <CardContent sx={{ py: 1.5, "&:last-child": { pb: 1.5 } }}>
         <Typography fontWeight={800} sx={{ fontSize: 15, mb: 0.5 }}>
@@ -307,21 +315,43 @@ export function ClinicalSoapCard({
         <Typography sx={{ fontSize: 10, color: "var(--muted)", mb: 1.25 }}>
           S 주관적 · O 객관적(활력은 좌측 카드) · A 상병 · P 처방·오더·메모
         </Typography>
-        <Typography sx={{ fontWeight: 700, fontSize: 13, color: "var(--muted)", mb: 0.5 }}>
-          S 증상·주호소 (Subjective)
+        <Typography sx={{ fontWeight: 700, fontSize: 13, color: "var(--muted)", mb: 0.25 }}>
+          S 주관적 (Subjective)
+        </Typography>
+        <Typography sx={{ fontSize: 10, color: "var(--muted)", mb: 0.75 }}>
+          과거 진료기록 표에서 「보기」로 확인하거나 「주·현·전」으로 주호소·현병력을 현재 차트에 반영할 수 있습니다.
+        </Typography>
+        <Typography sx={{ fontSize: 11, fontWeight: 700, color: "var(--muted)", mb: 0.35 }}>
+          주호소 (Chief complaint)
         </Typography>
         <TextField
           fullWidth
           multiline
-          rows={3}
+          rows={2}
           size="small"
-          placeholder="증상을 입력하세요"
-          value={symptomText}
-          onChange={(e) => onSymptomTextChange(e.target.value)}
+          placeholder="예: 두통 3일"
+          value={chiefComplaintText}
+          onChange={(e) => onChiefComplaintTextChange(e.target.value)}
+          sx={{ mb: 1.25, "& .MuiOutlinedInput-root": { bgcolor: "#fff" } }}
+        />
+        <Typography sx={{ fontSize: 11, fontWeight: 700, color: "var(--muted)", mb: 0.35 }}>
+          현병력 (Present illness)
+        </Typography>
+        <TextField
+          fullWidth
+          multiline
+          rows={5}
+          size="small"
+          placeholder="증상 시작·경과·동반 증상 등"
+          value={presentIllnessText}
+          onChange={(e) => onPresentIllnessTextChange(e.target.value)}
           sx={{ mb: 2, "& .MuiOutlinedInput-root": { bgcolor: "#fff" } }}
         />
-        <Typography sx={{ fontWeight: 700, fontSize: 13, color: "var(--muted)", mb: 0.5 }}>
+        <Typography sx={{ fontWeight: 700, fontSize: 13, color: "var(--muted)", mb: 0.25 }}>
           A 상병 (Assessment)
+        </Typography>
+        <Typography sx={{ fontSize: 11, color: "var(--muted)", mb: 0.75, lineHeight: 1.4 }}>
+          표준 상병 검색에서 선택해 등록합니다.
         </Typography>
         <Autocomplete<MasterDiagnosisItem, false, false, false>
           size="small"
@@ -345,7 +375,7 @@ export function ClinicalSoapCard({
             <TextField
               {...params}
               label="표준 상병 검색"
-              placeholder="선택 시 목록에 바로 등록 (마스터 API 연동 시 검색)"
+              placeholder="질병명 입력 후 목록에서 선택"
             />
           )}
           sx={{ mb: 1.25, maxWidth: 560, "& .MuiOutlinedInput-root": { bgcolor: "#fff" } }}
@@ -371,7 +401,7 @@ export function ClinicalSoapCard({
               {sortedDiagnoses.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={5} sx={{ color: "var(--muted)", fontSize: 13 }}>
-                    등록된 상병이 없습니다. 위에서 표준 항목을 선택하거나, 마스터에 없으면 아래 직접입력 후 추가하세요.
+                    등록된 상병이 없습니다.
                   </TableCell>
                 </TableRow>
               ) : (
@@ -447,43 +477,9 @@ export function ClinicalSoapCard({
             </TableBody>
           </Table>
         </TableContainer>
-        <Typography sx={{ fontSize: 12, color: "var(--muted)", mb: 0.5 }}>
-          첫 상병은 주진단으로 들어가고, 이후 추가분은 부상병입니다. 주진단을 바꾸려면 위 표에서 라디오를 선택하세요.
+        <Typography sx={{ fontSize: 11, color: "var(--muted)", mb: 1 }}>
+          첫 등록이 주진단, 추가는 부상병. 변경은 표의 라디오.
         </Typography>
-        <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1 }} flexWrap="wrap">
-          <Typography sx={{ fontSize: 12, color: "var(--muted)" }}>목록에 없으면 직접입력</Typography>
-          <TextField
-            size="small"
-            placeholder="코드"
-            value={diagnosisCodeInput}
-            onChange={(e) => onDiagnosisCodeInputChange(e.target.value)}
-            sx={{ width: 80, "& .MuiOutlinedInput-root": { bgcolor: "#fff" } }}
-          />
-          <TextField
-            size="small"
-            placeholder="상병명"
-            value={diagnosisNameInput}
-            onChange={(e) => onDiagnosisNameInputChange(e.target.value)}
-            sx={{ width: 140, "& .MuiOutlinedInput-root": { bgcolor: "#fff" } }}
-          />
-          <Button
-            size="small"
-            variant="outlined"
-            disabled={
-              visitId == null ||
-              (!diagnosisCodeInput.trim() && !diagnosisNameInput.trim())
-            }
-            onClick={async () => {
-              const ok = await tryAddDiagnosis(diagnosisCodeInput, diagnosisNameInput);
-              if (ok) {
-                onDiagnosisCodeInputChange("");
-                onDiagnosisNameInputChange("");
-              }
-            }}
-          >
-            추가
-          </Button>
-        </Stack>
         <Typography sx={{ fontWeight: 700, fontSize: 13, color: "var(--muted)", mb: 0.5 }}>
           P 처방·약품 (Plan)
         </Typography>
@@ -493,39 +489,56 @@ export function ClinicalSoapCard({
               <TableRow>
                 <TableCell>약품명</TableCell>
                 <TableCell>용량</TableCell>
-                <TableCell>일수</TableCell>
-                <TableCell width={60}></TableCell>
+                <TableCell>횟수</TableCell>
+                <TableCell>기간</TableCell>
+                <TableCell width={120}></TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
               {prescriptions.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={4} sx={{ color: "var(--muted)", fontSize: 13 }}>
+                  <TableCell colSpan={5} sx={{ color: "var(--muted)", fontSize: 13 }}>
                     등록된 처방이 없습니다.
                   </TableCell>
                 </TableRow>
               ) : (
                 prescriptions.map((p) => (
-                  <TableRow key={p.prescriptionId}>
+                  <TableRow key={p.orderItemId}>
                     <TableCell>{p.medicationName ?? "-"}</TableCell>
                     <TableCell>{p.dosage ?? "-"}</TableCell>
+                    <TableCell>{p.frequency ?? "-"}</TableCell>
                     <TableCell>{p.days ?? "-"}</TableCell>
                     <TableCell>
                       {visitId != null && (
-                        <Button
-                          size="small"
-                          color="error"
-                          onClick={async () => {
-                            try {
-                              await removePrescriptionApi(visitId, p.prescriptionId);
-                              onPrescriptionsReload();
-                            } catch (e) {
-                              window.alert(e instanceof Error ? e.message : "삭제 실패");
-                            }
-                          }}
-                        >
-                          삭제
-                        </Button>
+                        <Stack direction="row" spacing={0.5} flexWrap="wrap">
+                          <Button
+                            size="small"
+                            onClick={() => {
+                              setRxEditTarget(p);
+                              setRxEditName(p.medicationName ?? "");
+                              setRxEditDosage(p.dosage ?? "");
+                              setRxEditFrequency(p.frequency ?? "");
+                              setRxEditDuration(p.days ?? "");
+                              setRxEditOpen(true);
+                            }}
+                          >
+                            수정
+                          </Button>
+                          <Button
+                            size="small"
+                            color="error"
+                            onClick={async () => {
+                              try {
+                                await removePrescriptionApi(visitId, p.orderId, p.orderItemId);
+                                onPrescriptionsReload();
+                              } catch (e) {
+                                window.alert(e instanceof Error ? e.message : "삭제 실패");
+                              }
+                            }}
+                          >
+                            삭제
+                          </Button>
+                        </Stack>
                       )}
                     </TableCell>
                   </TableRow>
@@ -545,7 +558,14 @@ export function ClinicalSoapCard({
           />
           <TextField
             size="small"
-            placeholder="일수"
+            placeholder="횟수"
+            value={prescriptionFrequencyInput}
+            onChange={(e) => onPrescriptionFrequencyInputChange(e.target.value)}
+            sx={{ width: 56, "& .MuiOutlinedInput-root": { bgcolor: "#fff" } }}
+          />
+          <TextField
+            size="small"
+            placeholder="기간"
             value={prescriptionDaysInput}
             onChange={(e) => onPrescriptionDaysInputChange(e.target.value)}
             sx={{ width: 60, "& .MuiOutlinedInput-root": { bgcolor: "#fff" } }}
@@ -617,11 +637,13 @@ export function ClinicalSoapCard({
                 await addPrescriptionApi(visitId, {
                   medicationName: prescriptionNameInput.trim(),
                   dosage: prescriptionDosageInput || null,
+                  frequency: prescriptionFrequencyInput || null,
                   days: prescriptionDaysInput || null,
                 });
                 onPrescriptionsReload();
                 onPrescriptionNameInputChange("");
                 onPrescriptionDosageInputChange("");
+                onPrescriptionFrequencyInputChange("");
                 onPrescriptionDaysInputChange("");
               } catch (e) {
                 window.alert(e instanceof Error ? e.message : "등록 실패");
@@ -643,56 +665,106 @@ export function ClinicalSoapCard({
           onChange={(e) => onAdditionalMemoChange(e.target.value)}
           sx={{ mb: 2, "& .MuiOutlinedInput-root": { bgcolor: "#fff" } }}
         />
-        <Stack direction="row" spacing={2} alignItems="center" justifyContent="space-between" flexWrap="wrap">
-          <Stack direction="row" spacing={1} alignItems="center">
-            <Button size="small" variant="outlined" onClick={() => window.alert("사전심사 예정")}>
-              사전심사
-            </Button>
-            <Button
-              size="small"
-              variant="contained"
-              sx={{ bgcolor: "var(--brand)" }}
-              disabled={visitId == null || savingRecord}
-              onClick={async () => {
+        <Stack direction="row-reverse" spacing={1} alignItems="center" flexWrap="wrap" sx={{ width: "100%" }}>
+          {savingRecord ? (
+            <Typography sx={{ fontSize: 12, color: "var(--muted)", mr: "auto" }}>
+              노트 저장 중…
+            </Typography>
+          ) : null}
+          <FormControl size="small" sx={{ minWidth: 100 }}>
+            <InputLabel>전달</InputLabel>
+            <Select label="전달" value="수납실">
+              <MenuItem value="수납실">수납실</MenuItem>
+            </Select>
+          </FormControl>
+          <Button
+            size="small"
+            variant="contained"
+            color="success"
+            disabled={visitId == null || savingRecord || completingVisit}
+            onClick={() => {
+              void (async () => {
                 if (visitId == null) return;
-                onSavingRecordChange(true);
+                if (!window.confirm("진료를 완료하고 수납 서비스에 청구 연동을 요청할까요?")) return;
+                setCompletingVisit(true);
                 try {
-                  if (doctorNote) {
-                    await updateDoctorNoteApi(visitId, {
-                      presentIllness: symptomText,
-                      clinicalMemo: additionalMemo,
-                    });
-                  } else {
-                    await createDoctorNoteApi(visitId, {
-                      presentIllness: symptomText,
-                      clinicalMemo: additionalMemo,
-                    });
-                  }
-                  await onDoctorNoteReload();
-                  window.alert("진료기록이 저장되었습니다.");
+                  await onVisitCompleted();
+                  window.alert(
+                    "진료가 완료되었습니다. 진료 서버가 수납 서비스 API로 연동 요청을 보냈습니다."
+                  );
                 } catch (e) {
-                  window.alert(e instanceof Error ? e.message : "저장 실패");
+                  window.alert(e instanceof Error ? e.message : "진료 완료 처리 실패");
                 } finally {
-                  onSavingRecordChange(false);
+                  setCompletingVisit(false);
                 }
-              }}
-            >
-              {savingRecord ? "저장 중…" : "진료 저장"}
-            </Button>
-          </Stack>
-          <Stack direction="row" spacing={1} alignItems="center">
-            <FormControl size="small" sx={{ minWidth: 100 }}>
-              <InputLabel>전달</InputLabel>
-              <Select label="전달" value="수납실">
-                <MenuItem value="수납실">수납실</MenuItem>
-              </Select>
-            </FormControl>
-            <Button size="small" variant="contained" color="success" onClick={() => window.alert("진료완료 처리 예정")}>
-              진료완료
-            </Button>
-          </Stack>
+              })();
+            }}
+          >
+            {completingVisit ? "처리 중…" : "진료완료"}
+          </Button>
         </Stack>
       </CardContent>
     </Card>
+    <Dialog open={rxEditOpen} onClose={() => setRxEditOpen(false)} fullWidth maxWidth="sm">
+      <DialogTitle>처방 수정</DialogTitle>
+      <DialogContent>
+        <Stack spacing={1.5} sx={{ mt: 1 }}>
+          <TextField
+            label="약품명"
+            fullWidth
+            size="small"
+            value={rxEditName}
+            onChange={(e) => setRxEditName(e.target.value)}
+          />
+          <TextField
+            label="용량"
+            fullWidth
+            size="small"
+            value={rxEditDosage}
+            onChange={(e) => setRxEditDosage(e.target.value)}
+          />
+          <TextField
+            label="복용 횟수"
+            fullWidth
+            size="small"
+            value={rxEditFrequency}
+            onChange={(e) => setRxEditFrequency(e.target.value)}
+          />
+          <TextField
+            label="기간"
+            fullWidth
+            size="small"
+            value={rxEditDuration}
+            onChange={(e) => setRxEditDuration(e.target.value)}
+          />
+        </Stack>
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={() => setRxEditOpen(false)}>취소</Button>
+        <Button
+          variant="contained"
+          disabled={visitId == null || rxEditTarget == null || !rxEditName.trim()}
+          onClick={async () => {
+            if (visitId == null || rxEditTarget == null) return;
+            try {
+              await updatePrescriptionApi(visitId, rxEditTarget.orderId, rxEditTarget.orderItemId, {
+                medicationName: rxEditName.trim(),
+                dosage: rxEditDosage || null,
+                frequency: rxEditFrequency || null,
+                days: rxEditDuration || null,
+              });
+              setRxEditOpen(false);
+              setRxEditTarget(null);
+              onPrescriptionsReload();
+            } catch (e) {
+              window.alert(e instanceof Error ? e.message : "수정 실패");
+            }
+          }}
+        >
+          저장
+        </Button>
+      </DialogActions>
+    </Dialog>
+    </>
   );
 }

@@ -28,13 +28,13 @@ type Props = {
 };
 
 export function ClinicalOrderDialog({ open, onClose, visitId, onCreated }: Props) {
-  const [newOrderType, setNewOrderType] = React.useState<LabOrderType>("BLOOD");
+  const [newOrderType, setNewOrderType] = React.useState<LabOrderType>("IMAGING");
   const [newOrderName, setNewOrderName] = React.useState("");
   const [creating, setCreating] = React.useState(false);
 
   React.useEffect(() => {
     if (open) {
-      setNewOrderType("BLOOD");
+      setNewOrderType("IMAGING");
       setNewOrderName("");
     }
   }, [open]);
@@ -51,9 +51,13 @@ export function ClinicalOrderDialog({ open, onClose, visitId, onCreated }: Props
               label="검사 유형"
               onChange={(e) => setNewOrderType(e.target.value as LabOrderType)}
             >
-              <MenuItem value="BLOOD">{ORDER_TYPE_LABELS.BLOOD}</MenuItem>
               <MenuItem value="IMAGING">{ORDER_TYPE_LABELS.IMAGING}</MenuItem>
+              <MenuItem value="PATHOLOGY">{ORDER_TYPE_LABELS.PATHOLOGY}</MenuItem>
+              <MenuItem value="SPECIMEN">{ORDER_TYPE_LABELS.SPECIMEN}</MenuItem>
+              <MenuItem value="ENDOSCOPY">{ORDER_TYPE_LABELS.ENDOSCOPY}</MenuItem>
+              <MenuItem value="PHYSIOLOGICAL">{ORDER_TYPE_LABELS.PHYSIOLOGICAL}</MenuItem>
               <MenuItem value="PROCEDURE">{ORDER_TYPE_LABELS.PROCEDURE}</MenuItem>
+              <MenuItem value="MEDICATION">{ORDER_TYPE_LABELS.MEDICATION}</MenuItem>
             </Select>
           </FormControl>
           <TextField

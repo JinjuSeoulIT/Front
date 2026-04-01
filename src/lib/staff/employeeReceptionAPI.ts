@@ -43,7 +43,7 @@ export const createReceptionApi = async (receptionReq: ReceptionCreateRequest): 
 
 
 //수정
-export const updateReceptiondApi = async (staffId: string, receptionReq: ReceptionUpdateRequest): Promise<ApiResponse<ReceptionResponse>> => {
+export const updateReceptiondApi = async (staffId: number, receptionReq: ReceptionUpdateRequest): Promise<ApiResponse<ReceptionResponse>> => {
   const response = await receptionApi.put<ApiResponse<ReceptionResponse>>(`/api/reception/edit/${staffId}`, receptionReq);
   return response.data;
 };
@@ -51,7 +51,7 @@ export const updateReceptiondApi = async (staffId: string, receptionReq: Recepti
 
 
 //영구 삭제
-export const deleteReceptionApi = async (staffId: string): Promise<ApiResponse<void>> => {
+export const deleteReceptionApi = async (staffId: number): Promise<ApiResponse<void>> => {
   const response = await receptionApi.delete<ApiResponse<void>>(`/api/reception/delete/${staffId}`);
   return response.data;
 };

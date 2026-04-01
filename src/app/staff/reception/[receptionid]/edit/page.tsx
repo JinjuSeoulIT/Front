@@ -3,9 +3,10 @@ import ReceptionEdit from "@/components/staff/receptionDashboard/reception/recep
 
 export default async function ReceptionEditPage({ params }: { params: Promise<{ receptionid: string }> }) {
   const { receptionid } = await params;
+  const receptionidNum = Number(receptionid);
   return (
     <MainLayout showSidebar={false}>
-      <ReceptionEdit staffId={receptionid} />
+      <ReceptionEdit staffId={receptionidNum} />
     </MainLayout>
   );
 }

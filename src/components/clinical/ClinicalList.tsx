@@ -11,14 +11,11 @@ import {
   Pagination,
   Select,
   Stack,
-  Tab,
-  Tabs,
   TextField,
   Typography,
 } from "@mui/material";
 import SearchOutlinedIcon from "@mui/icons-material/SearchOutlined";
 import type { ClinicalRes } from "./types";
-import type { ClinicalTab } from "./types";
 import type { ReceptionQueueItem } from "@/lib/visitApi";
 import { clinicalStatusView, resolveClinicalStatus } from "./clinicalDocumentation";
 import { formatDepartmentName } from "@/lib/departmentLabel";
@@ -60,8 +57,6 @@ type Props = {
   onDepartmentChange: (v: string) => void;
   query: string;
   onQueryChange: (v: string) => void;
-  tab: ClinicalTab;
-  onTabChange: (t: ClinicalTab) => void;
   paginatedLeftList: ReceptionQueueItem[];
   listForLeft: ReceptionQueueItem[];
   leftPage: number;
@@ -78,8 +73,6 @@ export function ClinicalPatientList({
   onDepartmentChange,
   query,
   onQueryChange,
-  tab,
-  onTabChange,
   paginatedLeftList,
   listForLeft,
   leftPage,
@@ -128,16 +121,8 @@ export function ClinicalPatientList({
         />
       </Box>
       <Typography sx={{ px: 1.5, py: 1, fontWeight: 700, fontSize: 13 }}>
-        진료 대기/완료 환자목록
+        진료 대기 환자목록
       </Typography>
-      <Tabs
-        value={tab}
-        onChange={(_, v) => onTabChange(v as ClinicalTab)}
-        sx={{ minHeight: 40, "& .MuiTab-root": { minHeight: 40 } }}
-      >
-        <Tab label="대기" value="WAIT" />
-        <Tab label="완료" value="ALL" />
-      </Tabs>
       <Stack spacing={0.5} sx={{ flex: 1, overflow: "auto", p: 1 }}>
         {receptionLoading && (
           <Typography color="text.secondary" sx={{ fontSize: 13 }}>

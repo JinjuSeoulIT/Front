@@ -5,6 +5,11 @@ import {
   Payment,
   BillingStats,
   PaymentMethod,
+<<<<<<< HEAD
+=======
+  BillingClaimRequest,
+  BillingClaimResult,
+>>>>>>> feature/billing
 } from "@/lib/billing/billingApi";
 
 // 상태 필터 payload 타입
@@ -18,6 +23,11 @@ interface BillingState {
   billingDetail: BillDetail | null;
   payments: Payment[];
   billingStats: BillingStats | null;
+
+  //claims 생성 결과 상태
+
+  billingClaimResult: BillingClaimResult | null;
+
   loading: boolean;
   error: string | null;
 }
@@ -27,6 +37,9 @@ const initialState: BillingState = {
   billingDetail: null,
   payments: [],
   billingStats: null,
+
+  billingClaimResult: null,  //claims 생성 결과 초기값
+
   loading: false,
   error: null,
 };
@@ -44,7 +57,7 @@ const billingSlice = createSlice({
       state.loading = true;
       state.error = null;
     },
-    
+
     fetchBillingDetailRequest(
       state,
       action: PayloadAction<number>
@@ -126,6 +139,15 @@ const billingSlice = createSlice({
       state.error = null;
     },
 
+    //claims 생성 요청 액션
+    createBillingClaimRequest(
+      state,
+      action: PayloadAction<BillingClaimRequest>
+    ) {
+      state.loading = true;
+      state.error = null;
+    },
+
     // 공통 상태 변경
     setLoading(state, action: PayloadAction<boolean>) {
       state.loading = action.payload;
@@ -163,6 +185,14 @@ const billingSlice = createSlice({
     ) {
       state.payments = action.payload;
     },
+
+    // claims 생성 결과 저장
+    setBillingClaimResult(
+      state,
+      action: PayloadAction<BillingClaimResult | null>
+    ) {
+      state.billingClaimResult = action.payload;
+    },
   },
 });
 
@@ -173,16 +203,21 @@ export const {
   createPaymentRequest,
   confirmBillRequest,
   cancelPaymentRequest,
-  refundPaymentRequest, 
+  refundPaymentRequest,
   fetchBillingStatsRequest,
   fetchPaymentsByBillRequest,
   fetchBillsRequest,
+
+  createBillingClaimRequest,
+
   setBillingStats,
   setLoading,
   setError,
   setBillingList,
   setBillingDetail,
   setPayments,
+
+  setBillingClaimResult,
 } = billingSlice.actions;
 
 export default billingSlice.reducer;

@@ -34,6 +34,18 @@ export default function OutstandingBillingPage() {
     dispatch(fetchOutstandingBillsRequest());
   }, [dispatch]);
 
+  /* ================================
+     추가: 진료일 최신순(내림차순) 정렬용 목록
+     - 원본 billingList는 건드리지 않고
+     - 화면 출력용으로만 복사 후 정렬
+  ================================= */
+  const sortedBillingList = [...(billingList ?? [])].sort((a, b) => {
+    return (
+      new Date(b.treatmentDate).getTime() -
+      new Date(a.treatmentDate).getTime()
+    );
+  });
+
   return (
     <MainLayout>
       <Box sx={{ display: "grid", gap: 3 }}>
@@ -58,7 +70,10 @@ export default function OutstandingBillingPage() {
             </TableHead>
 
             <TableBody>
-              {(billingList ?? []).map((bill) => (
+              {/* ================================
+                 수정: 화면에는 최신 진료일 순으로 정렬된 목록 사용
+              ================================= */}
+              {sortedBillingList.map((bill) => (
                 <TableRow key={bill.billId}>
                   <TableCell>
                     <Link
@@ -97,7 +112,10 @@ export default function OutstandingBillingPage() {
               ))}
 
               {/* 데이터 없을 때 */}
-              {(billingList ?? []).length === 0 && !loading && (
+              {/* ================================
+                 수정: 정렬된 목록 기준으로 빈 결과 여부 판단
+              ================================= */}
+              {sortedBillingList.length === 0 && !loading && (
                 <TableRow>
                   <TableCell colSpan={5} align="center">
                     미수금 데이터가 없습니다

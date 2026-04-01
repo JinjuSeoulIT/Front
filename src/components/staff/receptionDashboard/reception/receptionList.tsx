@@ -64,11 +64,11 @@ const ReceptionList = () => {
     router.push(`/staff/reception/${reception.staffId}/detail`);
   };
 
-  const goEdit = (staffId: string) => {
+  const goEdit = (staffId: number) => {
     router.push(`/staff/reception/${staffId}/edit`);
   };
 
-  const goDelete = (staffId: string) => {
+  const goDelete = (staffId: number) => {
     router.push(`/staff/reception/${staffId}/delete`);
   };
 

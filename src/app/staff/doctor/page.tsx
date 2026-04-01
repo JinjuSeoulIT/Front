@@ -1,15 +1,10 @@
-"use client";
-
 import MainLayout from "@/components/layout/MainLayout";
-import DoctorDashboard from "@/components/staff/doctorDashboard/DoctorDashboard";
+import DoctorMedicalSpecialtyHub from "@/components/staff/doctorDashboard/DoctorMedicalSpecialtyHub";
 
-
-const RecordPage = () => {
+export default function Page() {
   return (
     <MainLayout showSidebar={false}>
-      <DoctorDashboard />
+      <DoctorMedicalSpecialtyHub />
     </MainLayout>
   );
-};
-
-export default RecordPage;
+}
