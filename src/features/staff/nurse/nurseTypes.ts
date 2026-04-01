@@ -1,6 +1,6 @@
 // ✅ 간호사 응답(서버 → 프론트)
 export type NurseResponse = {
-  staffId: string;
+  staffId: number;
   deptId?: string;
   positionId? :String;
   name?: string;
@@ -18,7 +18,7 @@ export type NurseResponse = {
 
 
 export type NurseStaffIdParam = {
-  staffId: string;
+  staffId: number;
 };
 
 
@@ -28,11 +28,11 @@ export type NurseStaffIdParam = {
 
 //생성
 export type NurseIdNumber = {
-  staffId: string;
+  staffId: number;
 };
 
 export type NurseCreateRequest = {
-  staffId: string;
+  staffId: number | string;
   deptId: string;
   positionId? :String;
 
@@ -56,7 +56,7 @@ export type NurseCreateRequest = {
 };
 
 export const initialNurseCreateForm: NurseCreateRequest = {
-  staffId: "",
+  staffId: 0,
   deptId: "",
   positionId :"",
   
@@ -85,7 +85,7 @@ export const initialNurseCreateForm: NurseCreateRequest = {
 
 ///수정
 export type NurseUpdateRequest = {
-  staffId: string;
+  staffId: number | string;
   licenseNo: string;
   shiftType: string;
   nurseFileUrl: string | null;
@@ -95,7 +95,7 @@ export type NurseUpdateRequest = {
 };
 
 export const initialNurseUpdateForm: NurseUpdateRequest = {
-  staffId: "",
+  staffId: 0,
   licenseNo: "",
   shiftType: "",
   nurseFileUrl: "",
@@ -104,7 +104,7 @@ export const initialNurseUpdateForm: NurseUpdateRequest = {
   careerDetail: "",
 };
 export type NurseUpdateNumber = {
-  staffId: string;
+  staffId: number;
   nurseReq: NurseUpdateRequest;
 };
 ///수정
@@ -113,7 +113,7 @@ export type NurseUpdateNumber = {
 
 
 export type NurseFile = {
-  staffId: string;
+  staffId: number;
   file: File;
 };
 

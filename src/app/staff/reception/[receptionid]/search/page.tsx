@@ -3,9 +3,10 @@ import ReceptionSearchBar from "@/components/staff/receptionDashboard/reception/
 
 export default async function ReceptionSearchPage({ params }: { params: Promise<{ receptionid: string }> }) {
   const { receptionid } = await params;
+  const receptionidNum = Number(receptionid);
   return (
     <MainLayout showSidebar={false}>
-      <ReceptionSearchBar staffId={receptionid} />
+      <ReceptionSearchBar staffId={receptionidNum} />
     </MainLayout>
   );
 }

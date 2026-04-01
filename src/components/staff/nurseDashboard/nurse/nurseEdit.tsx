@@ -44,7 +44,7 @@ const NurseUpdate = ({ staffId }: NurseIdNumber) => {
       const nurseReq: NurseUpdateRequest = {
 
         
-      staffId:   (form.staffId ?? staffId).trim(),
+      staffId: Number(form.staffId ?? staffId),
       licenseNo: (form.licenseNo ?? "").trim(),
       shiftType: (form.shiftType ?? "").trim(),
       nurseFileUrl: form.nurseFileUrl ?? null,

@@ -3,10 +3,11 @@ import PositionDelete from "@/components/staff/BasiclnfoDashboard/position/Posit
 
 export default async function PositionDeletePage({ params }: { params: Promise<{ positionid: string }> }) {
   const { positionid } = await params;
+  const positionidNum = Number(positionid);
 
   return (
     <MainLayout showSidebar={false}>
-      <PositionDelete positionId={positionid} />
+      <PositionDelete positionId={positionidNum} />
     </MainLayout>
   );
 }

@@ -4,10 +4,11 @@ import MainLayout from "@/components/layout/MainLayout";
 
 export default async function CreatePage({ params }: { params: Promise<{ nurseid: string }> }) {
   const { nurseid } = await params;
+  const nurseidNum = Number(nurseid);
 
   return (
     <MainLayout showSidebar={false}>
-      <NurseCreate staffId={nurseid} />
+      <NurseCreate staffId={nurseidNum} />
     </MainLayout>
   );
 }

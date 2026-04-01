@@ -22,7 +22,7 @@ import {
 
   type Props = {
   open: boolean;
-  staffId: string | null;
+  staffId: number | null;
   onClose: () => void;
   };
 

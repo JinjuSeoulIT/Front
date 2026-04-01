@@ -52,7 +52,7 @@ const PositionUpdate = ({ positionId }: PositionIdParam) => {
   useEffect(() => {
     if (!positionDetail || loadedRef.current) return;
     setForm({
-      positionId: positionDetail.positionId || "",
+      positionId: positionDetail.positionId || 0,
       positionType: positionDetail.positionType || "",
       positionCode: positionDetail.positionCode || "",
       positionLevel: positionDetail.positionLevel || "",
@@ -88,7 +88,7 @@ const PositionUpdate = ({ positionId }: PositionIdParam) => {
           positionId,
           positionType: form.positionType.trim(),
           positionCode: form.positionCode.trim(),
-          positionLevel: form.positionLevel.trim(),
+          positionLevel: String(form.positionLevel).trim(),
           positionName: form.positionName.trim(),
           managerYn: form.managerYn.trim() || "N",
           rmk: form.rmk.trim(),
@@ -112,7 +112,7 @@ const PositionUpdate = ({ positionId }: PositionIdParam) => {
           {error && <Alert severity="error">{error}</Alert>}
 
           <Stack direction={{ xs: "column", md: "row" }} spacing={2}>
-            <TextField label="직책 ID" value={positionId} fullWidth disabled />
+            <TextField label="직책 ID" value={String(positionId)} fullWidth disabled />
             <TextField
               label="직책 코드"
               value={form.positionCode}

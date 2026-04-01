@@ -3,9 +3,10 @@ import ReceptionCreate from "@/components/staff/receptionDashboard/reception/rec
 
 export default async function ReceptionCreatePage({ params }: { params: Promise<{ receptionid: string }> }) {
   const { receptionid } = await params;
+  const receptionidNum = Number(receptionid);
   return (
     <MainLayout showSidebar={false}>
-      <ReceptionCreate staffId={receptionid} />
+      <ReceptionCreate staffId={receptionidNum} />
     </MainLayout>
   );
 }

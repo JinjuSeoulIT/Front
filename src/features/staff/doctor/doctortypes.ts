@@ -1,6 +1,6 @@
 // ✅ 의사 응답
 export type DoctorResponse = {
-  staffId: string;
+  staffId: number;
   deptId?: string;
   positionId? :String;
 
@@ -9,7 +9,7 @@ export type DoctorResponse = {
  
   licenseNo: string;
   doctorType: string | null;
-  specialtyId: string;
+  specialtyId: number | string;
   doctorFileUrl: string | null;
   extNo: string;
   profileSummary: string;
@@ -19,7 +19,7 @@ export type DoctorResponse = {
 
 
 export type DoctorStaffIdParam = {
-  staffId: string;
+  staffId: number;
 };
 
 
@@ -29,14 +29,14 @@ export type DoctorStaffIdParam = {
 
 //생성
 export type DoctorIdNumber = {
-  staffId: string;
+  staffId: number;
 };
 
 // ✅ 의사 생성/수정은 의사 상세 테이블 컬럼만 전송
 export type DoctorCreateRequest = {
   
   
-  staffId: string;
+  staffId: number | string;
   deptId: string;
   positionId? :String;
 
@@ -52,7 +52,7 @@ export type DoctorCreateRequest = {
 
 
   licenseNo: string;
-  specialtyId: string;
+  specialtyId: number | string;
   doctorType?: string | null;
   doctorFileUrl: string | null;
   extNo: string;
@@ -66,7 +66,7 @@ export type DoctorCreateRequest = {
 
 export const initialDoctorCreateForm: DoctorCreateRequest = {
   
-  staffId: "",
+  staffId: 0,
   deptId: "",
   positionId : "",
 
@@ -82,7 +82,7 @@ export const initialDoctorCreateForm: DoctorCreateRequest = {
   
 
   licenseNo: "",
-  specialtyId: "",
+  specialtyId: 0,
   doctorType: "DOCTOR",
   doctorFileUrl: "",
   extNo: "",
@@ -97,9 +97,9 @@ export const initialDoctorCreateForm: DoctorCreateRequest = {
 
 ///수정
 export type DoctorUpdateRequest = {
-  staffId: string;
+  staffId: number | string;
   licenseNo: string;
-  specialtyId: string;
+  specialtyId: number | string;
   doctorFileUrl: string | null;
   extNo: string;
   profileSummary: string;
@@ -108,9 +108,9 @@ export type DoctorUpdateRequest = {
 };
 
 export const initialDoctorUpdateForm: DoctorUpdateRequest = {
-  staffId: "",
+  staffId: 0,
   licenseNo: "",
-  specialtyId: "",
+  specialtyId: 0,
   doctorFileUrl: "",
   extNo: "",
   profileSummary: "",
@@ -119,7 +119,7 @@ export const initialDoctorUpdateForm: DoctorUpdateRequest = {
 };
 
 export type DoctorUpdateNumber = {
-  staffId: string;
+  staffId: number;
   doctorReq: DoctorUpdateRequest;
 };
 ///수정
@@ -131,7 +131,7 @@ export type DoctorUpdateNumber = {
 
 
 export type DoctorFile = {
-  staffId: string;
+  staffId: number;
   file: File;
 };
 

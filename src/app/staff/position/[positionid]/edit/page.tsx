@@ -3,10 +3,11 @@ import PositionUpdate from "@/components/staff/BasiclnfoDashboard/position/Posit
 
 export default async function PositionEditPage({ params }: { params: Promise<{ positionid: string }> }) {
   const { positionid } = await params;
+  const positionidNum = Number(positionid);
 
   return (
     <MainLayout showSidebar={false}>
-      <PositionUpdate positionId={positionid} />
+      <PositionUpdate positionId={positionidNum} />
     </MainLayout>
   );
 }
