@@ -24,6 +24,7 @@ import physiologicalsReducer from "@/features/medical_support/physiological/phys
 import medicationRecordsReducer from "@/features/medical_support/medicationRecord/medicationRecordSlice";
 import treatmentResultsReducer from "@/features/medical_support/treatmentResult/treatmentResultSlice";
 import clinicalReducer from "@/features/clinical/clinicalSlice";
+import { medicalReducer, specialtyReducer } from "@/features/staff/doctor/MedicalSpecialty/medicalSpecialtySlice";
 
 
 const rootReducer = combineReducers({
@@ -51,6 +52,8 @@ const rootReducer = combineReducers({
   department: StaffdepartmentReducer,
   location: StafflocationReducer,
   position: StaffpositionReducer,
+  medical: medicalReducer,
+  specialty: specialtyReducer,
   clinical: clinicalReducer,
 });
 
