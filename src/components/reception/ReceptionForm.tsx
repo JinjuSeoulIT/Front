@@ -140,7 +140,7 @@ export default function ReceptionForm({
       (doctor) => (doctor.departmentId ?? null) === selectedDepartmentId
     );
   }, [doctors, form.departmentId]);
-
+ // 진료과를 선택하면 자동으로 진료과에 맞는 의사가 선택됨
   const handleSubmit = () => {
     if (!form.patientName.trim()) return;
     const departmentId = toOptionalNumber(form.departmentId);
@@ -248,13 +248,15 @@ export default function ReceptionForm({
               <TextField
                 label="환자 이름"
                 value={form.patientName}
-                onChange={(e) =>
+                onChange={(e) => {
+                  if (isEditMode) return;
                   setForm((prev) => ({
                     ...prev,
                     patientName: e.target.value,
                     patientId: null,
-                  }))
-                }
+                  }));
+                }}
+                InputProps={{ readOnly: isEditMode }}
                 required
                 fullWidth
                 helperText={
@@ -269,14 +271,14 @@ export default function ReceptionForm({
               value={form.departmentId}
               onChange={(e) => {
                 const departmentId = e.target.value;
-                const nextDoctorName =
+                const nextDoctorId =
                   doctors.find(
                     (doctor) => String(doctor.departmentId ?? "") === departmentId
                   )?.doctorId ?? "";
                 setForm((prev) => ({
                   ...prev,
                   departmentId,
-                  doctorId: nextDoctorName ? String(nextDoctorName) : "",
+                  doctorId: nextDoctorId ? String(nextDoctorId) : "",
                 }));
               }}
               required

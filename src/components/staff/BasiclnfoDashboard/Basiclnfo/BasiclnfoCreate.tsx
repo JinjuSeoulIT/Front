@@ -47,9 +47,9 @@ const BasicInfoCreate = () => {
 
     const staffReq: staffCreateRequest= {
     
-      staffId: form.staffId.trim(),
-      deptId: form.deptId.trim(),
-      positionId: form.positionId.trim(),
+      staffId: Number(form.staffId),
+      deptId: Number(form.deptId),
+      positionId: Number(form.positionId),
 
       name: form.name.trim(),
       phone: form.phone.trim(),

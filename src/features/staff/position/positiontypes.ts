@@ -1,8 +1,8 @@
 export type PositionResponse = {
-  positionId: string;
+  positionId: number;
   positionType: string;
   positionCode: string;
-  positionLevel?: string;
+  positionLevel?: number | string;
   positionName: string;
   managerYn?: string;
   rmk?: string;
@@ -11,11 +11,11 @@ export type PositionResponse = {
 };
 
 export type PositionIdParam = {
-  positionId: string;
+  positionId: number;
 };
 
 export type PositionRequest = {
-  positionId: string;
+  positionId: number | string;
   positionType: string;
   positionCode: string;
   positionLevel: string;
@@ -25,7 +25,7 @@ export type PositionRequest = {
 };
 
 export const initialPositionForm: PositionRequest = {
-  positionId: "",
+  positionId: 0,
   positionType: "",
   positionCode: "",
   positionLevel: "",
@@ -35,7 +35,7 @@ export const initialPositionForm: PositionRequest = {
 };
 
 export type PositionUpdatePayload = {
-  positionId: string;
+  positionId: number;
   positionReq: PositionRequest;
 };
 

@@ -60,10 +60,10 @@ const PositionCreate = () => {
 
     dispatch(
       positionCreateRequest({
-        positionId: form.positionId.trim(),
+        positionId: Number(form.positionId),
         positionType: form.positionType.trim(),
         positionCode: form.positionCode.trim(),
-        positionLevel: form.positionLevel.trim(),
+        positionLevel: String(form.positionLevel).trim(),
         positionName: form.positionName.trim(),
         managerYn: form.managerYn.trim() || "N",
         rmk: form.rmk.trim(),

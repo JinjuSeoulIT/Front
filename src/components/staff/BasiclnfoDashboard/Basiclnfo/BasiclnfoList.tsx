@@ -74,7 +74,7 @@ const BasicInfoList = () => {
   const handleEdit = (staff: staffResponse) => router.push(`/staff/Basiclnfo/${staff.staffId}/edit`);
 
   //삭제 (모달형)
-  const handleOpenDeleteDialog = (staffId: string) => setstaffDelete(staffId);
+  const handleOpenDeleteDialog = (staffId: number) => setstaffDelete(staffId);
 
   const handleCloseDeleteDialog = () => setstaffDelete(null);
 
@@ -120,6 +120,8 @@ const BasicInfoList = () => {
 
             <Button variant="contained" onClick={() => router.push(`/staff/position/list`)} sx={{ bgcolor: "#da342f" }}>+ 직책목록</Button>
 
+
+            <Button variant="contained" onClick={() => router.push(`/staff/doctor/medical/list`)} sx={{ bgcolor: "#da342f" }}>+ 과목목록</Button>
 
         </Stack>
         </Stack>

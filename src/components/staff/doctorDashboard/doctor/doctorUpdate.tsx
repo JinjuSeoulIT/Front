@@ -34,7 +34,7 @@ import { DoctorIdNumber, DoctorUpdateRequest, initialDoctorUpdateForm } from "@/
     setForm({
       staffId : doctorDetail.staffId,
       licenseNo: doctorDetail.licenseNo ?? "",
-      specialtyId: doctorDetail.specialtyId ?? "",
+      specialtyId: doctorDetail.specialtyId ?? 0,
       doctorFileUrl: doctorDetail.doctorFileUrl ?? null,
       extNo: doctorDetail.extNo ?? "",
       profileSummary: doctorDetail.profileSummary ?? "",
@@ -53,9 +53,9 @@ import { DoctorIdNumber, DoctorUpdateRequest, initialDoctorUpdateForm } from "@/
     event.preventDefault();
 
     const doctorReq: DoctorUpdateRequest = {
-      staffId : (form.staffId),
+      staffId : Number(form.staffId),
       licenseNo: (form.licenseNo ?? "").trim(),
-      specialtyId: (form.specialtyId ?? "").trim(),
+      specialtyId: Number(form.specialtyId ?? 0),
       doctorFileUrl: form.doctorFileUrl ?? null,
       extNo: (form.extNo ?? "").trim(),
       profileSummary: (form.profileSummary ?? "").trim(),
@@ -101,7 +101,7 @@ import { DoctorIdNumber, DoctorUpdateRequest, initialDoctorUpdateForm } from "@/
 
           <Stack spacing={2}>
              <TextField label="의료진 번호 *" 
-            name="staffId" value={form.staffId} onChange={handleChange} 
+            name="staffId" value={String(form.staffId ?? "")} onChange={handleChange} 
             fullWidth required 
             sx={{ "& .MuiInputBase-root": { bgcolor: "#f4f7fd" } }} />
 
