@@ -47,6 +47,31 @@ export default function TossSuccessPage() {
     return Boolean(paymentKey && orderId && amount);
   }, [paymentKey, orderId, amount]);
 
+<<<<<<< HEAD
+=======
+  /* orderId에서 billId 추출 */
+  const parsedBillIdFromOrderId = useMemo(() => {
+    if (!orderId) return null;
+
+    const parts = orderId.split("-");
+    if (parts.length < 2) return null;
+
+    const maybeBillId = Number(parts[1]);
+    if (Number.isNaN(maybeBillId) || maybeBillId <= 0) return null;
+
+    return maybeBillId;
+  }, [orderId]);
+
+  /* sessionStorage 우선, 없으면 orderId 파싱값 사용 */
+  const resolvedBillId = useMemo(() => {
+    if (paymentContext?.billId != null) {
+      return paymentContext.billId;
+    }
+
+    return parsedBillIdFromOrderId;
+  }, [paymentContext?.billId, parsedBillIdFromOrderId]);
+
+>>>>>>> feature/billing
   useEffect(() => {
     if (typeof window === "undefined") return;
 
@@ -61,6 +86,7 @@ export default function TossSuccessPage() {
     }
   }, []);
 
+<<<<<<< HEAD
 useEffect(() => {
   if (!isValid) {
     setMessage("성공 URL 파라미터 중 일부가 비어 있습니다.");
@@ -138,11 +164,97 @@ useEffect(() => {
 
   const moveToBillingDetail = () => {
     if ( paymentContext?.billId == null) {
+=======
+  useEffect(() => {
+    if (!isValid) {
+      setMessage("성공 URL 파라미터 중 일부가 비어 있습니다.");
+      return;
+    }
+
+    if (resolvedBillId == null) {
+      setMessage("billId를 확인할 수 없습니다. 수납 상세로 돌아가 다시 시도해주세요.");
+      return;
+    }
+
+    if (hasRequestedRef.current) {
+      return;
+    }
+
+    hasRequestedRef.current = true;
+
+    const approvePayment = async () => {
+      setLoading(true);
+
+      try {
+        const amountNumber = Number(amount);
+
+        if (Number.isNaN(amountNumber) || amountNumber <= 0) {
+          setApproveSuccess(false);
+          setMessage("amount 값이 올바르지 않습니다.");
+          return;
+        }
+
+        const baseUrl =
+          typeof window !== "undefined" &&
+          window.location.hostname !== "localhost"
+            ? `http://${window.location.hostname}:8081`
+            : "http://192.168.1.68:8081";
+
+        const response = await fetch(`${baseUrl}/api/billing/toss/approve`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            paymentKey,
+            orderId,
+            amount: amountNumber,
+            billId: resolvedBillId,
+          }),
+        });
+
+        const data: ApiResponse<TossApproveResponse> = await response.json();
+
+        if (!response.ok || !data.success) {
+          setApproveSuccess(false);
+          setMessage(data.message ?? "토스 결제 승인에 실패했습니다.");
+          return;
+        }
+
+        setApproveResult(data.result);
+        setApproveSuccess(true);
+        setMessage(
+          data.message ??
+            "토스 결제 승인 및 billing 수납 반영이 완료되었습니다."
+        );
+
+        if (typeof window !== "undefined") {
+          sessionStorage.removeItem("tossPaymentContext");
+        }
+      } catch (error) {
+        console.error("[toss] approve api error", error);
+        setApproveSuccess(false);
+        setMessage("백엔드 승인 API 호출 중 오류가 발생했습니다.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    approvePayment();
+  }, [isValid, paymentKey, orderId, amount, resolvedBillId]);
+
+  const moveToBillingDetail = () => {
+    if (resolvedBillId == null) {
+>>>>>>> feature/billing
       router.push("/billing");
       return;
     }
 
+<<<<<<< HEAD
     router.push(`/billing/${paymentContext.billId}`);
+=======
+    router.push(`/billing/${resolvedBillId}`);
+>>>>>>> feature/billing
   };
 
   return (
@@ -182,11 +294,19 @@ useEffect(() => {
             lineHeight: 1.6,
           }}
         >
+<<<<<<< HEAD
           현재 단계는 <strong>토스 성공 URL로 이동한 뒤 백엔드 승인 API를 호출</strong>
           하는 단계입니다.
           <br />
           아직은 기존 billing 수납 DB 반영까지 연결한 상태는 아니고, 승인 호출 흐름
           자체를 먼저 확인하는 단계입니다.
+=======
+          현재 단계는 <strong>토스 결제 승인 완료 후 billing 수납 DB까지 반영</strong>
+          하는 단계입니다.
+          <br />
+          승인 결과가 정상 처리되면 수납 상세 화면에서 결제 내역, 환불 내역,
+          남은 금액, 상태 변경 결과까지 확인할 수 있습니다.
+>>>>>>> feature/billing
         </p>
 
         <div
@@ -214,8 +334,13 @@ useEffect(() => {
           </div>
 
           <div>
+<<<<<<< HEAD
             <strong>billId(sessionStorage):</strong>{" "}
             <span>{paymentContext?.billId ?? "값 없음"}</span>
+=======
+            <strong>billId(sessionStorage / orderId 기준):</strong>{" "}
+            <span>{resolvedBillId ?? "값 없음"}</span>
+>>>>>>> feature/billing
           </div>
         </div>
 

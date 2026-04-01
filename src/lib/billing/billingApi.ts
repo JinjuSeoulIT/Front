@@ -8,7 +8,12 @@ export interface ApiResponse<T> {
   message: string;
   result: T;
 }
+<<<<<<< HEAD
 //결제 수단 타입 
+=======
+
+// 결제 수단 타입
+>>>>>>> feature/billing
 export type PaymentMethod = "CASH" | "CARD" | "TRANSFER";
 
 const baseURL =
@@ -42,6 +47,7 @@ api.interceptors.response.use(
     return res;
   },
   (err) => {
+<<<<<<< HEAD
   console.error("[billing] axios error", err);
 
   const responseMessage =
@@ -52,8 +58,19 @@ api.interceptors.response.use(
 
   throw new Error(responseMessage);
 }
-);
+=======
+    console.error("[billing] axios error", err);
 
+    const responseMessage =
+      err?.response?.data?.message ||
+      err?.response?.data?.error ||
+      err?.message ||
+      "알 수 없는 오류가 발생했습니다.";
+
+    throw new Error(responseMessage);
+  }
+>>>>>>> feature/billing
+);
 
 // 청구 목록 (환자 기준)
 export interface BillSummary {
@@ -92,6 +109,16 @@ export const fetchOutstandingBillsApi = async (): Promise<BillSummary[]> => {
   return response.data.result;
 };
 
+<<<<<<< HEAD
+=======
+//  청구 상세 항목 타입
+export interface BillItem {
+  billItemId: number;
+  itemName: string;
+  amount: number;
+}
+
+>>>>>>> feature/billing
 // 청구 상세
 export interface BillDetail {
   billId: number;
@@ -101,8 +128,10 @@ export interface BillDetail {
   paidAmount: number;
   remainingAmount: number;
   status: string;
-}
 
+  //백엔드 상세 응답에 포함된 항목 목록 반영
+  billItems: BillItem[];
+}
 
 // 결제 수단 표시
 export const PAYMENT_METHOD_OPTIONS: {
@@ -128,7 +157,49 @@ export const fetchBillDetailApi = async (
   return res.data.result;
 };
 
+// claims item 타입
+export interface BillingClaimItemRequest {
+  itemName: string;
+  itemCode: string;
+  orderType: string;
+  sourceId: number;
+  sourceType: string;
+}
 
+// claims 요청/응답 타입
+// 청구 요청 생성 request
+export interface BillingClaimRequest {
+  eventId: string;
+  visitId: number;
+  patientId: number;
+  status: string;
+  occurredAt: string;
+  items: BillingClaimItemRequest[];
+
+}
+
+// 청구 요청 생성 response result
+export interface BillingClaimResult {
+  billId: number;
+  alreadyProcessed: boolean;
+}
+
+
+   // claims 생성 API POST /api/billing/claims
+export const createBillingClaimApi = async (
+  payload: BillingClaimRequest
+): Promise<BillingClaimResult> => {
+  const res = await api.post<ApiResponse<BillingClaimResult>>(
+    `/api/billing/claims`,
+    payload
+  );
+
+  if (!res.data.success) {
+    throw new Error(res.data.message || "청구 생성 요청 실패");
+  }
+
+  return res.data.result;
+};
 
 // 수납 생성
 export interface Payment {
@@ -160,7 +231,6 @@ export const createPaymentApi = async (
   return res.data.result;
 };
 
-
 // 수납 취소
 export const cancelPaymentApi = async (
   paymentId: number
@@ -173,7 +243,6 @@ export const cancelPaymentApi = async (
     throw new Error(res.data.message || "수납 취소 실패");
   }
 };
-
 
 // 청구 기준 결제 내역 조회
 export const fetchPaymentsByBillApi = async (
@@ -189,8 +258,6 @@ export const fetchPaymentsByBillApi = async (
 
   return res.data.result;
 };
-
-
 
 // 수납 통계
 export interface BillingStats {
@@ -208,9 +275,7 @@ export interface BillingStats {
 }
 
 export const fetchBillingStatsApi = async (): Promise<BillingStats> => {
-  const res = await api.get<ApiResponse<BillingStats>>(
-    `/api/billing/stats`
-  );
+  const res = await api.get<ApiResponse<BillingStats>>(`/api/billing/stats`);
 
   if (!res.data.success) {
     throw new Error(res.data.message || "수납 통계 조회 실패");
@@ -218,7 +283,6 @@ export const fetchBillingStatsApi = async (): Promise<BillingStats> => {
 
   return res.data.result;
 };
-
 
 // 부분 환불 API
 export const refundPaymentApi = async (
@@ -240,19 +304,15 @@ export const refundPaymentApi = async (
   return res.data.result;
 };
 
-
 // 전체 청구 목록 조회 API
 export const fetchBillsApi = async (
   status: string | null
 ): Promise<BillSummary[]> => {
-  const res = await api.get<ApiResponse<BillSummary[]>>(
-    `/api/billing/bills`,
-    {
-      params: {
-        status,
-      },
-    }
-  );
+  const res = await api.get<ApiResponse<BillSummary[]>>(`/api/billing/bills`, {
+    params: {
+      status,
+    },
+  });
 
   if (!res.data.success) {
     throw new Error(res.data.message || "전체 청구 목록 조회 실패");
@@ -260,7 +320,6 @@ export const fetchBillsApi = async (
 
   return res.data.result;
 };
-
 
 // 청구 확정
 export const confirmBillApi = async (
