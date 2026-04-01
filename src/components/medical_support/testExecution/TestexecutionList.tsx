@@ -21,9 +21,7 @@ import {
   TableRow,
   Typography,
 } from "@mui/material";
-import AddIcon from "@mui/icons-material/Add";
 import RefreshIcon from "@mui/icons-material/Refresh";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useDispatch, useSelector } from "react-redux";
 import { TestExecutionActions } from "@/features/medical_support/testExecution/testExecutionSlice";
@@ -133,13 +131,15 @@ export default function TestExecutionList() {
   const router = useRouter();
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
+
   const { list: items, loading, error } = useSelector(
     (state: RootState) => state.testexecutions
   );
 
   useEffect(() => {
-    dispatch(TestExecutionActions.fetchTestExecutionsRequest());
+    dispatch(TestExecutionActions.fetchTestExecutionsRequest(undefined));
   }, [dispatch]);
+
 
   const completedCount = useMemo(
     () =>
@@ -231,12 +231,12 @@ export default function TestExecutionList() {
                 variant="outlined"
                 size="small"
                 startIcon={<RefreshIcon />}
-                onClick={() => dispatch(TestExecutionActions.fetchTestExecutionsRequest())}
+                onClick={() => dispatch(TestExecutionActions.fetchTestExecutionsRequest(undefined))}
                 disabled={loading}
               >
                 새로고침
               </Button>
-              <Button
+              {/* <Button
                 component={Link}
                 href="/medical_support/testExecution/create"
                 variant="contained"
@@ -260,7 +260,7 @@ export default function TestExecutionList() {
                 }}
               >
                 검사 수행 등록
-              </Button>
+              </Button> */}
             </Box>
           </Box>
         </Box>
@@ -331,7 +331,7 @@ export default function TestExecutionList() {
                         }}
                         onClick={() =>
                           router.push(
-                            `/medical_support/testExecution/detail/${item.testExecutionId}`
+                            `/medical_support/testExecution/edit/${item.testExecutionId}`
                           )
                         }
                       >
@@ -396,6 +396,7 @@ export default function TestExecutionList() {
           )}
         </CardContent>
       </Card>
+      
     </Box>
   );
 }

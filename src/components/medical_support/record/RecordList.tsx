@@ -3,7 +3,6 @@
 import type { ChangeEvent } from "react";
 import { useEffect, useMemo, useState } from "react";
 import {
-  Avatar,
   Alert,
   Box,
   Button,
@@ -59,7 +58,6 @@ const getStatusLabel = (status?: string | null) => {
   return "-";
 };
 
-
 const getStatusColor = (status?: string | null) => {
   if (status === "ACTIVE") return "success";
   if (status === "INACTIVE") return "default";
@@ -97,11 +95,6 @@ const getReceptionStatusChipColor = (status?: string | null) => {
   }
 };
 
-const getAvatarLabel = (name?: string | null) => {
-  const trimmed = name?.trim();
-  return trimmed ? trimmed.slice(0, 1) : "환";
-};
-
 const isToday = (value?: string | null) => {
   if (!value) return false;
 
@@ -119,6 +112,7 @@ const isToday = (value?: string | null) => {
 export default function RecordList() {
   const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
+
   const { list, loading, error } = useSelector(
     (state: RootState) => state.records
   );
@@ -127,9 +121,12 @@ export default function RecordList() {
     loading: receptionsLoading,
     error: receptionsError,
   } = useSelector((state: RootState) => state.receptions);
+
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
-  const [selectedReceptionId, setSelectedReceptionId] = useState<number | null>(null);
+  const [selectedReceptionId, setSelectedReceptionId] = useState<number | null>(
+    null
+  );
 
   useEffect(() => {
     dispatch(RecActions.fetchRecordsRequest());
@@ -148,7 +145,9 @@ export default function RecordList() {
       receptions
         .filter((item) => item.visitType === "OUTPATIENT")
         .filter((item) => isToday(item.createdAt) || isToday(item.arrivedAt))
-        .filter((item) => ["WAITING", "CALLED", "IN_PROGRESS"].includes(item.status))
+        .filter((item) =>
+          ["WAITING", "CALLED", "IN_PROGRESS"].includes(item.status)
+        )
         .sort((a, b) => {
           const left = new Date(a.arrivedAt ?? a.createdAt ?? 0).getTime();
           const right = new Date(b.arrivedAt ?? b.createdAt ?? 0).getTime();
@@ -158,9 +157,12 @@ export default function RecordList() {
   );
 
   const selectedReception = useMemo(
-    () => receptionList.find((item) => item.receptionId === selectedReceptionId) ?? null,
+    () =>
+      receptionList.find((item) => item.receptionId === selectedReceptionId) ??
+      null,
     [receptionList, selectedReceptionId]
   );
+
   const activeReception = selectedReception ?? receptionList[0] ?? null;
 
   const handleChangePage = (_event: unknown, newPage: number) => {
@@ -182,22 +184,9 @@ export default function RecordList() {
     setSelectedReceptionId(reception.receptionId);
   };
 
-  // const handleCreateWithReception = () => {
-  //   if (!activeReception) return;
-
-  //   const params = new URLSearchParams({
-  //     visitId: activeReception.receptionNo ?? "",
-  //     patientName: activeReception.patientName ?? "",
-  //     departmentName: activeReception.departmentName ?? "",
-  //     nurseName: activeReception.doctorName ?? "",
-  //   });
-
-  //   router.push(`/medical_support/record/create?${params.toString()}`);
-  // };
-
   const handleCreateWithReception = () => {
-  router.push("/medical_support/record/create");
-};
+    router.push("/medical_support/record/create");
+  };
 
   return (
     <Box
@@ -321,7 +310,11 @@ export default function RecordList() {
                 선택된 접수 환자
               </Typography>
               {!activeReception && (
-                <Typography variant="body2" color="text.secondary" sx={{ mt: 0.75 }}>
+                <Typography
+                  variant="body2"
+                  color="text.secondary"
+                  sx={{ mt: 0.75 }}
+                >
                   오른쪽 접수 환자 목록에서 환자를 선택하면 여기서 정보를 확인할 수 있습니다.
                 </Typography>
               )}
@@ -331,26 +324,35 @@ export default function RecordList() {
                     mt: 1,
                     display: "grid",
                     gap: 1,
-                    gridTemplateColumns: { xs: "1fr", sm: "repeat(2, minmax(0, 1fr))" },
+                    gridTemplateColumns: {
+                      xs: "1fr",
+                      sm: "repeat(2, minmax(0, 1fr))",
+                    },
                   }}
                 >
                   <Box>
                     <Typography variant="caption" color="text.secondary">
                       접수번호
                     </Typography>
-                    <Typography fontWeight={700}>{activeReception.receptionNo ?? "-"}</Typography>
+                    <Typography fontWeight={700}>
+                      {activeReception.receptionNo ?? "-"}
+                    </Typography>
                   </Box>
                   <Box>
                     <Typography variant="caption" color="text.secondary">
                       환자명
                     </Typography>
-                    <Typography fontWeight={700}>{activeReception.patientName ?? "-"}</Typography>
+                    <Typography fontWeight={700}>
+                      {activeReception.patientName ?? "-"}
+                    </Typography>
                   </Box>
                   <Box>
                     <Typography variant="caption" color="text.secondary">
                       진료과
                     </Typography>
-                    <Typography fontWeight={700}>{activeReception.departmentName ?? "-"}</Typography>
+                    <Typography fontWeight={700}>
+                      {activeReception.departmentName ?? "-"}
+                    </Typography>
                   </Box>
                   <Box>
                     <Typography variant="caption" color="text.secondary">
@@ -360,7 +362,9 @@ export default function RecordList() {
                       <Chip
                         label={getReceptionStatusLabel(activeReception.status)}
                         size="small"
-                        color={getReceptionStatusChipColor(activeReception.status)}
+                        color={getReceptionStatusChipColor(
+                          activeReception.status
+                        )}
                       />
                     </Box>
                   </Box>
@@ -399,91 +403,83 @@ export default function RecordList() {
                 }}
               >
                 <TableContainer>
-                  <Table size="small" stickyHeader sx={{ minWidth: 920 }}>
+                  <Table size="small" stickyHeader sx={{ minWidth: 820 }}>
                     <TableHead>
                       <TableRow>
-                      <TableCell
-                        sx={{
-                          fontWeight: 700,
-                          py: 1.4,
-                          backgroundColor: "#f8f9fa",
-                          whiteSpace: "nowrap",
-                          width: 72,
-                        }}
-                      >
-                        번호
-                      </TableCell>
-                      <TableCell
-                        sx={{
-                          fontWeight: 700,
-                          py: 1.4,
-                          backgroundColor: "#f8f9fa",
-                          whiteSpace: "nowrap",
-                        }}  align="center"
-                      >
-                        간호사명
-                      </TableCell>
-                      <TableCell
-                        sx={{
-                          fontWeight: 700,
-                          py: 1.4,
-                          backgroundColor: "#f8f9fa",
-                          whiteSpace: "nowrap",
-                        }}  align="center"
-                      >
-                        진료 ID
-                      </TableCell>
-                      <TableCell
-                       sx={{
-                      fontWeight: 700,
-                       py: 1.4,
-                       backgroundColor: "#f8f9fa",
-                       whiteSpace: "nowrap",
-                        }}   align="center"
-                         >
-                         환자명
-                       </TableCell>
-
-                      <TableCell
-                       sx={{
-                       fontWeight: 700,
-                       py: 1.4,
-                       backgroundColor: "#f8f9fa",
-                       whiteSpace: "nowrap",
-                       }}   align="center"
+                        <TableCell
+                          sx={{
+                            fontWeight: 700,
+                            py: 1.4,
+                            backgroundColor: "#f8f9fa",
+                            whiteSpace: "nowrap",
+                            width: 72,
+                          }}
+                          align="center"
+                        >
+                          번호
+                        </TableCell>
+                        <TableCell
+                          sx={{
+                            fontWeight: 700,
+                            py: 1.4,
+                            backgroundColor: "#f8f9fa",
+                            whiteSpace: "nowrap",
+                          }}
+                          align="center"
+                        >
+                          간호사명
+                        </TableCell>
+                        <TableCell
+                          sx={{
+                            fontWeight: 700,
+                            py: 1.4,
+                            backgroundColor: "#f8f9fa",
+                            whiteSpace: "nowrap",
+                          }}
+                          align="center"
+                        >
+                          환자명
+                        </TableCell>
+                        <TableCell
+                          sx={{
+                            fontWeight: 700,
+                            py: 1.4,
+                            backgroundColor: "#f8f9fa",
+                            whiteSpace: "nowrap",
+                          }}
+                          align="center"
                         >
                           진료과
-                      </TableCell>
-  
-                      <TableCell
-                        sx={{
-                          fontWeight: 700,
-                          py: 1.4,
-                          backgroundColor: "#f8f9fa",
-                          whiteSpace: "nowrap",
-                        }}  align="center"
-                      >
-                        기록일시
-                      </TableCell>
-<TableCell
-  sx={{
-    fontWeight: 700,
-    py: 1.4,
-    backgroundColor: "#f8f9fa",
-    whiteSpace: "nowrap",
-  }}  align="center"
->
-  상태
-</TableCell>
-
-
+                        </TableCell>
+                        <TableCell
+                          sx={{
+                            fontWeight: 700,
+                            py: 1.4,
+                            backgroundColor: "#f8f9fa",
+                            whiteSpace: "nowrap",
+                          }}
+                          align="center"
+                        >
+                          기록일시
+                        </TableCell>
+                        <TableCell
+                          sx={{
+                            fontWeight: 700,
+                            py: 1.4,
+                            backgroundColor: "#f8f9fa",
+                            whiteSpace: "nowrap",
+                          }}
+                          align="center"
+                        >
+                          상태
+                        </TableCell>
                       </TableRow>
                     </TableHead>
 
                     <TableBody>
                       {list.length === 0 && (
                         <TableRow>
-                          <TableCell colSpan={7} align="center" sx={{ py: 5 }}>
+                          <TableCell colSpan={6} align="center" sx={{ py: 5 }}>
                             데이터가 없습니다.
                           </TableCell>
                         </TableRow>
@@ -500,14 +496,21 @@ export default function RecordList() {
                           }}
                           onClick={() => handleRowClick(record)}
                         >
-                          <TableCell>
+                          <TableCell align="center">
                             {currentPage * rowsPerPage + index + 1}
                           </TableCell>
-                          <TableCell align="center">{record.nurseName ?? "-"}</TableCell>
-                          <TableCell align="center">{record.visitId ?? "-"}</TableCell>
-                          <TableCell align="center">{record.patientName ?? "-"}</TableCell>
-                          <TableCell align="center">{record.departmentName ?? "-"}</TableCell>
-                          <TableCell align="center">{formatDateTime(record.recordedAt)}</TableCell>
+                          <TableCell align="center">
+                            {record.nurseName ?? "-"}
+                          </TableCell>
+                          <TableCell align="center">
+                            {record.patientName ?? "-"}
+                          </TableCell>
+                          <TableCell align="center">
+                            {record.departmentName ?? "-"}
+                          </TableCell>
+                          <TableCell align="center">
+                            {formatDateTime(record.recordedAt)}
+                          </TableCell>
                           <TableCell align="center">
                             <Chip
                               label={getStatusLabel(record.status)}
@@ -552,11 +555,22 @@ export default function RecordList() {
           }}
         >
           <Box sx={{ px: 3, py: 2.5, backgroundColor: "#fafafa" }}>
-            <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 1 }}>
+            <Box
+              sx={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                gap: 1,
+              }}
+            >
               <Typography variant="h6" fontWeight={700}>
                 접수 환자 목록
               </Typography>
-              <Chip label={`오늘 ${receptionList.length}명`} size="small" color="primary" />
+              <Chip
+                label={`오늘 ${receptionList.length}명`}
+                size="small"
+                color="primary"
+              />
             </Box>
             <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
               접수/대기/진료중 환자를 보고 간호 기록 등록 화면으로 이동할 수 있습니다.
@@ -584,7 +598,7 @@ export default function RecordList() {
                     onClick={() => handleReceptionClick(reception)}
                     sx={{
                       display: "grid",
-                      gridTemplateColumns: "44px minmax(0, 1fr) auto",
+                      gridTemplateColumns: "minmax(0, 1fr) auto",
                       alignItems: "center",
                       gap: 1.25,
                       p: 1.25,
@@ -599,18 +613,19 @@ export default function RecordList() {
                         activeReception?.receptionId === reception.receptionId
                           ? "#93c5fd"
                           : "grey.200",
-                      "&:hover": { backgroundColor: "#f8fbff", borderColor: "#bfdbfe" },
+                      "&:hover": {
+                        backgroundColor: "#f8fbff",
+                        borderColor: "#bfdbfe",
+                      },
                     }}
                   >
-                    <Avatar sx={{ bgcolor: "#dbeafe", color: "#1d4ed8", width: 40, height: 40 }}>
-                      {getAvatarLabel(reception.patientName)}
-                    </Avatar>
                     <Box sx={{ minWidth: 0 }}>
                       <Typography fontWeight={700} noWrap>
                         {reception.receptionNo}
                       </Typography>
                       <Typography variant="body2" color="text.secondary" noWrap>
-                        {(reception.patientName ?? "환자 미확인").trim()} · {(reception.departmentName ?? "진료과 미정").trim()}
+                        {(reception.patientName ?? "환자 미확인").trim()} ·{" "}
+                        {(reception.departmentName ?? "진료과 미정").trim()}
                       </Typography>
                     </Box>
                     <Chip
@@ -622,7 +637,10 @@ export default function RecordList() {
                 ))}
 
                 {receptionList.length === 0 && (
-                  <Typography color="text.secondary" sx={{ py: 4, textAlign: "center" }}>
+                  <Typography
+                    color="text.secondary"
+                    sx={{ py: 4, textAlign: "center" }}
+                  >
                     오늘 표시할 접수 환자가 없습니다.
                   </Typography>
                 )}

@@ -277,7 +277,7 @@ const RecordForm: React.FC<Props> = ({
                   />
                 </Grid>
 
-                <Grid size={{ xs: 12, md: 6 }}>
+                {/* <Grid size={{ xs: 12, md: 6 }}>
                   <TextField
                     label="진료 ID"
                     value={toStr(form.visitId)}
@@ -285,7 +285,7 @@ const RecordForm: React.FC<Props> = ({
                     fullWidth
                     InputProps={{ readOnly: true }}
                   />
-                </Grid>
+                </Grid> */}
 
                 <Grid size={{ xs: 12, md: 6 }}>
                   <LocalizationProvider

@@ -1,6 +1,4 @@
-import TestExecutionList from "@/components/medical_support/testExecution/TestexecutionList";
-
-
+import TestExecutionList from "@/components/medical_support/testExecution/TestExecutionList";
 
 const TestExecutionListPage = () => {
   return (
