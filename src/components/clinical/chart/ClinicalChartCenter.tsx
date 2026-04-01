@@ -36,7 +36,6 @@ type Props = {
   repeatingFromClinicalId: number | null;
   onRepeatPrescription: (fromVisitId: number) => Promise<void>;
   onApplyPriorSubjective: (fromVisitId: number, mode: PriorSubjectiveApplyMode) => Promise<boolean>;
-  doctorNote: DoctorNoteRes | null;
   diagnoses: DiagnosisRes[];
   prescriptions: PrescriptionRes[];
   chiefComplaintText: string;
@@ -47,13 +46,13 @@ type Props = {
   onPrescriptionNameInputChange: (v: string) => void;
   prescriptionDosageInput: string;
   onPrescriptionDosageInputChange: (v: string) => void;
+  prescriptionFrequencyInput: string;
+  onPrescriptionFrequencyInputChange: (v: string) => void;
   prescriptionDaysInput: string;
   onPrescriptionDaysInputChange: (v: string) => void;
   additionalMemo: string;
   onAdditionalMemoChange: (v: string) => void;
   savingRecord: boolean;
-  onSavingRecordChange: (v: boolean) => void;
-  onDoctorNoteReload: () => void;
   onDiagnosesReload: () => void;
   onPrescriptionsReload: () => void;
   onVisitCompleted: () => Promise<void>;
@@ -119,7 +118,6 @@ export function ClinicalChartCenter(p: Props) {
           <Stack spacing={2} sx={{ minWidth: 0, flex: 1 }}>
             <ClinicalSoapCard
               visitId={p.visitId}
-              doctorNote={p.doctorNote}
               diagnoses={p.diagnoses}
               prescriptions={p.prescriptions}
               chiefComplaintText={p.chiefComplaintText}
@@ -130,13 +128,13 @@ export function ClinicalChartCenter(p: Props) {
               onPrescriptionNameInputChange={p.onPrescriptionNameInputChange}
               prescriptionDosageInput={p.prescriptionDosageInput}
               onPrescriptionDosageInputChange={p.onPrescriptionDosageInputChange}
+              prescriptionFrequencyInput={p.prescriptionFrequencyInput}
+              onPrescriptionFrequencyInputChange={p.onPrescriptionFrequencyInputChange}
               prescriptionDaysInput={p.prescriptionDaysInput}
               onPrescriptionDaysInputChange={p.onPrescriptionDaysInputChange}
               additionalMemo={p.additionalMemo}
               onAdditionalMemoChange={p.onAdditionalMemoChange}
               savingRecord={p.savingRecord}
-              onSavingRecordChange={p.onSavingRecordChange}
-              onDoctorNoteReload={p.onDoctorNoteReload}
               onDiagnosesReload={p.onDiagnosesReload}
               onPrescriptionsReload={p.onPrescriptionsReload}
               onVisitCompleted={p.onVisitCompleted}

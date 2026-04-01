@@ -8,6 +8,7 @@ import { watchPatientSaga } from "@/features/patients/patientSaga";
 import { watchRecordSaga } from "@/features/Record/recordSaga";
 import { watchReceptionSaga as watchReceptionsSaga } from "@/features/Reception/ReceptionSaga";
 import { watchReservationSaga } from "@/features/Reservations/ReservationSaga";
+import { watchClinicalSaga } from "@/features/clinical/clinicalSaga";
 
 export default function* rootSaga() {
   yield all([
@@ -20,5 +21,6 @@ export default function* rootSaga() {
     fork(watchReceptionsSaga),
     fork(watchReservationSaga),
     fork(billingSaga),
+    fork(watchClinicalSaga),
   ]);
 }

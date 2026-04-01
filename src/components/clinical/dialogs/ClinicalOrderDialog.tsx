@@ -55,7 +55,7 @@ export function ClinicalOrderDialog({ open, onClose, visitId, onCreated }: Props
               <MenuItem value="PATHOLOGY">{ORDER_TYPE_LABELS.PATHOLOGY}</MenuItem>
               <MenuItem value="SPECIMEN">{ORDER_TYPE_LABELS.SPECIMEN}</MenuItem>
               <MenuItem value="ENDOSCOPY">{ORDER_TYPE_LABELS.ENDOSCOPY}</MenuItem>
-              <MenuItem value="PHYSIOLOGY">{ORDER_TYPE_LABELS.PHYSIOLOGY}</MenuItem>
+              <MenuItem value="PHYSIOLOGICAL">{ORDER_TYPE_LABELS.PHYSIOLOGICAL}</MenuItem>
               <MenuItem value="PROCEDURE">{ORDER_TYPE_LABELS.PROCEDURE}</MenuItem>
               <MenuItem value="MEDICATION">{ORDER_TYPE_LABELS.MEDICATION}</MenuItem>
             </Select>

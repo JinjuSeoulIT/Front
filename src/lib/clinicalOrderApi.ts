@@ -6,7 +6,7 @@ export type LabOrderType =
   | "PATHOLOGY"
   | "SPECIMEN"
   | "ENDOSCOPY"
-  | "PHYSIOLOGY"
+  | "PHYSIOLOGICAL"
   | "PROCEDURE"
   | "MEDICATION";
 
@@ -63,7 +63,7 @@ const KNOWN_ORDER_TYPES: LabOrderType[] = [
   "PATHOLOGY",
   "SPECIMEN",
   "ENDOSCOPY",
-  "PHYSIOLOGY",
+  "PHYSIOLOGICAL",
   "PROCEDURE",
   "MEDICATION",
 ];
@@ -94,7 +94,9 @@ export async function fetchClinicalOrdersApi(
   }
   const value = await parseJson<OrderRaw[]>(res);
   const list = Array.isArray(value) ? value : [];
-  return list.map(mapOrderToClinical);
+  return list
+    .filter((o) => (o.orderType ?? "").toUpperCase() !== "PRESCRIPTION")
+    .map(mapOrderToClinical);
 }
 
 export async function createClinicalOrderApi(

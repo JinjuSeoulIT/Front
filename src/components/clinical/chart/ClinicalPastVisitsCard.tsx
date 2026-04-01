@@ -282,7 +282,7 @@ export function ClinicalPastVisitsCard({
                   <Typography sx={{ color: "var(--muted)", fontSize: 14 }}>기록을 불러올 수 없습니다.</Typography>
                 ) : !dialogMeta.hasNote ? (
                   <Typography sx={{ color: "var(--muted)", fontSize: 14 }}>
-                    저장된 진료노트가 없습니다. 진료 저장 후 주관적 내용이 생기면 여기에 표시됩니다.
+                    저장된 진료노트가 없습니다. 주호소·현병력을 입력하면 자동으로 반영된 뒤 여기에 표시됩니다.
                   </Typography>
                 ) : dialogNote ? (
                   <Stack spacing={1.5}>

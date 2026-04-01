@@ -8,8 +8,10 @@ import patientsReducer from "@/features/patients/patientSlice";
 import recordsReducer from "@/features/Record/recordSlice";
 import receptionsReducer from "@/features/Reception/ReceptionSlice";
 import reservationsReducer from "@/features/Reservations/ReservationSlice";
+import clinicalReducer from "@/features/clinical/clinicalSlice";
 
 const rootReducer = combineReducers({
+  clinical: clinicalReducer,
   consent: consentReducer,
   billing: billingReducer,
   emergencyReceptions: emergencyReceptionsReducer,
