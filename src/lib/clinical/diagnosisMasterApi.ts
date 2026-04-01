@@ -14,11 +14,17 @@ export type MasterDiagnosisItem = {
   name: string;
 };
 
-export async function searchMasterDiagnosesApi(query: string): Promise<MasterDiagnosisItem[]> {
+export type MasterDiagnosisDiseaseType = "SICK_NM" | "SICK_CD";
+
+export async function searchMasterDiagnosesApi(
+  query: string,
+  opts?: { diseaseType?: MasterDiagnosisDiseaseType }
+): Promise<MasterDiagnosisItem[]> {
   const trimmed = query.trim();
   if (!trimmed) return [];
   const q = new URLSearchParams();
   q.set("query", trimmed);
+  if (opts?.diseaseType) q.set("diseaseType", opts.diseaseType);
   const res = await fetch(
     `${CLINICAL_API_BASE}/api/master-diagnoses?${q.toString()}`,
     { cache: "no-store" }

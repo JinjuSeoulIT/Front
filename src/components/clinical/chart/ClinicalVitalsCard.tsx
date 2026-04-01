@@ -16,7 +16,7 @@ import {
   TableRow,
   Typography,
 } from "@mui/material";
-import type { AssessmentRes, VitalSignsRes } from "@/lib/clinical/clinicalVitalsApi";
+import type { VitalSignsRes, AssessmentRes } from "@/lib/clinical/clinicalVitalsApi";
 import type { Patient } from "@/features/patients/patientTypes";
 import { formatDateTime } from "../clinicalDocumentation";
 
@@ -28,6 +28,7 @@ type Props = {
   assessmentLoading: boolean;
   visitId: number | null;
   onOpenVitalDialog: (mode: "new" | "edit") => void;
+  embedded?: boolean;
 };
 
 export function ClinicalVitalsCard({
@@ -37,14 +38,27 @@ export function ClinicalVitalsCard({
   assessmentLoading,
   visitId,
   onOpenVitalDialog,
+  embedded = false,
 }: Props) {
   return (
-    <Card sx={{ borderRadius: 2, border: "1px solid var(--line)" }}>
-      <CardContent sx={{ py: 1.5, "&:last-child": { pb: 1.5 } }}>
-        <Typography fontWeight={800} sx={{ mb: 0.25, fontSize: 15 }}>
-          신체계측/바이탈 (SOAP O)
-        </Typography>
-        <Typography sx={{ fontSize: 10, color: "var(--muted)", mb: 1 }}>계측·문진 (SOAP)</Typography>
+    <Card
+      variant={embedded ? "outlined" : undefined}
+      elevation={embedded ? 0 : undefined}
+      sx={{
+        borderRadius: 2,
+        border: embedded ? "none" : "1px solid var(--line)",
+        boxShadow: embedded ? "none" : undefined,
+      }}
+    >
+      <CardContent sx={{ py: embedded ? 0 : 1.5, "&:last-child": { pb: embedded ? 0 : 1.5 } }}>
+        {!embedded ? (
+          <>
+            <Typography fontWeight={800} sx={{ mb: 0.25, fontSize: 15 }}>
+              신체계측/바이탈 (SOAP O)
+            </Typography>
+            <Typography sx={{ fontSize: 10, color: "var(--muted)", mb: 1 }}>계측·문진 (SOAP)</Typography>
+          </>
+        ) : null}
         {selectedPatient ? (
           vitals ? (
             <>
