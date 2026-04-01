@@ -5,8 +5,6 @@ import {
   fetchBillsByPatientApi,
   fetchBillDetailApi,
   fetchOutstandingBillsApi,
-<<<<<<< HEAD
-=======
   createPaymentApi,
   cancelPaymentApi,
   fetchPaymentsByBillApi,
@@ -16,7 +14,6 @@ import {
   confirmBillApi,
   createBillingClaimApi,
   BillingClaimRequest,
->>>>>>> feature/billing
 } from "@/lib/billing/billingApi";
 
 import {
