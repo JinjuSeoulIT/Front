@@ -16,7 +16,7 @@ import {
   TableRow,
   Typography,
 } from "@mui/material";
-import type { VitalSignsRes } from "@/lib/clinicalVitalsApi";
+import type { VitalSignsRes, AssessmentRes } from "@/lib/clinicalVitalsApi";
 import type { Patient } from "@/features/patients/patientTypes";
 import { formatDateTime } from "../clinicalDocumentation";
 

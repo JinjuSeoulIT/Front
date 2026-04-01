@@ -9,6 +9,7 @@ import { watchRecordSaga } from "@/features/medical_support/record/recordSaga";
 // import { watchTestExecutionSaga } from "@/features/medical_support/testexecution/testexecutionSaga";
 import { watchReceptionSaga as watchReceptionsSaga } from "@/features/Reception/ReceptionSaga";
 import { watchReservationSaga } from "@/features/Reservations/ReservationSaga";
+<<<<<<< HEAD
 import { watchEmployeeNurseSaga } from "@/features/staff/nurse/nurseSaga";
 import { watchEmployeeDoctorSaga } from "@/features/staff/doctor/doctorSaga";
 import { watchEmployeeStaffSaga } from "@/features/staff/Basiclnfo/BasiclnfoSaga";
@@ -17,6 +18,9 @@ import watchStaffDepartmentSaga from "@/features/staff/department/departmentSaga
 import watchStaffLocationSaga from "@/features/staff/location/locationSaga";
 import watchStaffPositionSaga from "@/features/staff/position/positionSaga";
 
+=======
+import { watchClinicalSaga } from "@/features/clinical/clinicalSaga";
+>>>>>>> feature/clinical
 
 export default function* rootSaga() {
   yield all([
@@ -30,6 +34,7 @@ export default function* rootSaga() {
     fork(watchReceptionsSaga),
     fork(watchReservationSaga),
     fork(billingSaga),
+<<<<<<< HEAD
     fork(watchEmployeeNurseSaga),
     fork(watchEmployeeDoctorSaga),
     fork(watchEmployeeStaffSaga),
@@ -37,5 +42,8 @@ export default function* rootSaga() {
     fork(watchStaffDepartmentSaga),
     fork(watchStaffLocationSaga),
     fork(watchStaffPositionSaga)
+=======
+    fork(watchClinicalSaga),
+>>>>>>> feature/clinical
   ]);
 }

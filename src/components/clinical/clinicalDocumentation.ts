@@ -6,7 +6,12 @@ import type { ClinicalRes } from "./types";
 export const ORDER_TYPE_LABELS: Record<LabOrderType, string> = {
   BLOOD: "혈액검사",
   IMAGING: "영상검사",
+  PATHOLOGY: "병리검사",
+  SPECIMEN: "검체검사",
+  ENDOSCOPY: "내시경검사",
+  PHYSIOLOGICAL: "생리기능검사",
   PROCEDURE: "처치",
+  MEDICATION: "투약",
 };
 
 export function formatDateTime(iso?: string | null) {
@@ -143,6 +148,26 @@ export function orderStatusLabel(status?: string | null) {
   return ORDER_STATUS_LABELS[status] ?? status;
 }
 
+export function orderStatusView(status?: string | null): {
+  label: string;
+  color: "default" | "primary" | "secondary" | "error" | "info" | "success" | "warning";
+} {
+  const raw = (status ?? "").trim().toUpperCase();
+  const key = raw === "REQUEST" ? "REQUESTED" : raw;
+  switch (key) {
+    case "REQUESTED":
+      return { label: orderStatusLabel("REQUESTED"), color: "warning" };
+    case "IN_PROGRESS":
+      return { label: orderStatusLabel("IN_PROGRESS"), color: "info" };
+    case "COMPLETED":
+      return { label: orderStatusLabel("COMPLETED"), color: "success" };
+    case "CANCELLED":
+      return { label: orderStatusLabel("CANCELLED"), color: "error" };
+    default:
+      return { label: orderStatusLabel(status), color: "default" };
+  }
+}
+
 export const PAST_HISTORY_TYPE_LABEL: Record<PastHistoryType, string> = {
   DISEASE: "질병력",
   SURGERY: "수술력",
@@ -161,25 +186,3 @@ export function sortPastHistoryRows(list: PastHistoryItem[]): PastHistoryItem[] 
   });
 }
 
-export const MEDICATION_OPTIONS: { code: string; name: string }[] = [
-  { code: "B00012345", name: "타이레놀정" },
-  { code: "B00012346", name: "타이레놀에스정" },
-  { code: "B00012347", name: "베타히스틴메실산염정 6mg" },
-  { code: "B00012348", name: "이가탄정" },
-  { code: "B00012349", name: "로키소펜정 400mg" },
-  { code: "B00012350", name: "어린이타이레놀현탁액" },
-  { code: "B00012351", name: "우루사캡슐 100mg" },
-  { code: "B00012352", name: "가스디알정" },
-  { code: "B00012353", name: "모드콜캡슐" },
-  { code: "B00012354", name: "락트엘정" },
-  { code: "B00012355", name: "메가마그정" },
-  { code: "B00012356", name: "센시아민정" },
-  { code: "B00012357", name: "베나코티연고 0.1%" },
-  { code: "B00012358", name: "레보플록사신정 500mg" },
-  { code: "B00012359", name: "아로나민골드캡슐" },
-  { code: "B00012360", name: "게보린정" },
-  { code: "B00012361", name: "쎄레콕스캡슐 200mg" },
-  { code: "B00012362", name: "뉴론틴캡슐 300mg" },
-  { code: "B00012363", name: "타베길정" },
-  { code: "B00012364", name: "콘서타서방정 18mg" },
-];

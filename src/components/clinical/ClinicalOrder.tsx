@@ -1,23 +1,16 @@
 "use client";
 
 import * as React from "react";
-import {
-  Box,
-  Button,
-  FormControl,
-  MenuItem,
-  Select,
-  Stack,
-  TextField,
-  Typography,
-} from "@mui/material";
+import { Box, Button, Chip, Stack, TextField, Typography } from "@mui/material";
 import CalendarMonthOutlinedIcon from "@mui/icons-material/CalendarMonthOutlined";
-import {
-  updateClinicalOrderStatusApi,
-  type ClinicalOrder,
-  type OrderStatus,
-} from "@/lib/clinicalOrderApi";
-import { ORDER_TYPE_LABELS, orderStatusLabel } from "./clinicalDocumentation";
+import { cancelClinicalOrderApi, type ClinicalOrder } from "@/lib/clinicalOrderApi";
+import { ORDER_TYPE_LABELS, orderStatusView } from "./clinicalDocumentation";
+
+function normalizedOrderStatus(s: string | null | undefined): string {
+  const u = (s ?? "").trim().toUpperCase();
+  if (u === "REQUEST") return "REQUESTED";
+  return u || "REQUESTED";
+}
 
 type Props = {
   now: Date;
@@ -134,57 +127,64 @@ export function ClinicalRightPanel({
           <Typography sx={{ fontSize: 12, color: "var(--muted)" }}>등록된 검사 오더가 없습니다.</Typography>
         ) : (
           <Stack spacing={1} sx={{ mt: 0.5 }}>
-            {orders.map((ord) => (
-              <Box
-                key={ord.id}
-                sx={{
-                  p: 1,
-                  borderRadius: 1,
-                  border: "1px solid var(--line)",
-                  bgcolor: "rgba(255,255,255,0.8)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  gap: 1,
-                  flexWrap: "wrap",
-                }}
-              >
-                <Typography sx={{ fontSize: 12, fontWeight: 600 }}>
-                  {ord.orderName && !["BLOOD", "IMAGING", "PROCEDURE"].includes(ord.orderName)
-                    ? ord.orderName
-                    : ORDER_TYPE_LABELS[ord.orderType]}
-                </Typography>
-                <FormControl size="small" sx={{ minWidth: 100 }}>
-                  <Select
-                    value={ord.status === "REQUEST" ? "REQUESTED" : (ord.status ?? "REQUESTED")}
-                    onChange={async (e) => {
-                      const next = e.target.value as OrderStatus;
-                      if (visitId == null || next === (ord.status === "REQUEST" ? "REQUESTED" : ord.status))
-                        return;
-                      onUpdatingOrderId(ord.id);
-                      try {
-                        await updateClinicalOrderStatusApi(visitId, ord.id, next);
-                        onOrdersReplace((prev) =>
-                          prev.map((o) => (o.id === ord.id ? { ...o, status: next } : o))
-                        );
-                      } catch (err) {
-                        window.alert(err instanceof Error ? err.message : "상태 변경에 실패했습니다.");
-                        onOrdersRefresh();
-                      } finally {
-                        onUpdatingOrderId(null);
-                      }
-                    }}
-                    disabled={updatingOrderId != null}
-                    sx={{ fontSize: 11, height: 28 }}
-                  >
-                    <MenuItem value="REQUESTED">{orderStatusLabel("REQUESTED")}</MenuItem>
-                    <MenuItem value="IN_PROGRESS">{orderStatusLabel("IN_PROGRESS")}</MenuItem>
-                    <MenuItem value="COMPLETED">{orderStatusLabel("COMPLETED")}</MenuItem>
-                    <MenuItem value="CANCELLED">{orderStatusLabel("CANCELLED")}</MenuItem>
-                  </Select>
-                </FormControl>
-              </Box>
-            ))}
+            {orders.map((ord) => {
+              const st = normalizedOrderStatus(ord.status);
+              const chip = orderStatusView(ord.status);
+              const canCancel =
+                visitId != null && st !== "COMPLETED" && st !== "CANCELLED";
+              return (
+                <Box
+                  key={ord.id}
+                  sx={{
+                    p: 1,
+                    borderRadius: 1,
+                    border: "1px solid var(--line)",
+                    bgcolor: "rgba(255,255,255,0.8)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    gap: 1,
+                    flexWrap: "wrap",
+                  }}
+                >
+                  <Typography sx={{ fontSize: 12, fontWeight: 600 }}>
+                    {ord.orderName &&
+                    !(Object.keys(ORDER_TYPE_LABELS) as string[]).includes(ord.orderName)
+                      ? ord.orderName
+                      : ORDER_TYPE_LABELS[ord.orderType]}
+                  </Typography>
+                  <Stack direction="row" alignItems="center" spacing={0.75} flexWrap="wrap">
+                    <Chip size="small" label={chip.label} color={chip.color} sx={{ height: 24, fontSize: 11 }} />
+                    {canCancel ? (
+                      <Button
+                        size="small"
+                        color="error"
+                        variant="outlined"
+                        disabled={updatingOrderId != null}
+                        sx={{ fontSize: 11, minHeight: 28, py: 0 }}
+                        onClick={async () => {
+                          if (visitId == null) return;
+                          onUpdatingOrderId(ord.id);
+                          try {
+                            const updated = await cancelClinicalOrderApi(visitId, ord.id);
+                            onOrdersReplace((prev) =>
+                              prev.map((o) => (o.id === ord.id ? { ...o, status: updated.status } : o))
+                            );
+                          } catch (err) {
+                            window.alert(err instanceof Error ? err.message : "오더 취소에 실패했습니다.");
+                            onOrdersRefresh();
+                          } finally {
+                            onUpdatingOrderId(null);
+                          }
+                        }}
+                      >
+                        요청 취소
+                      </Button>
+                    ) : null}
+                  </Stack>
+                </Box>
+              );
+            })}
           </Stack>
         )}
         <Button

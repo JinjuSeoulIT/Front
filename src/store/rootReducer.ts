@@ -9,6 +9,7 @@ import recordsReducer from "@/features/medical_support/record/recordSlice";
 import testexecutionsReducer from "@/features/medical_support/testExecution/testExecutionSlice";
 import receptionsReducer from "@/features/Reception/ReceptionSlice";
 import reservationsReducer from "@/features/Reservations/ReservationSlice";
+<<<<<<< HEAD
 import employeeNurseReducer from "@/features/staff/nurse/nurseSlice"
 import employeeDoctorReducer from "@/features/staff/doctor/doctorSlice"
 import employeeBasiclnfoReducer from "@/features/staff/Basiclnfo/BasiclnfoSlict"
@@ -17,8 +18,12 @@ import StaffdepartmentReducer from "@/features/staff/department/departmentSlisct
 import StafflocationReducer from "@/features/staff/location/locationSlice"
 import StaffpositionReducer from "@/features/staff/position/positionSlice"
 
+=======
+import clinicalReducer from "@/features/clinical/clinicalSlice";
+>>>>>>> feature/clinical
 
 const rootReducer = combineReducers({
+  clinical: clinicalReducer,
   consent: consentReducer,
   billing: billingReducer,
   emergencyReceptions: emergencyReceptionsReducer,
