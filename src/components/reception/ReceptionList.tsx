@@ -653,7 +653,7 @@ export default function ReceptionList({
       window.clearInterval(timer);
     };
   }, [refreshReceptionsByCurrentMode]);
- // 5초마다 목록 재조회
+ // 10초마다 목록 재조회
   React.useEffect(() => {
     let active = true;
 
