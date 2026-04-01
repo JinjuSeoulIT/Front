@@ -8,12 +8,8 @@ export interface ApiResponse<T> {
   message: string;
   result: T;
 }
-<<<<<<< HEAD
-//결제 수단 타입 
-=======
 
 // 결제 수단 타입
->>>>>>> feature/billing
 export type PaymentMethod = "CASH" | "CARD" | "TRANSFER";
 
 const baseURL =
@@ -47,18 +43,6 @@ api.interceptors.response.use(
     return res;
   },
   (err) => {
-<<<<<<< HEAD
-  console.error("[billing] axios error", err);
-
-  const responseMessage =
-    err?.response?.data?.message ||
-    err?.response?.data?.error ||
-    err?.message ||
-    "알 수 없는 오류가 발생했습니다.";
-
-  throw new Error(responseMessage);
-}
-=======
     console.error("[billing] axios error", err);
 
     const responseMessage =
@@ -69,7 +53,6 @@ api.interceptors.response.use(
 
     throw new Error(responseMessage);
   }
->>>>>>> feature/billing
 );
 
 // 청구 목록 (환자 기준)
@@ -109,8 +92,6 @@ export const fetchOutstandingBillsApi = async (): Promise<BillSummary[]> => {
   return response.data.result;
 };
 
-<<<<<<< HEAD
-=======
 //  청구 상세 항목 타입
 export interface BillItem {
   billItemId: number;
@@ -118,7 +99,6 @@ export interface BillItem {
   amount: number;
 }
 
->>>>>>> feature/billing
 // 청구 상세
 export interface BillDetail {
   billId: number;
