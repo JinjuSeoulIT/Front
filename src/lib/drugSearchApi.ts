@@ -1,7 +1,7 @@
 import {
   choseongLeadToSyllablePrefixes,
   getChoseongString,
-} from "./koreanChoseong";
+} from "../utils/koreanChoseong";
 import { CLINICAL_API_BASE } from "./clinicalApiBase";
 
 export type DrugItemDto = {

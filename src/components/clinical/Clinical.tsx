@@ -39,7 +39,10 @@ import { ClinicalPatientList } from "./ClinicalList";
 import { ClinicalRightPanel } from "./ClinicalOrder";
 import { ClinicalChartCenter } from "./chart/ClinicalChartCenter";
 import type { PriorSubjectiveApplyMode } from "./chart/ClinicalPastVisitsCard";
-import { ClinicalOrderDialog } from "./dialogs/ClinicalOrderDialog";
+import {
+  ClinicalOrderDialog,
+  type ClinicalOrderDialogVariant,
+} from "./dialogs/ClinicalOrderDialog";
 import {
   ClinicalPastHistoryDialog,
   type PastHistoryFormState,
@@ -79,6 +82,8 @@ export default function ClinicalPage() {
   const [orders, setOrders] = React.useState<ClinicalOrder[]>([]);
   const [ordersLoading, setOrdersLoading] = React.useState(false);
   const [orderDialogOpen, setOrderDialogOpen] = React.useState(false);
+  const [orderDialogVariant, setOrderDialogVariant] =
+    React.useState<ClinicalOrderDialogVariant>("exam");
   const [updatingOrderId, setUpdatingOrderId] = React.useState<number | null>(null);
 
   const [vitals, setVitals] = React.useState<VitalSignsRes | null>(null);
@@ -834,13 +839,17 @@ export default function ClinicalPage() {
               currentClinicalId != null ? void loadOrders(currentClinicalId) : undefined
             }
             onOrdersReplace={setOrders}
-            onOpenOrderDialog={() => setOrderDialogOpen(true)}
+            onOpenOrderDialog={(variant) => {
+              setOrderDialogVariant(variant);
+              setOrderDialogOpen(true);
+            }}
           />
         </Box>
       </Stack>
 
       <ClinicalOrderDialog
         open={orderDialogOpen}
+        variant={orderDialogVariant}
         onClose={() => setOrderDialogOpen(false)}
         visitId={currentClinicalId}
         onCreated={async () => {

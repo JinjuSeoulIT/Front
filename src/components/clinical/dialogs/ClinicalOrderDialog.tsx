@@ -20,53 +20,77 @@ import {
 } from "@/lib/clinicalOrderApi";
 import { ORDER_TYPE_LABELS } from "../clinicalDocumentation";
 
+export type ClinicalOrderDialogVariant = "exam" | "treatment";
+
+const EXAM_ORDER_TYPES: LabOrderType[] = [
+  "BLOOD",
+  "IMAGING",
+  "PATHOLOGY",
+  "SPECIMEN",
+  "ENDOSCOPY",
+  "PHYSIOLOGICAL",
+];
+
+const TREATMENT_ORDER_TYPES: LabOrderType[] = ["PROCEDURE", "MEDICATION"];
+
+function defaultOrderType(variant: ClinicalOrderDialogVariant): LabOrderType {
+  return variant === "exam" ? "IMAGING" : "PROCEDURE";
+}
+
 type Props = {
   open: boolean;
+  variant: ClinicalOrderDialogVariant;
   onClose: () => void;
   visitId: number | null;
   onCreated: () => void | Promise<void>;
 };
 
-export function ClinicalOrderDialog({ open, onClose, visitId, onCreated }: Props) {
-  const [newOrderType, setNewOrderType] = React.useState<LabOrderType>("IMAGING");
+export function ClinicalOrderDialog({ open, variant, onClose, visitId, onCreated }: Props) {
+  const [newOrderType, setNewOrderType] = React.useState<LabOrderType>(() => defaultOrderType(variant));
   const [newOrderName, setNewOrderName] = React.useState("");
   const [creating, setCreating] = React.useState(false);
 
+  const allowedTypes = variant === "exam" ? EXAM_ORDER_TYPES : TREATMENT_ORDER_TYPES;
+  const typeLabel = variant === "exam" ? "검사 유형" : "치료 유형";
+  const title = variant === "exam" ? "검사 오더 등록" : "치료 오더 등록";
+  const nameFieldLabel = variant === "exam" ? "검사 명" : "처치·약물 명";
+  const namePlaceholder =
+    variant === "exam" ? "예: CBC, 흉부 X-ray" : "예: 상처 드레싱, 타세틀 시럽";
+  const failMessage = variant === "exam" ? "검사 오더 등록에 실패했습니다." : "치료 오더 등록에 실패했습니다.";
+
   React.useEffect(() => {
     if (open) {
-      setNewOrderType("IMAGING");
+      setNewOrderType(defaultOrderType(variant));
       setNewOrderName("");
     }
-  }, [open]);
+  }, [open, variant]);
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-      <DialogTitle>검사 오더 등록</DialogTitle>
+      <DialogTitle>{title}</DialogTitle>
       <DialogContent>
         <Stack spacing={2} sx={{ mt: 1 }}>
           <FormControl fullWidth size="small">
-            <InputLabel>검사 유형</InputLabel>
+            <InputLabel>{typeLabel}</InputLabel>
             <Select
               value={newOrderType}
-              label="검사 유형"
+              label={typeLabel}
               onChange={(e) => setNewOrderType(e.target.value as LabOrderType)}
             >
-              <MenuItem value="IMAGING">{ORDER_TYPE_LABELS.IMAGING}</MenuItem>
-              <MenuItem value="PATHOLOGY">{ORDER_TYPE_LABELS.PATHOLOGY}</MenuItem>
-              <MenuItem value="SPECIMEN">{ORDER_TYPE_LABELS.SPECIMEN}</MenuItem>
-              <MenuItem value="ENDOSCOPY">{ORDER_TYPE_LABELS.ENDOSCOPY}</MenuItem>
-              <MenuItem value="PHYSIOLOGICAL">{ORDER_TYPE_LABELS.PHYSIOLOGICAL}</MenuItem>
-              <MenuItem value="PROCEDURE">{ORDER_TYPE_LABELS.PROCEDURE}</MenuItem>
-              <MenuItem value="MEDICATION">{ORDER_TYPE_LABELS.MEDICATION}</MenuItem>
+              {allowedTypes.map((t) => (
+                <MenuItem key={t} value={t}>
+                  {ORDER_TYPE_LABELS[t]}
+                </MenuItem>
+              ))}
             </Select>
           </FormControl>
           <TextField
             fullWidth
             size="small"
-            label="검사/처치 명"
+            label={nameFieldLabel}
             value={newOrderName}
             onChange={(e) => setNewOrderName(e.target.value)}
-            placeholder="예: CBC, 흉부 X-ray, 주사"
+            placeholder={namePlaceholder}
           />
         </Stack>
       </DialogContent>
@@ -88,7 +112,7 @@ export function ClinicalOrderDialog({ open, onClose, visitId, onCreated }: Props
               onClose();
               setNewOrderName("");
             } catch (err) {
-              window.alert(err instanceof Error ? err.message : "검사 오더 등록에 실패했습니다.");
+              window.alert(err instanceof Error ? err.message : failMessage);
             } finally {
               setCreating(false);
             }

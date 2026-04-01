@@ -46,7 +46,7 @@ import {
   searchDrugsForChoseongMatch,
   searchDrugsForVisit,
 } from "@/lib/drugSearchApi";
-import { isChoseongOnlyQuery } from "@/lib/koreanChoseong";
+import { isChoseongOnlyQuery } from "@/utils/koreanChoseong";
 
 const DRUG_SEARCH_MIN_CHARS = 2;
 const DRUG_SEARCH_DEBOUNCE_MS = 380;

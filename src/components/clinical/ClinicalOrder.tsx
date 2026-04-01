@@ -4,6 +4,7 @@ import * as React from "react";
 import { Box, Button, Chip, Stack, TextField, Typography } from "@mui/material";
 import CalendarMonthOutlinedIcon from "@mui/icons-material/CalendarMonthOutlined";
 import { cancelClinicalOrderApi, type ClinicalOrder } from "@/lib/clinicalOrderApi";
+import type { ClinicalOrderDialogVariant } from "./dialogs/ClinicalOrderDialog";
 import { ORDER_TYPE_LABELS, orderStatusView } from "./clinicalDocumentation";
 
 function normalizedOrderStatus(s: string | null | undefined): string {
@@ -28,7 +29,7 @@ type Props = {
   onUpdatingOrderId: (id: number | null) => void;
   onOrdersRefresh: () => void;
   onOrdersReplace: (updater: (prev: ClinicalOrder[]) => ClinicalOrder[]) => void;
-  onOpenOrderDialog: () => void;
+  onOpenOrderDialog: (variant: ClinicalOrderDialogVariant) => void;
 };
 
 export function ClinicalRightPanel({
@@ -192,16 +193,21 @@ export function ClinicalRightPanel({
           variant="outlined"
           fullWidth
           sx={{ mt: 1 }}
-          onClick={onOpenOrderDialog}
+          onClick={() => onOpenOrderDialog("exam")}
           disabled={visitId == null}
         >
-          검사 오더 등록
+          검사 오더
         </Button>
-        <Stack direction="row" spacing={0.5} sx={{ mt: 0.5 }}>
-          <Button size="small" variant="outlined" fullWidth onClick={() => window.alert("처방 화면 예정")}>
-            처방
-          </Button>
-        </Stack>
+        <Button
+          size="small"
+          variant="outlined"
+          fullWidth
+          sx={{ mt: 0.5 }}
+          onClick={() => onOpenOrderDialog("treatment")}
+          disabled={visitId == null}
+        >
+          치료 오더
+        </Button>
       </Box>
     </Box>
   );
