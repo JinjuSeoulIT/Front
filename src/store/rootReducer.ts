@@ -16,6 +16,7 @@ import employeeReceptionReducer from "@/features/staff/reception/receptionSlice"
 import StaffdepartmentReducer from "@/features/staff/department/departmentSlisct"
 import StafflocationReducer from "@/features/staff/location/locationSlice"
 import StaffpositionReducer from "@/features/staff/position/positionSlice"
+import clinicalReducer from "@/features/clinical/clinicalSlice"
 import { medicalReducer, specialtyReducer } from "@/features/staff/doctor/MedicalSpecialty/medicalSpecialtySlice";
 
 
@@ -39,6 +40,7 @@ const rootReducer = combineReducers({
   position: StaffpositionReducer,
   medical: medicalReducer,
   specialty: specialtyReducer,
+  clinical: clinicalReducer,
 });
 
 export type RootState = ReturnType<typeof rootReducer>;

@@ -16,11 +16,8 @@ import { watchEmployeeReceptionSaga } from "@/features/staff/reception/reception
 import watchStaffDepartmentSaga from "@/features/staff/department/departmentSaga";
 import watchStaffLocationSaga from "@/features/staff/location/locationSaga";
 import watchStaffPositionSaga from "@/features/staff/position/positionSaga";
-import {
-  watchDoctorMedicalSaga,
-  watchDoctorSpecialtySaga,
-} from "@/features/staff/doctor/MedicalSpecialty/medicalSpecialtySaga";
-
+import {watchDoctorMedicalSaga, watchDoctorSpecialtySaga} from "@/features/staff/doctor/MedicalSpecialty/medicalSpecialtySaga";
+import watchClinicalSaga from "@/features/clinical/clinicalSaga";
 
 export default function* rootSaga() {
   yield all([
@@ -42,6 +39,7 @@ export default function* rootSaga() {
     fork(watchStaffLocationSaga),
     fork(watchStaffPositionSaga),
     fork(watchDoctorMedicalSaga),
-    fork(watchDoctorSpecialtySaga)
+    fork(watchDoctorSpecialtySaga),
+    fork(watchClinicalSaga)
   ]);
 }
