@@ -100,8 +100,8 @@ useEffect(() => {dispatch(positionListRequest())},[dispatch]);
 
     const basicInfo: staffCreateRequest = {
       staffId: Number(form.staffId),
-      deptId: Number(form.deptId),
-      positionId: Number(form.positionId),
+      deptId: form.deptId.trim(),
+      positionId: form.positionId.trim(),
 
       name: form.name.trim(),
       phone: form.phone.trim(),

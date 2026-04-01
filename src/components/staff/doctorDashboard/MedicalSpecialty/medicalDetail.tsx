@@ -21,7 +21,7 @@ export const MedicalDetail = () => {
   const resolvedUpdatedAt = medicalDetail?.updatedAt ?? medicalDetail?.updated_at ?? "-";
 
   useEffect(() => {
-    if (medicalId) dispatch(medicalDetailRequest(medicalId));
+    if (medicalId > 0) dispatch(medicalDetailRequest(medicalId));
   }, [dispatch, medicalId]);
 
   return (

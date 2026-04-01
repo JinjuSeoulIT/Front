@@ -47,19 +47,19 @@ export const createDoctorApi = async (doctorReq: DoctorCreateRequest): Promise<A
 };
 
 //수정
-export const updateDoctorApi = async (staffId: number, doctorReq: DoctorUpdateRequest): Promise<ApiResponse<DoctorResponse>> => {
+export const updateDoctorApi = async (staffId: number | string, doctorReq: DoctorUpdateRequest): Promise<ApiResponse<DoctorResponse>> => {
   const res = await doctorAPI.patch<ApiResponse<DoctorResponse>>(`/api/doctor/update/${staffId}`, doctorReq);
   return res.data;
 };
 
 //영구 삭제
-export const deleteDoctorApi = async (staffId: number): Promise<ApiResponse<void>> => {
+export const deleteDoctorApi = async (staffId: number | string): Promise<ApiResponse<void>> => {
   const res = await doctorAPI.delete<ApiResponse<void>>(`/api/doctor/delete/${staffId}`);
   return res.data;
 };
 
 
-export async function uploadFileApi(staffId: number, file: File):
+export async function uploadFileApi(staffId: number | string, file: File):
  Promise<ApiResponse<FileUploadResDTO>> {
   const form = new FormData();
   form.append("DoctorFile", file);

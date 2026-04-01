@@ -18,12 +18,12 @@ export const MedicalDelete = () => {
   const dispatch = useDispatch();
   const router = useRouter();
   const params = useParams<{ medicalid: string }>();
-  const medicalId = String(params.medicalid ?? "");
+  const medicalId = Number(params.medicalid ?? 0);
   const { medicalDetail, loading, error, deleteSuccess } = useSelector((state: RootState) => state.medical);
   const medicalName = medicalDetail?.medicalName ?? medicalDetail?.specialtyName ?? medicalDetail?.medicalId ?? medicalDetail?.specialtyId ?? "-";
 
   useEffect(() => {
-    if (medicalId) dispatch(medicalDetailRequest(medicalId));
+    if (medicalId > 0) dispatch(medicalDetailRequest(medicalId));
   }, [dispatch, medicalId]);
 
   useEffect(() => {
@@ -43,7 +43,7 @@ export const MedicalDelete = () => {
       {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
       <Stack direction="row" spacing={1.5} justifyContent="flex-end">
         <Button variant="outlined" onClick={() => router.push(`/staff/doctor/medical/${medicalId}/detail`)}>취소</Button>
-        <Button color="error" variant="contained" disabled={loading} onClick={() => dispatch(medicalDeleteRequest(medicalId))}>{loading ? "삭제 중..." : "삭제"}</Button>
+        <Button color="error" variant="contained" disabled={loading} onClick={() => dispatch(medicalDeleteRequest(String(medicalId)))}>{loading ? "삭제 중..." : "삭제"}</Button>
       </Stack>
     </Paper>
   );

@@ -11,7 +11,7 @@ export const SpecialtyDetail = () => {
   const dispatch = useDispatch();
   const router = useRouter();
   const params = useParams<{ specialtyid: string }>();
-  const specialtyId = Number(params.specialtyid ?? 0);
+  const specialtyId = String(params.specialtyid ?? "");
   const { specialtyDetail, loading, error } = useSelector((state: RootState) => state.specialty);
 
   const resolvedMedicalId = specialtyDetail?.medicalId ?? specialtyDetail?.specialtyId ?? "-";

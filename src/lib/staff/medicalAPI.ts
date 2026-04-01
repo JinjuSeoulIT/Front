@@ -18,7 +18,7 @@ export const fetchMedicalListApi = async (): Promise<ApiResponse<MedicalResponse
   return response.data;
 };
 
-export const fetchMedicalDetailApi = async (medicalId: number): Promise<ApiResponse<MedicalResponse>> => {
+export const fetchMedicalDetailApi = async (medicalId: number | string): Promise<ApiResponse<MedicalResponse>> => {
   const response = await medicalApi.get<ApiResponse<MedicalResponse>>(`/api/medical/detail/${medicalId}`);
   return response.data;
 };
@@ -31,7 +31,7 @@ export const createMedicalApi = async (
 };
 
 export const updateMedicalApi = async (
-  medicalId: number,
+  medicalId: number | string,
   medicalReq: MedicalUpdateRequest
 ): Promise<ApiResponse<MedicalResponse>> => {
   const response = await medicalApi.put<ApiResponse<MedicalResponse>>(
@@ -41,7 +41,7 @@ export const updateMedicalApi = async (
   return response.data;
 };
 
-export const deleteMedicalApi = async (medicalId: number): Promise<ApiResponse<void>> => {
+export const deleteMedicalApi = async (medicalId: number | string): Promise<ApiResponse<void>> => {
   const response = await medicalApi.delete<ApiResponse<void>>(`/api/medical/delete/${medicalId}`);
   return response.data;
 };

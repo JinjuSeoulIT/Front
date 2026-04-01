@@ -17,7 +17,7 @@ export const MedicalUpdate = () => {
   const [form, setForm] = useState<MedicalUpdateRequest>(initialMedicalUpdateForm);
 
   useEffect(() => {
-    if (medicalId) dispatch(medicalDetailRequest(medicalId));
+    if (medicalId > 0) dispatch(medicalDetailRequest(medicalId));
   }, [dispatch, medicalId]);
 
   useEffect(() => {

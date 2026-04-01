@@ -39,7 +39,7 @@ const NurseList = () => {
 
   const handleCreate = () => router.push("/staff/Basiclnfo/list");
 
-  // const handleDetail = (staffId: string) => router.push(`/staff/nurse/${staffId}/detail`);
+  // const handleDetail = (staffId: number) => router.push(`/staff/nurse/${staffId}/detail`);
 
 
   const handleEdit = (staffId: number) => router.push(`/staff/nurse/${staffId}/edit`);

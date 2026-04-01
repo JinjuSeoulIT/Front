@@ -60,8 +60,8 @@ const [form, setForm] = useState(initialDoctorCreateForm);
     const doctorReq: DoctorCreateRequest = {
       //⭐ 공통 (기존값)
       staffId: Number(doctorBasiclnfo.staffId),
-      deptId: Number(doctorBasiclnfo.deptId),
-      positionId: Number(doctorBasiclnfo.positionId),
+      deptId: doctorBasiclnfo.deptId.trim(),
+      positionId: doctorBasiclnfo.positionId.trim(),
 
       name: doctorBasiclnfo.name.trim(),
       phone: doctorBasiclnfo.phone.trim(),
@@ -76,7 +76,7 @@ const [form, setForm] = useState(initialDoctorCreateForm);
 
       // 의사
       licenseNo: form.licenseNo.trim(),
-      specialtyId: Number(form.specialtyId),
+      specialtyId: String(form.specialtyId ?? "").trim(),
       doctorType: "DOCTOR",
       doctorFileUrl: (form.doctorFileUrl ?? "").trim(),
       profileSummary: form.profileSummary.trim(),

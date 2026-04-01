@@ -89,7 +89,7 @@ const ReceptionEdit = ({ staffId }: ReceptionIdNumber) => {
           <Divider />
 
           <Stack spacing={2}>
-            <TextField label="직원번호(staffId)" name="staffId" value={String(form.staffId ?? "")} onChange={handleChange} fullWidth InputProps={{ readOnly: true }} sx={{ "& .MuiInputBase-root": { bgcolor: "#f4f7fd" } }} />
+            <TextField label="직원번호(staffId)" name="staffId" value={form.staffId} onChange={handleChange} fullWidth InputProps={{ readOnly: true }} sx={{ "& .MuiInputBase-root": { bgcolor: "#f4f7fd" } }} />
             <TextField label="직군 타입" name="receptionType" value={form.receptionType} fullWidth InputProps={{ readOnly: true }} sx={{ "& .MuiInputBase-root": { bgcolor: "#f4f7fd" } }} />
             <TextField label="업무 구분 *" name="jobTypeCd" value={form.jobTypeCd} onChange={handleChange} fullWidth required sx={{ "& .MuiInputBase-root": { bgcolor: "#f4f7fd" } }} />
             <TextField label="창구 번호 *" name="deskNo" value={form.deskNo} onChange={handleChange} fullWidth required sx={{ "& .MuiInputBase-root": { bgcolor: "#f4f7fd" } }} />

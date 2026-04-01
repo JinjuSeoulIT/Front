@@ -1,6 +1,6 @@
 // ✅ 의사 응답
 export type DoctorResponse = {
-  staffId: number;
+  staffId: number | string;
   deptId?: string;
   positionId? :String;
 
@@ -19,7 +19,7 @@ export type DoctorResponse = {
 
 
 export type DoctorStaffIdParam = {
-  staffId: number;
+  staffId: number | string;
 };
 
 
@@ -119,7 +119,7 @@ export const initialDoctorUpdateForm: DoctorUpdateRequest = {
 };
 
 export type DoctorUpdateNumber = {
-  staffId: number;
+  staffId: number | string;
   doctorReq: DoctorUpdateRequest;
 };
 ///수정
@@ -131,7 +131,7 @@ export type DoctorUpdateNumber = {
 
 
 export type DoctorFile = {
-  staffId: number;
+  staffId: number | string;
   file: File;
 };
 

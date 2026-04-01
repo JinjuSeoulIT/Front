@@ -50,7 +50,7 @@ const medicalSlice = createSlice({
       state.error = action.payload;
     },
 
-    medicalDetailRequest(state, _action: PayloadAction<string>) {
+    medicalDetailRequest(state, _action: PayloadAction<number>) {
       state.loading = true;
       state.error = null;
     },
@@ -93,7 +93,7 @@ const medicalSlice = createSlice({
       state.error = action.payload;
     },
 
-    medicalDeleteRequest(state, _action: PayloadAction<string>) {
+    medicalDeleteRequest(state, _action: PayloadAction<number | string>) {
       state.loading = true;
       state.error = null;
       state.deleteSuccess = false;
@@ -158,7 +158,7 @@ const specialtySlice = createSlice({
       state.error = action.payload;
     },
 
-    specialtyDetailRequest(state, _action: PayloadAction<string>) {
+    specialtyDetailRequest(state, _action: PayloadAction<number>) {
       state.loading = true;
       state.error = null;
     },

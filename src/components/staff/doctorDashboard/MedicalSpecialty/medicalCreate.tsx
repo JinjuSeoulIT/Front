@@ -17,6 +17,9 @@ export const MedicalCreate = () => {
 
   const [form, setForm] = useState<MedicalCreateRequest>(initialMedicalCreateForm);
 
+
+
+  
     const handleChange = (event: ChangeEvent<HTMLInputElement>) => {
     const { name, value } = event.target;
     setForm((prev) => ({ ...prev, [name]: value }));
@@ -24,16 +27,14 @@ export const MedicalCreate = () => {
 
     const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+
     dispatch(medicalCreateRequest({
-      medicalId: Number(form.medicalId),
-      medicalName: form.medicalName.trim(),
-      medicalCode: form.medicalCode.trim(),
-      description: form.description.trim(),
-      rmk: form.rmk.trim(),
-      status: form.status.trim(),
-      specialtyId: Number(form.medicalId),
-      specialtyName: form.medicalName.trim(),
-      specialtyCode: form.medicalCode.trim(),
+    specialtyId: Number(String(form.specialtyId).trim()),
+    specialtyName: form.specialtyName.trim(),
+    specialtyCode: form.specialtyCode.trim(),
+    description: form.description.trim(),
+    rmk: form.rmk.trim(),
+    status: form.status.trim(),
     }));
     };
 
@@ -54,24 +55,24 @@ export const MedicalCreate = () => {
       <Box component="form" onSubmit={handleSubmit}>
         <Stack spacing={2.5}>
           <TextField label="메지컬 ID *" 
-          name="medicalId" 
-          value={form.medicalId} 
+          name="specialtyId" 
+          value={form.specialtyId} 
           onChange={handleChange} fullWidth required />
 
 
           <TextField label="메지컬명 *" 
-          name="medicalName" value={form.medicalName} 
+          name="specialtyName" value={form.specialtyName} 
           onChange={handleChange} fullWidth required />
 
 
           <TextField label="메지컬 코드 *" 
-          name="medicalCode" value={form.medicalCode} 
+          name="specialtyCode" value={form.specialtyCode} 
           onChange={handleChange} fullWidth required />
 
 
           <TextField label="설명" 
           name="description" value={form.description}
-           onChange={handleChange} fullWidth multiline minRows={3} />
+          onChange={handleChange} fullWidth multiline minRows={3} />
 
           <TextField label="비고" 
           name="rmk" value={form.rmk} 

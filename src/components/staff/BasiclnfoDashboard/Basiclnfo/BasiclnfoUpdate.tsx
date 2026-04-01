@@ -62,7 +62,7 @@ const BasicInfoUpdate = ({ staffId }: staffIdNumber) => {
     if (!StaffDetail || loadedRef.current) return;
 
     setForm({
-      staffId: StaffDetail.staffId ?? 0,
+      staffId: StaffDetail.staffId ?? "",
       deptId: StaffDetail.deptId ?? "",
       positionId: StaffDetail.positionId ?? "",
 
@@ -93,8 +93,8 @@ const BasicInfoUpdate = ({ staffId }: staffIdNumber) => {
   
     const staffReq: staffUpdateRequest = {
         staffId: Number(form.staffId),
-        deptId: Number(form.deptId),
-        positionId: Number(form.positionId),
+        deptId: form.deptId.trim(),
+        positionId: form.positionId.trim(),
 
         name: form.name.trim(),
         phone: form.phone.trim(),

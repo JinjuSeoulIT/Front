@@ -31,7 +31,7 @@ export const fetchPositionTypeListApi = async (
 };
 
 export const fetchPositionDetailApi = async (
-  positionId: number
+  positionId: string
 ): Promise<ApiResponse<PositionResponse>> => {
   const response = await positionApi.get<ApiResponse<PositionResponse>>(
     `/api/positions/${positionId}`
@@ -50,7 +50,7 @@ export const createPositionApi = async (
 };
 
 export const updatePositionApi = async (
-  positionId: number,
+  positionId: string,
   positionReq: PositionRequest
 ): Promise<ApiResponse<PositionResponse>> => {
   const response = await positionApi.put<ApiResponse<PositionResponse>>(
@@ -61,7 +61,7 @@ export const updatePositionApi = async (
 };
 
 export const deletePositionApi = async (
-  positionId: number
+  positionId: string
 ): Promise<ApiResponse<void>> => {
   const response = await positionApi.delete<ApiResponse<void>>(
     `/api/positions/delete/${positionId}`

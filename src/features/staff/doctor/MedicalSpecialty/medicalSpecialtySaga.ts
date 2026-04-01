@@ -65,7 +65,7 @@ function* listMedicalSaga(): SagaIterator {
   }
 }
 
-function* detailMedicalSaga(action: PayloadAction<string>): SagaIterator {
+function* detailMedicalSaga(action: PayloadAction<number>): SagaIterator {
   try {
     const response: ApiResponse<MedicalResponse> = yield call(fetchMedicalDetailApi, action.payload);
     if (response.success) yield put(medicalDetailSuccess(response.data));

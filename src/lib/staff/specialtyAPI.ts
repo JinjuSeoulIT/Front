@@ -19,7 +19,7 @@ export const fetchSpecialtyListApi = async (): Promise<ApiResponse<SpecialtyResp
 };
 
 export const fetchSpecialtyDetailApi = async (
-  specialtyId: number
+  specialtyId: number | string
 ): Promise<ApiResponse<SpecialtyResponse>> => {
   const response = await specialtyApi.get<ApiResponse<SpecialtyResponse>>(`/api/specialty/detail/${specialtyId}`);
   return response.data;
@@ -36,7 +36,7 @@ export const createSpecialtyApi = async (
 };
 
 export const updateSpecialtyApi = async (
-  specialtyId: number,
+  specialtyId: number | string,
   specialtyReq: SpecialtyUpdateRequest
 ): Promise<ApiResponse<SpecialtyResponse>> => {
   const response = await specialtyApi.put<ApiResponse<SpecialtyResponse>>(
@@ -47,7 +47,7 @@ export const updateSpecialtyApi = async (
 };
 
 export const deleteSpecialtyApi = async (
-  specialtyId: number
+  specialtyId: number | string
 ): Promise<ApiResponse<void>> => {
   const response = await specialtyApi.delete<ApiResponse<void>>(`/api/specialty/delete/${specialtyId}`);
   return response.data;

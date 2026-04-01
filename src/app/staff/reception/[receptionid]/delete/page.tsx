@@ -3,10 +3,9 @@ import ReceptionDelete from "@/components/staff/receptionDashboard/reception/rec
 
 export default async function ReceptionDeletePage({ params }: { params: Promise<{ receptionid: string }> }) {
   const { receptionid } = await params;
-  const receptionidNum = Number(receptionid);
   return (
     <MainLayout showSidebar={false}>
-      <ReceptionDelete staffId={receptionidNum} open={true} onClose={() => {}} />
+      <ReceptionDelete staffId={receptionid} open={true} onClose={() => {}} />
     </MainLayout>
   );
 }

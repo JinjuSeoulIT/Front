@@ -1,5 +1,5 @@
 export type ReceptionResponse = {
-  staffId: number;
+  staffId: number | string;
   deptId?: string;
   positionId? :String;
   
@@ -20,7 +20,7 @@ export type ReceptionResponse = {
 
 
 export type ReceptionIdNumber = {
-  staffId: number;
+  staffId: number | string;
 };
 
 export type ReceptionCreateRequest = {
@@ -104,7 +104,7 @@ export const initialReceptionUpdateForm: ReceptionUpdateRequest = {
 };
 
 export type ReceptionUpdateNumber = {
-  staffId: number;
+  staffId: number | string;
   receptionReq: ReceptionUpdateRequest;
 };
 

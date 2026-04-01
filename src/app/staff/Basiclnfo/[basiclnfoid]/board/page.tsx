@@ -3,8 +3,7 @@ import BasiclnfoHub from "@/components/staff/BasiclnfoDashboard/BasiclnfoHub";
 
 export default async function StaffBoardPage({ params }: { params: Promise<{ basiclnfoid: string }> }) {
   const { basiclnfoid } = await params;
-  const basiclnfoidNum = Number(basiclnfoid);
-  const staffId = basiclnfoidNum;
+  const staffId = basiclnfoid;
 
   return (
     <MainLayout showSidebar={false}>

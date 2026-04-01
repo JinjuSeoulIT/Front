@@ -3,8 +3,7 @@ import BasicInfoDetail from "@/components/staff/BasiclnfoDashboard/Basiclnfo/Bas
 
 export default async function StaffDetailPage({ params }: { params: Promise<{ basiclnfoid: string }> }) {
   const { basiclnfoid } = await params;
-  const basiclnfoidNum = Number(basiclnfoid);
-  const staffId = basiclnfoidNum;
+  const staffId = basiclnfoid;
   return (
     <MainLayout showSidebar={false}>
       <BasicInfoDetail staffId={staffId} />

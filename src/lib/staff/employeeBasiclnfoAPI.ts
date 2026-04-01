@@ -32,7 +32,7 @@ export const StafflistApi = async (): Promise<ApiResponse<staffResponse[]>> => {
 };
 
 //단건조회
-export const DetailStaffApi = async (staffId: number): Promise<ApiResponse<staffResponse>> => {
+export const DetailStaffApi = async (staffId: number | string): Promise<ApiResponse<staffResponse>> => {
   const response = await staffApi.get<ApiResponse<staffResponse>>(`/api/staff/detail/${staffId}`);
   return response.data;
 };
@@ -44,14 +44,14 @@ export const createStaffApi = async (staffReq: staffCreateRequest): Promise<ApiR
 };
 
 //수정
-export const updateStaffApi = async (staffId: number,staffReq: staffUpdateRequest): Promise<ApiResponse<staffResponse>> => {
+export const updateStaffApi = async (staffId: number | string,staffReq: staffUpdateRequest): Promise<ApiResponse<staffResponse>> => {
   const response = await staffApi.put<ApiResponse<staffResponse>>(`/api/staff/update/${staffId}`, staffReq);
   return response.data;
 };
 
 
 //영구 삭제
-export const deleteStaffApi = async (staffId: number): Promise<ApiResponse<void>> => {
+export const deleteStaffApi = async (staffId: number | string): Promise<ApiResponse<void>> => {
   const response = await staffApi.delete<ApiResponse<void>>(`/api/staff/delete/${staffId}`);
   return response.data;
 };

@@ -11,9 +11,6 @@ import { DoctorIdNumber } from "@/features/staff/doctor/doctortypes";
 import DoctorUpload from "./DoctorUpload";
 import StatusBadge from "../../BasiclnfoDashboard/BasiclnfoStatus";
 
-
-
-
 const DoctorDetail = ({ staffId }: DoctorIdNumber) => {
 
   const dispatch = useDispatch();
@@ -33,14 +30,12 @@ const DoctorDetail = ({ staffId }: DoctorIdNumber) => {
   const goEdit = () => router.push(`/staff/Basiclnfo/${staffId}/edit`);
    
 
-  
-    useEffect(() => {
+  useEffect(() => {
     if (!staffId) return;
     dispatch(DetailDoctorRequest({ staffId }));
-    
     dispatch(resetSuccessEnd());
+  }, [dispatch, staffId]);
 
-    }, [dispatch, staffId]);
 
     return (
     <Box sx={{ maxWidth: 980, mx: "auto", px: 2, py: 2 }}>

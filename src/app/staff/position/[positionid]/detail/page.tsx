@@ -3,11 +3,10 @@ import PositionDetail from "@/components/staff/BasiclnfoDashboard/position/Posit
 
 export default async function PositionDetailPage({ params }: { params: Promise<{ positionid: string }> }) {
   const { positionid } = await params;
-  const positionidNum = Number(positionid);
 
   return (
     <MainLayout showSidebar={false}>
-      <PositionDetail positionId={positionidNum} />
+      <PositionDetail positionId={positionid} />
     </MainLayout>
   );
 }

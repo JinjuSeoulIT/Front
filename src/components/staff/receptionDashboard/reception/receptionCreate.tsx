@@ -47,8 +47,8 @@ const ReceptionCreate = () => {
 
   
         staffId: Number(basicInfo.staffId),
-        deptId: Number(basicInfo.deptId),
-        positionId: Number(basicInfo.positionId),
+        deptId: basicInfo.deptId.trim(),
+        positionId: basicInfo.positionId.trim(),
 
         name: basicInfo.name.trim(),
         phone: basicInfo.phone.trim(),

@@ -1,6 +1,6 @@
 // ✅ 간호사 응답(서버 → 프론트)
 export type NurseResponse = {
-  staffId: number;
+  staffId: number | string;
   deptId?: string;
   positionId? :String;
   name?: string;
@@ -18,7 +18,7 @@ export type NurseResponse = {
 
 
 export type NurseStaffIdParam = {
-  staffId: number;
+  staffId: number | string;
 };
 
 
@@ -28,7 +28,7 @@ export type NurseStaffIdParam = {
 
 //생성
 export type NurseIdNumber = {
-  staffId: number;
+  staffId: number | string;
 };
 
 export type NurseCreateRequest = {
@@ -104,7 +104,7 @@ export const initialNurseUpdateForm: NurseUpdateRequest = {
   careerDetail: "",
 };
 export type NurseUpdateNumber = {
-  staffId: number;
+  staffId: number | string;
   nurseReq: NurseUpdateRequest;
 };
 ///수정
@@ -113,7 +113,7 @@ export type NurseUpdateNumber = {
 
 
 export type NurseFile = {
-  staffId: number;
+  staffId: number | string;
   file: File;
 };
 

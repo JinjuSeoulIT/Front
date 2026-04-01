@@ -24,7 +24,7 @@ export const fetchMedicalListApi = async (): Promise<ApiResponse<MedicalResponse
   return response.data;
 };
 
-export const fetchMedicalDetailApi = async (medicalId: number): Promise<ApiResponse<MedicalResponse>> => {
+export const fetchMedicalDetailApi = async (medicalId: number | string): Promise<ApiResponse<MedicalResponse>> => {
   const response = await doctorMedicalSpecialtyAPI.get<ApiResponse<MedicalResponse>>(`/api/medical/detail/${medicalId}`);
   return response.data;
 };
@@ -40,7 +40,7 @@ export const createMedicalApi = async (
 };
 
 export const updateMedicalApi = async (
-  medicalId: number,
+  medicalId: number | string,
   medicalReq: MedicalUpdateRequest
 ): Promise<ApiResponse<MedicalResponse>> => {
   const response = await doctorMedicalSpecialtyAPI.put<ApiResponse<MedicalResponse>>(
@@ -50,7 +50,7 @@ export const updateMedicalApi = async (
   return response.data;
 };
 
-export const deleteMedicalApi = async (medicalId: number): Promise<ApiResponse<void>> => {
+export const deleteMedicalApi = async (medicalId: number | string): Promise<ApiResponse<void>> => {
   const response = await doctorMedicalSpecialtyAPI.delete<ApiResponse<void>>(`/api/medical/delete/${medicalId}`);
   return response.data;
 };
@@ -64,7 +64,7 @@ export const fetchSpecialtyListApi = async (): Promise<ApiResponse<SpecialtyResp
 };
 
 export const fetchSpecialtyDetailApi = async (
-  specialtyId: number
+  specialtyId: number | string
 ): Promise<ApiResponse<SpecialtyResponse>> => {
   const response = await doctorMedicalSpecialtyAPI.get<ApiResponse<SpecialtyResponse>>(`/api/specialty/detail/${specialtyId}`);
   return response.data;
@@ -81,7 +81,7 @@ export const createSpecialtyApi = async (
 };
 
 export const updateSpecialtyApi = async (
-  specialtyId: number,
+  specialtyId: number | string,
   specialtyReq: SpecialtyUpdateRequest
 ): Promise<ApiResponse<SpecialtyResponse>> => {
   const response = await doctorMedicalSpecialtyAPI.put<ApiResponse<SpecialtyResponse>>(
@@ -92,7 +92,7 @@ export const updateSpecialtyApi = async (
 };
 
 export const deleteSpecialtyApi = async (
-  specialtyId: number
+  specialtyId: number | string
 ): Promise<ApiResponse<void>> => {
   const response = await doctorMedicalSpecialtyAPI.delete<ApiResponse<void>>(`/api/specialty/delete/${specialtyId}`);
   return response.data;
