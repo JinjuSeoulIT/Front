@@ -41,12 +41,8 @@ export default function ReceptionEditPage() {
     setSubmitRequested(true);
     dispatch(receptionActions.updateReceptionRequest({ receptionId, form }));
   };
-
-  const onDelete = () => {
-    if (!confirm("접수를 취소 처리하시겠습니까?")) return;
-    dispatch(receptionActions.cancelReceptionRequest({ receptionId }));
-    router.push("/reception/outpatient/list");
-  };
+ // 저장버튼을 눌렀을때 호출하는 함수
+  
 
   return (
     <MainLayout>
@@ -72,13 +68,7 @@ export default function ReceptionEditPage() {
         onSubmit={onSubmit}
         onCancel={() => router.push(`/reception/outpatient/detail/${receptionId}`)}
       />
-      {current && (
-        <Stack direction="row" spacing={1} sx={{ mt: 2 }}>
-          <Button variant="outlined" color="warning" onClick={onDelete}>
-            취소
-          </Button>
-        </Stack>
-      )}
+     
     </MainLayout>
   );
 }
