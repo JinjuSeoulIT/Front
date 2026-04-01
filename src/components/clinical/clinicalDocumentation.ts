@@ -1,6 +1,6 @@
-import type { LabOrderType } from "@/lib/clinicalOrderApi";
-import type { VitalSignsRes, AssessmentRes } from "@/lib/clinicalVitalsApi";
-import type { PastHistoryItem, PastHistoryType } from "@/lib/clinicalPastHistoryApi";
+import type { LabOrderType } from "@/lib/clinical/clinicalOrderApi";
+import type { VitalSignsRes, AssessmentRes } from "@/lib/clinical/clinicalVitalsApi";
+import type { PastHistoryItem, PastHistoryType } from "@/lib/clinical/clinicalPastHistoryApi";
 import type { ClinicalRes } from "./types";
 
 export const ORDER_TYPE_LABELS: Record<LabOrderType, string> = {
@@ -9,7 +9,7 @@ export const ORDER_TYPE_LABELS: Record<LabOrderType, string> = {
   PATHOLOGY: "병리검사",
   SPECIMEN: "검체검사",
   ENDOSCOPY: "내시경검사",
-  PHYSIOLOGY: "생리기능검사",
+  PHYSIOLOGICAL: "생리기능검사",
   PROCEDURE: "처치",
   MEDICATION: "투약",
 };

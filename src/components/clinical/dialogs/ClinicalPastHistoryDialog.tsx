@@ -18,7 +18,7 @@ import {
   createPastHistoryApi,
   updatePastHistoryApi,
   type PastHistoryType,
-} from "@/lib/clinicalPastHistoryApi";
+} from "@/lib/clinical/clinicalPastHistoryApi";
 import { PAST_HISTORY_TYPE_LABEL } from "../clinicalDocumentation";
 
 export type PastHistoryFormState = {

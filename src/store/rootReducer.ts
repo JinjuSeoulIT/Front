@@ -23,6 +23,7 @@ import endoscopiesReducer from "@/features/medical_support/endoscopy/endoscopySl
 import physiologicalsReducer from "@/features/medical_support/physiological/physiologicalSlice";
 import medicationRecordsReducer from "@/features/medical_support/medicationRecord/medicationRecordSlice";
 import treatmentResultsReducer from "@/features/medical_support/treatmentResult/treatmentResultSlice";
+import clinicalReducer from "@/features/clinical/clinicalSlice";
 
 
 const rootReducer = combineReducers({
@@ -50,6 +51,7 @@ const rootReducer = combineReducers({
   department: StaffdepartmentReducer,
   location: StafflocationReducer,
   position: StaffpositionReducer,
+  clinical: clinicalReducer,
 });
 
 export type RootState = ReturnType<typeof rootReducer>;

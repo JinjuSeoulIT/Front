@@ -1,3 +1,5 @@
+import { CLINICAL_API_BASE } from "./clinicalApiBase";
+
 export type ApiEnvelope<T> = {
   success?: boolean;
   message?: string | null;
@@ -17,9 +19,6 @@ export type ClinicalRes = {
   clinicalAt?: string | null;
   createdAt?: string | null;
 };
-
-const CLINICAL_API_BASE =
-  process.env.NEXT_PUBLIC_CLINICAL_API_BASE_URL ?? "http://192.168.1.70:8090";
 
 function formatBackendDateTime(v: unknown): string | null {
   if (v == null) return null;
@@ -75,8 +74,7 @@ export function isNetworkError(e: unknown): boolean {
 }
 
 export function clinicalConnectionMessage(): string {
-  const base = process.env.NEXT_PUBLIC_CLINICAL_API_BASE_URL ?? "http://localhost:8090";
-  return `진료 서버에 연결할 수 없습니다. hospital-clinical 백엔드(${base})가 실행 중인지 확인해 주세요.`;
+  return `진료 서버에 연결할 수 없습니다. hospital-clinical 백엔드(${CLINICAL_API_BASE})가 실행 중인지 확인해 주세요.`;
 }
 
 export async function createClinicalApi(patientId: number): Promise<ClinicalRes> {
@@ -171,4 +169,21 @@ export async function startVisitApi(
   const result = body?.result;
   if (!result?.visitId) throw new Error("진료 시작 응답이 올바르지 않습니다.");
   return result;
+}
+
+export async function endVisitApi(visitId: number): Promise<void> {
+  let res: Response;
+  try {
+    res = await fetch(`${CLINICAL_API_BASE}/api/visits/${visitId}/end`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+    });
+  } catch (e) {
+    if (isNetworkError(e)) throw new Error(clinicalConnectionMessage());
+    throw e;
+  }
+  if (!res.ok) {
+    const err = (await res.json().catch(() => ({}))) as { message?: string };
+    throw new Error(err?.message ?? `진료 완료 실패 (${res.status})`);
+  }
 }

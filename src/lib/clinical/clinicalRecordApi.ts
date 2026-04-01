@@ -1,4 +1,4 @@
-import { CLINICAL_API_BASE } from "../clinicalApiBase";
+import { CLINICAL_API_BASE } from "./clinicalApiBase";
 
 type ApiEnvelope<T> = { success?: boolean; message?: string | null; data?: T; result?: T };
 
@@ -165,32 +165,144 @@ export async function reorderDiagnosesApi(clinicalId: number, diagnosisIds: numb
 }
 
 export type PrescriptionRes = {
-  prescriptionId: number;
+  orderId: number;
+  orderItemId: number;
   clinicalId: number;
   medicationName?: string | null;
   dosage?: string | null;
+  frequency?: string | null;
   days?: string | null;
 };
 
-export async function fetchPrescriptionsApi(clinicalId: number): Promise<PrescriptionRes[]> {
-  const res = await fetch(`${CLINICAL_API_BASE}/api/visits/${clinicalId}/prescriptions`, { cache: "no-store" });
-  if (!res.ok) return [];
-  const data = await parseJson<PrescriptionRes[]>(res);
-  return Array.isArray(data) ? data : [];
+type PrescriptionOrderItemRaw = {
+  orderItemId?: number;
+  itemName?: string | null;
+  dosage?: string | null;
+  frequency?: string | null;
+  duration?: string | null;
+};
+
+type PrescriptionOrderRaw = {
+  orderId?: number;
+  visitId?: number;
+  items?: PrescriptionOrderItemRaw[] | null;
+};
+
+function flattenPrescriptionOrders(orders: PrescriptionOrderRaw[], fallbackVisitId: number): PrescriptionRes[] {
+  const out: PrescriptionRes[] = [];
+  for (const o of orders) {
+    const visitId = Number(o.visitId ?? fallbackVisitId);
+    for (const it of o.items ?? []) {
+      out.push({
+        orderId: Number(o.orderId ?? 0),
+        orderItemId: Number(it.orderItemId ?? 0),
+        clinicalId: visitId,
+        medicationName: it.itemName ?? null,
+        dosage: it.dosage ?? null,
+        frequency: it.frequency ?? null,
+        days: it.duration ?? null,
+      });
+    }
+  }
+  return out;
 }
 
-export async function addPrescriptionApi(clinicalId: number, payload: { medicationName?: string | null; dosage?: string | null; days?: string | null }): Promise<PrescriptionRes> {
-  const res = await fetch(`${CLINICAL_API_BASE}/api/visits/${clinicalId}/prescriptions`, {
+function mapPrescriptionRowFromItem(
+  orderId: number,
+  visitId: number,
+  it: PrescriptionOrderItemRaw
+): PrescriptionRes {
+  return {
+    orderId,
+    orderItemId: Number(it.orderItemId ?? 0),
+    clinicalId: visitId,
+    medicationName: it.itemName ?? null,
+    dosage: it.dosage ?? null,
+    frequency: it.frequency ?? null,
+    days: it.duration ?? null,
+  };
+}
+
+export async function fetchPrescriptionsApi(clinicalId: number): Promise<PrescriptionRes[]> {
+  const res = await fetch(
+    `${CLINICAL_API_BASE}/api/visits/${clinicalId}/orders?orderType=${encodeURIComponent("PRESCRIPTION")}`,
+    { cache: "no-store" }
+  );
+  if (!res.ok) return [];
+  const data = await parseJson<PrescriptionOrderRaw[]>(res);
+  if (!Array.isArray(data)) return [];
+  return flattenPrescriptionOrders(data, clinicalId);
+}
+
+export async function addPrescriptionApi(
+  clinicalId: number,
+  payload: {
+    medicationName?: string | null;
+    dosage?: string | null;
+    frequency?: string | null;
+    days?: string | null;
+  }
+): Promise<PrescriptionRes> {
+  const res = await fetch(`${CLINICAL_API_BASE}/api/visits/${clinicalId}/orders`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
+    body: JSON.stringify({
+      orderType: "PRESCRIPTION",
+      items: [
+        {
+          itemName: (payload.medicationName ?? "").trim(),
+          dosage: payload.dosage ?? null,
+          frequency: payload.frequency ?? null,
+          duration: payload.days ?? null,
+        },
+      ],
+    }),
   });
   if (!res.ok) throw new Error((await res.json().catch(() => ({})) as { message?: string })?.message ?? "처방 등록 실패");
-  return parseJson<PrescriptionRes>(res);
+  const order = await parseJson<PrescriptionOrderRaw>(res);
+  const first = order?.items?.[0];
+  if (order?.orderId != null && first?.orderItemId != null) {
+    return mapPrescriptionRowFromItem(order.orderId, order.visitId ?? clinicalId, first);
+  }
+  throw new Error("처방 등록 후 응답을 해석하지 못했습니다.");
 }
 
-export async function removePrescriptionApi(clinicalId: number, prescriptionId: number): Promise<void> {
-  const res = await fetch(`${CLINICAL_API_BASE}/api/visits/${clinicalId}/prescriptions/${prescriptionId}`, { method: "DELETE" });
+export async function updatePrescriptionApi(
+  clinicalId: number,
+  orderId: number,
+  orderItemId: number,
+  payload: {
+    medicationName?: string | null;
+    dosage?: string | null;
+    frequency?: string | null;
+    days?: string | null;
+  }
+): Promise<void> {
+  const res = await fetch(
+    `${CLINICAL_API_BASE}/api/visits/${clinicalId}/orders/${orderId}/items/${orderItemId}`,
+    {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        itemName: payload.medicationName ?? undefined,
+        dosage: payload.dosage ?? undefined,
+        frequency: payload.frequency ?? undefined,
+        duration: payload.days ?? undefined,
+      }),
+    }
+  );
+  if (!res.ok) throw new Error((await res.json().catch(() => ({})) as { message?: string })?.message ?? "처방 수정 실패");
+}
+
+export async function removePrescriptionApi(
+  clinicalId: number,
+  orderId: number,
+  orderItemId: number
+): Promise<void> {
+  const res = await fetch(
+    `${CLINICAL_API_BASE}/api/visits/${clinicalId}/orders/${orderId}/items/${orderItemId}`,
+    { method: "DELETE" }
+  );
   if (!res.ok) throw new Error("처방 삭제 실패");
 }
 

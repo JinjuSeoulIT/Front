@@ -3,7 +3,7 @@
 import * as React from "react";
 import { Box, Button, Chip, Stack, TextField, Typography } from "@mui/material";
 import CalendarMonthOutlinedIcon from "@mui/icons-material/CalendarMonthOutlined";
-import { cancelClinicalOrderApi, type ClinicalOrder } from "@/lib/clinicalOrderApi";
+import { cancelClinicalOrderApi, type ClinicalOrder } from "@/lib/clinical/clinicalOrderApi";
 import { ORDER_TYPE_LABELS, orderStatusView } from "./clinicalDocumentation";
 
 function normalizedOrderStatus(s: string | null | undefined): string {
@@ -127,60 +127,6 @@ export function ClinicalRightPanel({
           <Typography sx={{ fontSize: 12, color: "var(--muted)" }}>등록된 검사 오더가 없습니다.</Typography>
         ) : (
           <Stack spacing={1} sx={{ mt: 0.5 }}>
-<<<<<<< HEAD
-            {orders.map((ord) => (
-              <Box
-                key={ord.id}
-                sx={{
-                  p: 1,
-                  borderRadius: 1,
-                  border: "1px solid var(--line)",
-                  bgcolor: "rgba(255,255,255,0.8)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  gap: 1,
-                  flexWrap: "wrap",
-                }}
-              >
-                <Typography sx={{ fontSize: 12, fontWeight: 600 }}>
-                  {ord.orderName &&
-                  !(Object.keys(ORDER_TYPE_LABELS) as string[]).includes(ord.orderName)
-                    ? ord.orderName
-                    : ORDER_TYPE_LABELS[ord.orderType]}
-                </Typography>
-                <FormControl size="small" sx={{ minWidth: 100 }}>
-                  <Select
-                    value={ord.status === "REQUEST" ? "REQUESTED" : (ord.status ?? "REQUESTED")}
-                    onChange={async (e) => {
-                      const next = e.target.value as OrderStatus;
-                      if (visitId == null || next === (ord.status === "REQUEST" ? "REQUESTED" : ord.status))
-                        return;
-                      onUpdatingOrderId(ord.id);
-                      try {
-                        await updateClinicalOrderStatusApi(visitId, ord.id, next);
-                        onOrdersReplace((prev) =>
-                          prev.map((o) => (o.id === ord.id ? { ...o, status: next } : o))
-                        );
-                      } catch (err) {
-                        window.alert(err instanceof Error ? err.message : "상태 변경에 실패했습니다.");
-                        onOrdersRefresh();
-                      } finally {
-                        onUpdatingOrderId(null);
-                      }
-                    }}
-                    disabled={updatingOrderId != null}
-                    sx={{ fontSize: 11, height: 28 }}
-                  >
-                    <MenuItem value="REQUESTED">{orderStatusLabel("REQUESTED")}</MenuItem>
-                    <MenuItem value="IN_PROGRESS">{orderStatusLabel("IN_PROGRESS")}</MenuItem>
-                    <MenuItem value="COMPLETED">{orderStatusLabel("COMPLETED")}</MenuItem>
-                    <MenuItem value="CANCELLED">{orderStatusLabel("CANCELLED")}</MenuItem>
-                  </Select>
-                </FormControl>
-              </Box>
-            ))}
-=======
             {orders.map((ord) => {
               const st = normalizedOrderStatus(ord.status);
               const chip = orderStatusView(ord.status);
@@ -239,7 +185,6 @@ export function ClinicalRightPanel({
                 </Box>
               );
             })}
->>>>>>> feature/clinical
           </Stack>
         )}
         <Button

@@ -1,5 +1,5 @@
 import axios from "axios";
-import type { ApiResponse } from "../features/patients/patientTypes";
+import type { ApiResponse } from "@/features/patients/patientTypes";
 
 export type VisitHistory = {
   id: number;

@@ -1,4 +1,4 @@
-import { CLINICAL_API_BASE } from "../clinicalApiBase";
+import { CLINICAL_API_BASE } from "./clinicalApiBase";
 
 export type LabOrderType =
   | "BLOOD"
@@ -6,7 +6,7 @@ export type LabOrderType =
   | "PATHOLOGY"
   | "SPECIMEN"
   | "ENDOSCOPY"
-  | "PHYSIOLOGY"
+  | "PHYSIOLOGICAL"
   | "PROCEDURE"
   | "MEDICATION";
 
@@ -63,7 +63,7 @@ const KNOWN_ORDER_TYPES: LabOrderType[] = [
   "PATHOLOGY",
   "SPECIMEN",
   "ENDOSCOPY",
-  "PHYSIOLOGY",
+  "PHYSIOLOGICAL",
   "PROCEDURE",
   "MEDICATION",
 ];
@@ -94,7 +94,9 @@ export async function fetchClinicalOrdersApi(
   }
   const value = await parseJson<OrderRaw[]>(res);
   const list = Array.isArray(value) ? value : [];
-  return list.map(mapOrderToClinical);
+  return list
+    .filter((o) => (o.orderType ?? "").toUpperCase() !== "PRESCRIPTION")
+    .map(mapOrderToClinical);
 }
 
 export async function createClinicalOrderApi(
@@ -126,17 +128,8 @@ export async function cancelClinicalOrderApi(
   orderId: number
 ): Promise<ClinicalOrder> {
   const res = await fetch(
-<<<<<<< HEAD:src/lib/clinical/clinicalOrderApi.ts
-    `${CLINICAL_API_BASE}/api/visits/${clinicalId}/orders/${orderId}/status`,
-    {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ orderStatus: status }),
-    }
-=======
     `${CLINICAL_API_BASE}/api/visits/${clinicalId}/orders/${orderId}/cancel`,
     { method: "POST", headers: { "Content-Type": "application/json" } }
->>>>>>> feature/clinical:src/lib/clinicalOrderApi.ts
   );
   if (!res.ok) {
     const body = await res.json().catch(() => ({})) as { message?: string };
