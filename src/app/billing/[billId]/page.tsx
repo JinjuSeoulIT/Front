@@ -5,6 +5,10 @@ import { useParams } from "next/navigation";
 import { useDispatch, useSelector } from "react-redux";
 import type { RootState, AppDispatch } from "@/store/store";
 import toast from "react-hot-toast";
+<<<<<<< HEAD
+=======
+import Script from "next/script";
+>>>>>>> develop
 import MainLayout from "@/components/layout/MainLayout";
 
 declare global {
@@ -30,6 +34,13 @@ import {
 } from "@/features/billing/billingSlice";
 
 import type { PaymentMethod } from "@/lib/billing/billingApi";
+<<<<<<< HEAD
+=======
+import {
+  getDisplayBillingStatusLabel,
+  getDisplayBillingStatusColor,
+} from "@/lib/billing/billingStatus";
+>>>>>>> feature/billing
 
 /* MUI UI */
 import {
@@ -40,23 +51,8 @@ import {
   Typography,
   Button,
   Box,
+  Divider,
 } from "@mui/material";
-
-/* Bill 상태 색상 */
-const getBillStatusColor = (status: string) => {
-  switch (status) {
-    case "READY":
-      return "default";
-    case "CONFIRMED":
-      return "warning";
-    case "PAID":
-      return "success";
-    case "CANCELED":
-      return "error";
-    default:
-      return "default";
-  }
-};
 
 /* 결제 상태 색상 */
 const getPaymentStatusColor = (status: string) => {
@@ -72,6 +68,23 @@ const getPaymentStatusColor = (status: string) => {
   }
 };
 
+<<<<<<< HEAD
+/* 결제 상태 색상 */
+const getPaymentStatusColor = (status: string) => {
+  switch (status) {
+    case "COMPLETED":
+      return "success";
+    case "REFUNDED":
+      return "warning";
+    case "CANCELED":
+      return "error";
+    default:
+      return "default";
+  }
+};
+
+=======
+>>>>>>> develop
 /* 결제 상태 라벨 */
 const getPaymentStatusLabel = (status: string) => {
   switch (status) {
@@ -209,14 +222,13 @@ export default function BillingDetailPage() {
   );
 
   const [payAmount, setPayAmount] = useState<number>(0);
-
-  // 결제수단 상태
-  const [paymentMethod, setPaymentMethod] =
-    useState<PaymentMethod>("CASH");
-
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("CASH");
   const [refundTargetId, setRefundTargetId] = useState<number | null>(null);
+<<<<<<< HEAD
 
   /* number + 0 기본값 대신 문자열 입력값으로 관리 */
+=======
+>>>>>>> develop
   const [refundAmountInput, setRefundAmountInput] = useState<string>("");
 
   useEffect(() => {
@@ -226,6 +238,7 @@ export default function BillingDetailPage() {
     }
   }, [billId, dispatch]);
 
+<<<<<<< HEAD
 //toss
 const tossClientKey = process.env.NEXT_PUBLIC_TOSS_CLIENT_KEY;
 const createOrderId = (billId: number) => {
@@ -279,14 +292,70 @@ const requestTossCardPayment = async (amount: number) => {
     toast.error("토스 결제창 호출 중 오류가 발생했습니다.");
   }
 };
+=======
+  const tossClientKey = process.env.NEXT_PUBLIC_TOSS_CLIENT_KEY;
+
+  const createOrderId = (billId: number) => {
+    return `bill-${billId}-${Date.now()}`;
+  };
+
+  const requestTossCardPayment = async (amount: number) => {
+    if (!billingDetail) return;
+
+    if (!tossClientKey) {
+      toast.error("토스 클라이언트 키가 없습니다.");
+      return;
+    }
+
+    if (!window.TossPayments) {
+      toast.error("토스 SDK가 아직 로드되지 않았습니다.");
+      return;
+    }
+
+    const orderId = createOrderId(billingDetail.billId);
+
+    sessionStorage.setItem(
+      "tossPaymentContext",
+      JSON.stringify({
+        billId: billingDetail.billId,
+        patientId: billingDetail.patientId,
+        requestedAmount: amount,
+        orderId,
+      })
+    );
+
+    try {
+      const tossPayments = window.TossPayments(tossClientKey);
+      const payment = tossPayments.payment({
+        customerKey: `patient-${billingDetail.patientId}`,
+      });
+
+      await payment.requestPayment({
+        method: "CARD",
+        amount: {
+          currency: "KRW",
+          value: amount,
+        },
+        orderId,
+        orderName: `진료비 수납 - bill ${billingDetail.billId}`,
+        successUrl: `${window.location.origin}/billing/toss/success`,
+        failUrl: `${window.location.origin}/billing/toss/fail`,
+      });
+    } catch (error) {
+      console.error("[toss] requestPayment error", error);
+      toast.error("토스 결제창 호출 중 오류가 발생했습니다.");
+    }
+  };
+>>>>>>> feature/billing
 
   useEffect(() => {
     setPayAmount(0);
-
-    // 상세가 바뀌면 기본 결제수단도 초기화
     setPaymentMethod("CASH");
+<<<<<<< HEAD
 
     // 상세 변경 시 환불 입력 상태도 초기화
+=======
+>>>>>>> develop
     setRefundTargetId(null);
     setRefundAmountInput("");
   }, [billingDetail]);
@@ -305,9 +374,15 @@ const requestTossCardPayment = async (amount: number) => {
     }
 
     if (paymentMethod === "CARD") {
+<<<<<<< HEAD
         requestTossCardPayment(payAmount);
         return;
   }
+=======
+      requestTossCardPayment(payAmount);
+      return;
+    }
+>>>>>>> feature/billing
 
     dispatch(
       createPaymentRequest({
@@ -341,10 +416,19 @@ const requestTossCardPayment = async (amount: number) => {
       toast.error("이미 전액 수납 완료되었습니다.");
       return;
     }
+<<<<<<< HEAD
     if (paymentMethod === "CARD") {
       requestTossCardPayment(billingDetail.remainingAmount);
       return;
   }
+=======
+
+    if (paymentMethod === "CARD") {
+      requestTossCardPayment(billingDetail.remainingAmount);
+      return;
+    }
+
+>>>>>>> feature/billing
     dispatch(
       createPaymentRequest({
         billId: billingDetail.billId,
@@ -385,8 +469,16 @@ const requestTossCardPayment = async (amount: number) => {
     (p) => p.status === "REFUNDED"
   );
 
+<<<<<<< HEAD
   return (
     <MainLayout>
+=======
+  const billItemsTotal =
+    billingDetail?.billItems?.reduce((sum, item) => sum + item.amount, 0) ?? 0;
+
+  return (
+<<<<<<< HEAD
+>>>>>>> develop
     /* 화면 전체 배경색 추가 */
     <main
       style={{
@@ -405,8 +497,25 @@ const requestTossCardPayment = async (amount: number) => {
       <Typography variant="h5" sx={{ fontWeight: 700, mb: 1 }}>
         청구 상세
       </Typography>
+=======
+    <MainLayout>
+      <main
+        style={{
+          padding: "24px",
+          backgroundColor: "#f4f6f8",
+          minHeight: "100vh",
+        }}
+      >
+        <Script
+          src="https://js.tosspayments.com/v2/standard"
+          strategy="afterInteractive"
+        />
+>>>>>>> feature/billing
 
+<<<<<<< HEAD
         {/* 제목 여백/굵기 보강 */}
+=======
+>>>>>>> develop
         <Typography variant="h5" sx={{ fontWeight: 700, mb: 1 }}>
           청구 상세
         </Typography>
@@ -414,7 +523,10 @@ const requestTossCardPayment = async (amount: number) => {
         {loading && <p>로딩 중...</p>}
         {error && <p style={{ color: "red" }}>{error}</p>}
 
+<<<<<<< HEAD
         {/* 상단 KPI 요약 카드 */}
+=======
+>>>>>>> develop
         {billingDetail && (
           <Card
             sx={{
@@ -468,8 +580,23 @@ const requestTossCardPayment = async (amount: number) => {
                     현재 상태
                   </Typography>
                   <Chip
+<<<<<<< HEAD
                     label={billingDetail.status}
                     color={getBillStatusColor(billingDetail.status) as any}
+=======
+                    label={getDisplayBillingStatusLabel(
+                      billingDetail.paidAmount,
+                      billingDetail.remainingAmount,
+                      billingDetail.status
+                    )}
+                    color={
+                      getDisplayBillingStatusColor(
+                        billingDetail.paidAmount,
+                        billingDetail.remainingAmount,
+                        billingDetail.status
+                      ) as any
+                    }
+>>>>>>> develop
                     sx={{ mt: 0.5 }}
                   />
                 </Box>
@@ -480,7 +607,10 @@ const requestTossCardPayment = async (amount: number) => {
 
         {billingDetail && (
           <section style={{ marginTop: "24px" }}>
+<<<<<<< HEAD
             {/* 청구 요약 카드 */}
+=======
+>>>>>>> develop
             <Card
               sx={{
                 mb: 3,
@@ -496,6 +626,7 @@ const requestTossCardPayment = async (amount: number) => {
 
                 <Stack spacing={1}>
                   <Typography>청구 ID: {billingDetail.billId}</Typography>
+<<<<<<< HEAD
 
                   <Typography>환자 ID: {billingDetail.patientId}</Typography>
 
@@ -550,12 +681,158 @@ const requestTossCardPayment = async (amount: number) => {
                       {loading ? "처리 중..." : "청구 확정"}
                     </Button>
                   </div>
+=======
+                  <Typography>환자 ID: {billingDetail.patientId}</Typography>
+
+                  <Typography>
+                    총 금액: {billingDetail.totalAmount.toLocaleString()} 원
+                  </Typography>
+
+                  <Typography>
+                    결제 금액: {billingDetail.paidAmount.toLocaleString()} 원
+                  </Typography>
+
+                  <Typography>
+                    남은 금액:
+                    <span
+                      style={{
+                        color:
+                          billingDetail.remainingAmount > 0
+                            ? "#d32f2f"
+                            : "#2e7d32",
+                        fontWeight: "bold",
+                        marginLeft: "6px",
+                      }}
+                    >
+                      {billingDetail.remainingAmount.toLocaleString()} 원
+                    </span>
+                  </Typography>
+
+                  <Typography component="div">
+                    상태:
+                    <Chip
+                      label={getDisplayBillingStatusLabel(
+                        billingDetail.paidAmount,
+                        billingDetail.remainingAmount,
+                        billingDetail.status
+                      )}
+                      color={
+                        getDisplayBillingStatusColor(
+                          billingDetail.paidAmount,
+                          billingDetail.remainingAmount,
+                          billingDetail.status
+                        ) as any
+                      }
+                      size="small"
+                      sx={{ ml: 1 }}
+                    />
+                  </Typography>
+                </Stack>
+
+                {billingDetail.status === "READY" && (
+                  <div style={{ marginTop: "12px" }}>
+                    <Button
+                      variant="contained"
+                      color="warning"
+                      onClick={() =>
+                        dispatch(confirmBillRequest(billingDetail.billId))
+                      }
+                      disabled={loading}
+                    >
+                      {loading ? "처리 중..." : "청구 확정"}
+                    </Button>
+                  </div>
                 )}
               </CardContent>
             </Card>
 
+            <Card
+              sx={{
+                mb: 3,
+                borderRadius: 3,
+                boxShadow: 2,
+                backgroundColor: "#ffffff",
+              }}
+            >
+              <CardContent>
+                <Stack
+                  direction={{ xs: "column", md: "row" }}
+                  justifyContent="space-between"
+                  alignItems={{ xs: "flex-start", md: "center" }}
+                  sx={{ mb: 2 }}
+                >
+                  <Box>
+                    <Typography variant="h6">청구 항목</Typography>
+                    <Typography
+                      sx={{ fontSize: 13, color: "text.secondary", mt: 0.5 }}
+                    >
+                      현재 청구에 포함된 항목별 금액입니다.
+                    </Typography>
+                  </Box>
+
+                  <Box sx={{ mt: { xs: 1, md: 0 } }}>
+                    <Typography sx={{ fontSize: 12, color: "text.secondary" }}>
+                      항목 합계
+                    </Typography>
+                    <Typography sx={{ fontWeight: 700, fontSize: 18 }}>
+                      {billItemsTotal.toLocaleString()} 원
+                    </Typography>
+                  </Box>
+                </Stack>
+
+                {billingDetail.billItems.length === 0 ? (
+                  <Typography sx={{ color: "text.secondary" }}>
+                    등록된 청구 항목이 없습니다.
+                  </Typography>
+                ) : (
+                  <Stack spacing={1.5}>
+                    {billingDetail.billItems.map((item, index) => (
+                      <Box key={item.billItemId}>
+                        <Stack
+                          direction={{ xs: "column", md: "row" }}
+                          justifyContent="space-between"
+                          alignItems={{ xs: "flex-start", md: "center" }}
+                          spacing={1}
+                          sx={{ py: 1 }}
+                        >
+                          <Box>
+                            <Typography sx={{ fontWeight: 600 }}>
+                              {item.itemName}
+                            </Typography>
+                            <Typography
+                              sx={{
+                                fontSize: 12,
+                                color: "text.secondary",
+                                mt: 0.5,
+                              }}
+                            >
+                              항목 ID: {item.billItemId}
+                            </Typography>
+                          </Box>
+
+                          <Typography sx={{ fontWeight: 700 }}>
+                            {item.amount.toLocaleString()} 원
+                          </Typography>
+                        </Stack>
+
+                        {index !== billingDetail.billItems.length - 1 && (
+                          <Divider />
+                        )}
+                      </Box>
+                    ))}
+                  </Stack>
+>>>>>>> develop
+                )}
+              </CardContent>
+            </Card>
+
+<<<<<<< HEAD
             {/* 수납 처리 영역 제목 카드 */}
             {billingDetail.remainingAmount > 0 && (
+=======
+            {billingDetail.status !== "READY" &&
+            billingDetail.remainingAmount > 0 && (
+>>>>>>> develop
               <Card
                 sx={{
                   mb: 2,
@@ -577,8 +854,13 @@ const requestTossCardPayment = async (amount: number) => {
               </Card>
             )}
 
+<<<<<<< HEAD
             {/* 결제 입력 */}
             {billingDetail.remainingAmount > 0 && (
+=======
+            {billingDetail.status !== "READY" &&
+            billingDetail.remainingAmount > 0 && (
+>>>>>>> develop
               <div style={{ marginBottom: "24px" }}>
                 <input
                   type="text"
@@ -596,7 +878,10 @@ const requestTossCardPayment = async (amount: number) => {
                   style={inputStyle}
                 />
 
+<<<<<<< HEAD
                 {/* 결제 수단 선택 */}
+=======
+>>>>>>> develop
                 <div style={methodBoxStyle}>
                   <label>
                     <input
@@ -657,12 +942,18 @@ const requestTossCardPayment = async (amount: number) => {
               </div>
             )}
 
+<<<<<<< HEAD
             {/* 수납 내역 제목 */}
+=======
+>>>>>>> develop
             <Typography variant="h6" sx={{ mb: 2, mt: 4 }}>
               수납 내역
             </Typography>
 
+<<<<<<< HEAD
             {/* 수납 내역 상단 요약 카드 */}
+=======
+>>>>>>> develop
             <Card
               sx={{
                 mb: 2,
