@@ -1,8 +1,13 @@
-import RecordCreate from "@/components/medical_support/record/RecordCreate";
 
+import RecordCreate from "@/components/record/RecordCreate";
+
+ 
 
 const RecordCreatePage = () => {
-  return <main><RecordCreate/></main>;
+  return (
+      <RecordCreate />
+   
+  );
 };
 
 export default RecordCreatePage;

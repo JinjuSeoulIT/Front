@@ -12,14 +12,8 @@ export default function MainLayout({
   children: React.ReactNode;
   showSidebar?: boolean;
 }) {
-  const SIDEBAR_OPEN_W = 240;
-  const SIDEBAR_COLLAPSED_W = 72;
+  const SIDEBAR_W = 240;
   const NAV_H = { xs: 64, md: 76 };
-
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = React.useState(false);
-  const [isSidebarHovered, setIsSidebarHovered] = React.useState(false);
-
-  const sidebarWidth = isSidebarCollapsed ? SIDEBAR_COLLAPSED_W : SIDEBAR_OPEN_W;
 
   return (
     <Box
@@ -35,44 +29,31 @@ export default function MainLayout({
     >
       {showSidebar ? (
         <Box
-          onMouseEnter={() => setIsSidebarHovered(true)}
-          onMouseLeave={() => setIsSidebarHovered(false)}
           sx={{
             position: { xs: "static", md: "fixed" },
-            top: { xs: 0, md: `${NAV_H.md}px` },
+            top: NAV_H,
             left: 0,
-            width: { xs: "100%", md: `${sidebarWidth}px` },
-            height: {
-              xs: "auto",
-              md: `calc(100vh - ${NAV_H.md}px)`,
-            },
+            width: { xs: "100%", md: `${SIDEBAR_W}px` },
+            height: { md: `calc(100vh - ${NAV_H.md}px)` },
             overflowY: { md: "auto" },
             zIndex: 1100,
-            transition: "width 0.25s ease",
           }}
         >
-          <Sidebar
-            width={sidebarWidth}
-            collapsed={isSidebarCollapsed}
-            hovered={isSidebarHovered}
-            onToggle={() => setIsSidebarCollapsed((prev) => !prev)}
-          />
+          <Sidebar width={SIDEBAR_W} />
         </Box>
       ) : null}
-
       <Navbar />
-
       <Box sx={{ height: NAV_H }} />
-
       <Box
         sx={{
-          ml: showSidebar ? { xs: 0, md: `${sidebarWidth}px` } : 0,
+          ml: showSidebar ? { xs: 0, md: `${SIDEBAR_W}px` } : 0,
           px: { xs: 2, md: 4 },
           py: 3,
-          transition: "margin-left 0.25s ease",
         }}
       >
-        <Box sx={{ width: "100%", maxWidth: "100%", mx: "auto" }}>{children}</Box>
+        <Box sx={{ width: "100%", maxWidth: "100%", mx: "auto" }}>
+          {children}
+        </Box>
       </Box>
     </Box>
   );

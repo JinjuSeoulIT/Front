@@ -74,7 +74,6 @@ export type ApiResponse<T> = {
 export interface EmergencyReceptionState {
   list: EmergencyReception[];
   selected: EmergencyReception | null;
-  lastCreated: EmergencyReception | null;
   loading: boolean;
   error: string | null;
 }

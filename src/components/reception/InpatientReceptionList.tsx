@@ -14,7 +14,6 @@ import {
   Divider,
   InputAdornment,
   MenuItem,
-  Pagination,
   Stack,
   TextField,
   Typography,
@@ -25,10 +24,8 @@ import { useDispatch, useSelector } from "react-redux";
 import type { RootState, AppDispatch } from "@/store/store";
 import { inpatientReceptionActions } from "@/features/InpatientReception/InpatientReceptionSlice";
 import type { InpatientReception } from "@/features/InpatientReception/InpatientReceptionTypes";
-import type { DepartmentOption, DoctorOption } from "@/features/Reservations/ReservationTypes";
 import type { Patient } from "@/features/patients/patientTypes";
 import { searchPatientsApi } from "@/lib/patient/patientApi";
-import { fetchDepartmentsApi, fetchDoctorsApi } from "@/lib/masterDataApi";
 
 const statusLabel = (value?: string | null) => {
   switch (value) {
@@ -37,7 +34,7 @@ const statusLabel = (value?: string | null) => {
     case "CALLED":
       return "호출";
     case "IN_PROGRESS":
-      return "진료중";
+      return "진행중";
     case "COMPLETED":
       return "완료";
     case "PAYMENT_WAIT":
@@ -62,14 +59,28 @@ const toLocalDateTimeValue = (date: Date) => {
   return `${year}-${month}-${day}T${hour}:${minute}`;
 };
 
+const INPATIENT_DEPARTMENTS = [
+  { id: 1, name: "내과" },
+  { id: 2, name: "정형외과" },
+  { id: 3, name: "소아과" },
+  { id: 4, name: "이비인후과" },
+  { id: 5, name: "피부과" },
+];
+
+const INPATIENT_DOCTORS = [
+  { id: 1, name: "송태민", departmentId: 1 },
+  { id: 2, name: "이현석", departmentId: 2 },
+  { id: 3, name: "성숙희", departmentId: 3 },
+  { id: 4, name: "최효정", departmentId: 4 },
+  { id: 5, name: "홍예진", departmentId: 4 },
+];
+
 const toOptionalNumber = (value: string) => {
   const trimmed = value.trim();
   if (!trimmed) return null;
   const parsed = Number(trimmed);
   return Number.isNaN(parsed) ? null : parsed;
 };
-
-const ITEMS_PER_PAGE = 10;
 
 export default function InpatientReceptionList() {
   const dispatch = useDispatch<AppDispatch>();
@@ -78,10 +89,6 @@ export default function InpatientReceptionList() {
   );
 
   const [keyword, setKeyword] = React.useState("");
-  const [departments, setDepartments] = React.useState<DepartmentOption[]>([]);
-  const [doctors, setDoctors] = React.useState<DoctorOption[]>([]);
-  const [masterDataLoading, setMasterDataLoading] = React.useState(false);
-  const [masterDataError, setMasterDataError] = React.useState<string | null>(null);
   const [patientSuggestions, setPatientSuggestions] = React.useState<Patient[]>([]);
   const [openSuggestion, setOpenSuggestion] = React.useState(false);
   const [patientSearchResultCount, setPatientSearchResultCount] = React.useState<number | null>(
@@ -103,14 +110,16 @@ export default function InpatientReceptionList() {
     roomId: string;
     note: string;
   }>({
-    departmentId: 0,
-    doctorId: null,
+    departmentId: INPATIENT_DEPARTMENTS[0]?.id ?? 1,
+    doctorId:
+      INPATIENT_DOCTORS.find(
+        (doctor) => doctor.departmentId === (INPATIENT_DEPARTMENTS[0]?.id ?? 1)
+      )?.id ?? null,
     admissionPlanAt: toLocalDateTimeValue(new Date()),
     wardId: "",
     roomId: "",
     note: "",
   });
-  const [page, setPage] = React.useState(1);
 
   React.useEffect(() => {
     dispatch(inpatientReceptionActions.fetchInpatientReceptionsRequest());
@@ -124,37 +133,6 @@ export default function InpatientReceptionList() {
     }
     dispatch(inpatientReceptionActions.fetchInpatientReceptionSuccess(list[0]));
   }, [list, selected, dispatch]);
-
-  React.useEffect(() => {
-    let active = true;
-
-    const loadMasterData = async () => {
-      try {
-        setMasterDataLoading(true);
-        setMasterDataError(null);
-        const [departmentList, doctorList] = await Promise.all([
-          fetchDepartmentsApi(),
-          fetchDoctorsApi(),
-        ]);
-        if (!active) return;
-        setDepartments(departmentList);
-        setDoctors(doctorList);
-      } catch (err: unknown) {
-        if (!active) return;
-        const message =
-          err instanceof Error && err.message ? err.message : "진료과/의사 목록 조회 실패";
-        setMasterDataError(message);
-      } finally {
-        if (!active) return;
-        setMasterDataLoading(false);
-      }
-    };
-
-    void loadMasterData();
-    return () => {
-      active = false;
-    };
-  }, []);
 
   const openCreateWithPatient = React.useCallback(
     (patient: Patient) => {
@@ -171,7 +149,6 @@ export default function InpatientReceptionList() {
 
   const onSearch = () => {
     const kw = keyword.trim();
-    setPage(1);
     if (!kw) return alert("검색어를 입력해주세요.");
 
     const run = async () => {
@@ -209,7 +186,6 @@ export default function InpatientReceptionList() {
   };
 
   const onReset = () => {
-    setPage(1);
     setKeyword("");
     setPatientSuggestions([]);
     setOpenSuggestion(false);
@@ -251,7 +227,6 @@ export default function InpatientReceptionList() {
   const onPickPatientSuggestion = (patient: Patient) => {
     if (!patient.patientId) return;
     const nextKeyword = patient.name?.trim() ?? "";
-    setPage(1);
     setKeyword(nextKeyword);
     setPatientSuggestions([]);
     setOpenSuggestion(false);
@@ -259,19 +234,11 @@ export default function InpatientReceptionList() {
     openCreateWithPatient(patient);
   };
 
-  const doctorsForSelectedDepartment = React.useMemo(() => {
-    if (!createModalForm.departmentId) return doctors;
-    return doctors.filter(
-      (doctor) => (doctor.departmentId ?? null) === createModalForm.departmentId
-    );
-  }, [createModalForm.departmentId, doctors]);
-
   React.useEffect(() => {
     if (!createModalOpen) return;
-    const defaultDepartmentId = departments[0]?.departmentId ?? 0;
+    const defaultDepartmentId = INPATIENT_DEPARTMENTS[0]?.id ?? 1;
     const defaultDoctorId =
-      doctors.find((doctor) => (doctor.departmentId ?? null) === defaultDepartmentId)?.doctorId ??
-      null;
+      INPATIENT_DOCTORS.find((doctor) => doctor.departmentId === defaultDepartmentId)?.id ?? null;
     setCreateModalForm({
       departmentId: defaultDepartmentId,
       doctorId: defaultDoctorId,
@@ -280,7 +247,7 @@ export default function InpatientReceptionList() {
       roomId: "",
       note: "",
     });
-  }, [createModalOpen, departments, doctors]);
+  }, [createModalOpen]);
 
   const onCreateModalSubmit = () => {
     if (!createTargetPatient.patientId) {
@@ -288,8 +255,8 @@ export default function InpatientReceptionList() {
       return;
     }
 
-    const department = departments.find(
-      (item) => item.departmentId === createModalForm.departmentId
+    const department = INPATIENT_DEPARTMENTS.find(
+      (item) => item.id === createModalForm.departmentId
     );
     if (!department) {
       alert("진료과를 선택해주세요.");
@@ -297,21 +264,21 @@ export default function InpatientReceptionList() {
     }
 
     if (!createModalForm.admissionPlanAt) {
-      alert("입원 예정 시간???낅젰?댁＜?몄슂.");
+      alert("입원 예정 시간을 입력해주세요.");
       return;
     }
 
     const doctor =
-      doctors.find((item) => item.doctorId === createModalForm.doctorId) ??
-      doctors.find((item) => (item.departmentId ?? null) === department.departmentId) ??
+      INPATIENT_DOCTORS.find((item) => item.id === createModalForm.doctorId) ??
+      INPATIENT_DOCTORS.find((item) => item.departmentId === department.id) ??
       null;
 
     dispatch(
       inpatientReceptionActions.createInpatientReceptionRequest({
         receptionNo: "",
         patientId: createTargetPatient.patientId,
-        departmentId: department.departmentId,
-        doctorId: doctor?.doctorId ?? null,
+        departmentId: department.id,
+        doctorId: doctor?.id ?? null,
         scheduledAt: null,
         arrivedAt: null,
         status: "WAITING",
@@ -332,27 +299,17 @@ export default function InpatientReceptionList() {
   };
 
   const visibleList = list;
-  const totalCount = visibleList.length;
-  const totalPages = Math.max(1, Math.ceil(totalCount / ITEMS_PER_PAGE));
-  const pagedList = React.useMemo(() => {
-    const start = (page - 1) * ITEMS_PER_PAGE;
-    return visibleList.slice(start, start + ITEMS_PER_PAGE);
-  }, [visibleList, page]);
-  React.useEffect(() => {
-    setPage((prev) => Math.min(prev, totalPages));
-  }, [totalPages]);
 
   const primary =
-    (selected && pagedList.find((item) => item.receptionId === selected.receptionId)) ||
-    pagedList[0] ||
+    (selected && visibleList.find((item) => item.receptionId === selected.receptionId)) ||
     visibleList[0];
 
   React.useEffect(() => {
-    if (!pagedList.length) return;
-    if (!selected || !pagedList.some((item) => item.receptionId === selected.receptionId)) {
-      dispatch(inpatientReceptionActions.fetchInpatientReceptionSuccess(pagedList[0]));
+    if (!visibleList.length) return;
+    if (!selected || !visibleList.some((item) => item.receptionId === selected.receptionId)) {
+      dispatch(inpatientReceptionActions.fetchInpatientReceptionSuccess(visibleList[0]));
     }
-  }, [pagedList, selected, dispatch]);
+  }, [visibleList, selected, dispatch]);
 
   return (
     <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
@@ -525,7 +482,7 @@ export default function InpatientReceptionList() {
               </Button>
             </Stack>
             <Box sx={{ flex: 1 }} />
-            <Chip label={`전체 ${totalCount}`} color="primary" />
+            <Chip label={`전체 ${visibleList.length}`} color="primary" />
           </Stack>
         </CardContent>
       </Card>
@@ -624,11 +581,11 @@ export default function InpatientReceptionList() {
               <Stack spacing={2}>
                 <Stack direction="row" justifyContent="space-between" alignItems="center">
                   <Typography fontWeight={800}>입원 접수 목록</Typography>
-                  <Chip label={`총 ${totalCount}`} size="small" color="primary" />
+                  <Chip label={`총 ${visibleList.length}`} size="small" color="primary" />
                 </Stack>
 
                 <Stack spacing={1}>
-                  {pagedList.map((p) => {
+                  {visibleList.map((p) => {
                     const isSelected = selected?.receptionId === p.receptionId;
                     return (
                       <Box
@@ -673,17 +630,6 @@ export default function InpatientReceptionList() {
                     <Typography color="#7b8aa9">조회된 입원 접수가 없습니다.</Typography>
                   )}
                 </Stack>
-                {visibleList.length > 0 && totalPages > 1 && (
-                  <Stack direction="row" justifyContent="center" sx={{ pt: 1 }}>
-                    <Pagination
-                      page={page}
-                      count={totalPages}
-                      onChange={(_, value) => setPage(value)}
-                      color="primary"
-                      size="small"
-                    />
-                  </Stack>
-                )}
               </Stack>
             </CardContent>
           </Card>
@@ -717,8 +663,8 @@ export default function InpatientReceptionList() {
               onChange={(e) => {
                 const departmentId = Number(e.target.value);
                 const nextDoctorId =
-                  doctors.find((doctor) => (doctor.departmentId ?? null) === departmentId)
-                    ?.doctorId ?? null;
+                  INPATIENT_DOCTORS.find((doctor) => doctor.departmentId === departmentId)?.id ??
+                  null;
                 setCreateModalForm((prev) => ({
                   ...prev,
                   departmentId,
@@ -727,9 +673,9 @@ export default function InpatientReceptionList() {
               }}
               fullWidth
             >
-              {departments.map((item) => (
-                <MenuItem key={item.departmentId} value={item.departmentId}>
-                  {item.departmentName}
+              {INPATIENT_DEPARTMENTS.map((item) => (
+                <MenuItem key={item.id} value={item.id}>
+                  {item.name}
                 </MenuItem>
               ))}
             </TextField>
@@ -741,7 +687,7 @@ export default function InpatientReceptionList() {
               value={createModalForm.doctorId ?? ""}
               onChange={(e) => {
                 const doctorId = Number(e.target.value);
-                const doctor = doctors.find((item) => item.doctorId === doctorId);
+                const doctor = INPATIENT_DOCTORS.find((item) => item.id === doctorId);
                 setCreateModalForm((prev) => ({
                   ...prev,
                   doctorId,
@@ -750,23 +696,12 @@ export default function InpatientReceptionList() {
               }}
               fullWidth
             >
-              {doctorsForSelectedDepartment.map((item) => (
-                <MenuItem key={item.doctorId} value={item.doctorId}>
-                  {item.doctorName}
+              {INPATIENT_DOCTORS.map((item) => (
+                <MenuItem key={item.id} value={item.id}>
+                  {item.name}
                 </MenuItem>
               ))}
-              {!doctorsForSelectedDepartment.length && (
-                <MenuItem disabled value="">
-                  담당의 없음
-                </MenuItem>
-              )}
             </TextField>
-
-            {masterDataError && (
-              <Typography color="error" fontWeight={700}>
-                {masterDataError}
-              </Typography>
-            )}
 
             <TextField
               size="small"
@@ -831,11 +766,7 @@ export default function InpatientReceptionList() {
                 variant="contained"
                 onClick={onCreateModalSubmit}
                 disabled={
-                  loading ||
-                  masterDataLoading ||
-                  !createTargetPatient.patientId ||
-                  !createModalForm.departmentId ||
-                  !createModalForm.admissionPlanAt
+                  loading || !createTargetPatient.patientId || !createModalForm.admissionPlanAt
                 }
                 sx={{ bgcolor: "#2b5aa9" }}
               >
@@ -854,6 +785,3 @@ export default function InpatientReceptionList() {
     </Box>
   );
 }
-
-
-

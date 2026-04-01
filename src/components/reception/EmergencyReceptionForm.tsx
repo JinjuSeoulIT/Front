@@ -20,8 +20,7 @@ import type { EmergencyReceptionForm as EmergencyReceptionFormPayload } from "@/
 import type {
   PatientOption,
 } from "@/features/Reservations/ReservationTypes";
-import type { Patient } from "@/features/patients/patientTypes";
-import { fetchPatientApi, searchPatientsApi } from "@/lib/patient/patientApi";
+import { fetchPatientsApi } from "@/lib/admin/masterDataApi";
 import EmergencyReceptionStatusTimeline from "@/components/reception/EmergencyReceptionStatusTimeline";
 
 type EmergencyReceptionFormState = {
@@ -102,14 +101,6 @@ const arrivalModes = [
   { value: "OTHER", label: "기타" },
 ];
 
-const triageLevelOptions = [
-  { value: "1", label: "1 - 소생" },
-  { value: "2", label: "2 - 긴급" },
-  { value: "3", label: "3 - 응급" },
-  { value: "4", label: "4 - 준응급" },
-  { value: "5", label: "5 - 비응급" },
-];
-
 const EMERGENCY_DEPARTMENT_ID = 5;
 const EMERGENCY_DEPARTMENT_NAME = "응급의학과";
 
@@ -181,12 +172,6 @@ function toOptionalDateTime(value: string) {
   return trimmed;
 }
 
-function toCurrentDateTimeLocal() {
-  const now = new Date();
-  const offsetMs = now.getTimezoneOffset() * 60 * 1000;
-  return new Date(now.getTime() - offsetMs).toISOString().slice(0, 16);
-}
-
 function getPatientDisplayName(
   patient?: (Partial<PatientOption> & { name?: string | null }) | null
 ) {
@@ -199,13 +184,6 @@ function getPatientDisplayName(
   const id = patient?.patientId;
   if (typeof id === "number") return `환자 ${id}`;
   return "";
-}
-
-function toPatientOption(patient: Patient): PatientOption {
-  return {
-    patientId: Number(patient.patientId),
-    patientName: (patient.name ?? "").trim(),
-  };
 }
 
 function statusLabelByCode(code?: string | null) {
@@ -260,7 +238,6 @@ export default function EmergencyReceptionForm({
   const [patientKeyword, setPatientKeyword] = React.useState("");
   const [listError, setListError] = React.useState<string | null>(null);
   const [submitError, setSubmitError] = React.useState<string | null>(null);
-  const [showOptionalFields, setShowOptionalFields] = React.useState(isEditMode);
   const isPatientFixed = !isEditMode && initial.patientId.trim().length > 0;
   const initialStatusCode = React.useMemo(
     () => statusLabelToCode[initial.status] ?? initial.status ?? "REGISTERED",
@@ -299,23 +276,6 @@ export default function EmergencyReceptionForm({
 
   React.useEffect(() => {
     if (!isEditMode) return;
-    setShowOptionalFields(true);
-  }, [isEditMode]);
-
-  React.useEffect(() => {
-    if (form.status === "TRIAGE" || reasonRequired) {
-      setShowOptionalFields(true);
-    }
-  }, [form.status, reasonRequired]);
-
-  React.useEffect(() => {
-    if (isEditMode) return;
-    if (form.arrivedAt.trim()) return;
-    setForm((prev) => ({ ...prev, arrivedAt: toCurrentDateTimeLocal() }));
-  }, [form.arrivedAt, isEditMode]);
-
-  React.useEffect(() => {
-    if (!isEditMode) return;
     const initialPatientId = initial.patientId.trim();
     if (!initialPatientId) return;
     if (form.patientId.trim()) return;
@@ -329,74 +289,24 @@ export default function EmergencyReceptionForm({
   }, [form.note, form.triageNote]);
 
   React.useEffect(() => {
-    const fixedPatientId = Number(form.patientId.trim() || initial.patientId.trim());
-    if (!Number.isFinite(fixedPatientId) || fixedPatientId <= 0) return;
-    if (patients.some((item) => item.patientId === fixedPatientId)) return;
-
     let mounted = true;
-    const loadDetail = async () => {
+    const load = async () => {
       try {
         setListError(null);
-        const patient = await fetchPatientApi(fixedPatientId);
+        const patientList = await fetchPatientsApi();
         if (!mounted) return;
-        const option = toPatientOption(patient);
-        setPatients((prev) => {
-          if (prev.some((item) => item.patientId === option.patientId)) return prev;
-          return [option, ...prev];
-        });
-        if (!patientKeyword.trim()) {
-          setPatientKeyword(option.patientName);
-        }
+        setPatients(patientList);
       } catch (err) {
         if (!mounted) return;
-        const message =
-          err instanceof Error ? err.message : "환자 상세 정보를 불러오지 못했습니다.";
+        const message = err instanceof Error ? err.message : "목록을 불러오지 못했습니다.";
         setListError(message);
       }
     };
-
-    loadDetail();
+    load();
     return () => {
       mounted = false;
     };
-  }, [form.patientId, initial.patientId, patients, patientKeyword]);
-
-  React.useEffect(() => {
-    if (isEditMode || isPatientFixed) return;
-
-    const keyword = patientKeyword.trim();
-    if (!keyword) {
-      if (!form.patientId.trim()) {
-        setPatients([]);
-      }
-      return;
-    }
-
-    let mounted = true;
-    const timer = setTimeout(async () => {
-      try {
-        setListError(null);
-        const list = await searchPatientsApi("name", keyword);
-        if (!mounted) return;
-
-        const mapped = list
-          .map(toPatientOption)
-          .filter((item) => Number.isFinite(item.patientId));
-
-        setPatients(mapped);
-      } catch (err) {
-        if (!mounted) return;
-        const message = err instanceof Error ? err.message : "환자 검색에 실패했습니다.";
-        setListError(message);
-        setPatients([]);
-      }
-    }, 250);
-
-    return () => {
-      mounted = false;
-      clearTimeout(timer);
-    };
-  }, [patientKeyword, isEditMode, isPatientFixed, form.patientId]);
+  }, []);
 
   React.useEffect(() => {
     setSubmitError(null);
@@ -741,7 +651,6 @@ export default function EmergencyReceptionForm({
             InputLabelProps={{ shrink: true }}
             value={form.arrivedAt}
             onChange={(e) => setForm((prev) => ({ ...prev, arrivedAt: e.target.value }))}
-            helperText="현재 시간으로 자동 입력됩니다. 필요 시 수정할 수 있습니다."
             fullWidth
             sx={fieldSx}
           />
@@ -750,21 +659,13 @@ export default function EmergencyReceptionForm({
 
           <Stack direction={{ xs: "column", sm: "row" }} spacing={1}>
             <TextField
-              select
-              label="중증도 *"
+              label="중증도 (1~5)"
               value={form.triageLevel}
               onChange={(e) => setForm((prev) => ({ ...prev, triageLevel: e.target.value }))}
               required
               fullWidth
-              helperText="1-소생 / 2-긴급 / 3-응급 / 4-준응급 / 5-비응급"
               sx={fieldSx}
-            >
-              {triageLevelOptions.map((opt) => (
-                <MenuItem key={opt.value} value={opt.value}>
-                  {opt.label}
-                </MenuItem>
-              ))}
-            </TextField>
+            />
             <TextField
               label="주호소"
               value={form.chiefComplaint}
@@ -774,115 +675,83 @@ export default function EmergencyReceptionForm({
               sx={fieldSx}
             />
           </Stack>
-          <Stack
-            direction={{ xs: "column", sm: "row" }}
-            justifyContent="space-between"
-            alignItems={{ xs: "flex-start", sm: "center" }}
-            spacing={1}
-          >
-            <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 700 }}>
-              바이탈/도착방법/메모는 선택 입력입니다
-            </Typography>
-            <Button
-              type="button"
-              size="small"
-              variant="outlined"
-              onClick={() => setShowOptionalFields((prev) => !prev)}
-              sx={{
-                borderColor: accent,
-                color: accent,
-                fontWeight: 700,
-                "&:hover": { borderColor: accent, bgcolor: "rgba(194,65,12,0.06)" },
-              }}
-            >
-              {showOptionalFields ? "선택 입력 숨기기" : "선택 입력 펼치기"}
-            </Button>
+          <Stack direction={{ xs: "column", sm: "row" }} spacing={1}>
+            <TextField
+              label="체온(℃)"
+              value={form.vitalTemp}
+              onChange={(e) => setForm((prev) => ({ ...prev, vitalTemp: e.target.value }))}
+              fullWidth
+              sx={fieldSx}
+            />
+            <TextField
+              label="수축기혈압(mmHg)"
+              value={form.vitalBpSystolic}
+              onChange={(e) => setForm((prev) => ({ ...prev, vitalBpSystolic: e.target.value }))}
+              fullWidth
+              sx={fieldSx}
+            />
+            <TextField
+              label="이완기혈압(mmHg)"
+              value={form.vitalBpDiastolic}
+              onChange={(e) => setForm((prev) => ({ ...prev, vitalBpDiastolic: e.target.value }))}
+              fullWidth
+              sx={fieldSx}
+            />
           </Stack>
-          {showOptionalFields && (
-            <>
-              <Stack direction={{ xs: "column", sm: "row" }} spacing={1}>
-                <TextField
-                  label="체온(℃)"
-                  value={form.vitalTemp}
-                  onChange={(e) => setForm((prev) => ({ ...prev, vitalTemp: e.target.value }))}
-                  fullWidth
-                  sx={fieldSx}
-                />
-                <TextField
-                  label="수축기혈압(mmHg)"
-                  value={form.vitalBpSystolic}
-                  onChange={(e) =>
-                    setForm((prev) => ({ ...prev, vitalBpSystolic: e.target.value }))
-                  }
-                  fullWidth
-                  sx={fieldSx}
-                />
-                <TextField
-                  label="이완기혈압(mmHg)"
-                  value={form.vitalBpDiastolic}
-                  onChange={(e) =>
-                    setForm((prev) => ({ ...prev, vitalBpDiastolic: e.target.value }))
-                  }
-                  fullWidth
-                  sx={fieldSx}
-                />
-              </Stack>
-              <Stack direction={{ xs: "column", sm: "row" }} spacing={1}>
-                <TextField
-                  label="심박수(bpm)"
-                  value={form.vitalHr}
-                  onChange={(e) => setForm((prev) => ({ ...prev, vitalHr: e.target.value }))}
-                  fullWidth
-                  sx={fieldSx}
-                />
-                <TextField
-                  label="호흡수(회/분)"
-                  value={form.vitalRr}
-                  onChange={(e) => setForm((prev) => ({ ...prev, vitalRr: e.target.value }))}
-                  fullWidth
-                  sx={fieldSx}
-                />
-                <TextField
-                  label="SpO2(동맥혈산소포화도)(%)"
-                  value={form.vitalSpo2}
-                  onChange={(e) => setForm((prev) => ({ ...prev, vitalSpo2: e.target.value }))}
-                  fullWidth
-                  sx={fieldSx}
-                />
-              </Stack>
-              <Stack direction={{ xs: "column", sm: "row" }} spacing={1}>
-                <TextField
-                  select
-                  label="도착 방법"
-                  value={form.arrivalMode}
-                  onChange={(e) => setForm((prev) => ({ ...prev, arrivalMode: e.target.value }))}
-                  fullWidth
-                  sx={fieldSx}
-                >
-                  {arrivalModes.map((opt) => (
-                    <MenuItem key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </MenuItem>
-                  ))}
-                </TextField>
-              </Stack>
-              <TextField
-                label="메모"
-                value={form.note}
-                onChange={(e) => setForm((prev) => ({ ...prev, note: e.target.value }))}
-                fullWidth
-                multiline
-                minRows={3}
-                required={reasonRequired}
-                helperText={
-                  reasonRequired
-                    ? "보류/전원/취소 상태로 변경하려면 사유(메모)를 입력해야 합니다."
-                    : undefined
-                }
-                sx={fieldSx}
-              />
-            </>
-          )}
+          <Stack direction={{ xs: "column", sm: "row" }} spacing={1}>
+            <TextField
+              label="심박수(bpm)"
+              value={form.vitalHr}
+              onChange={(e) => setForm((prev) => ({ ...prev, vitalHr: e.target.value }))}
+              fullWidth
+              sx={fieldSx}
+            />
+            <TextField
+              label="호흡수(회/분)"
+              value={form.vitalRr}
+              onChange={(e) => setForm((prev) => ({ ...prev, vitalRr: e.target.value }))}
+              fullWidth
+              sx={fieldSx}
+            />
+            <TextField
+              label="SpO2(동맥혈산소포화도)(%)"
+              value={form.vitalSpo2}
+              onChange={(e) => setForm((prev) => ({ ...prev, vitalSpo2: e.target.value }))}
+              fullWidth
+              sx={fieldSx}
+            />
+          </Stack>
+          <Stack direction={{ xs: "column", sm: "row" }} spacing={1}>
+            <TextField
+              select
+              label="도착 방법"
+              value={form.arrivalMode}
+              onChange={(e) => setForm((prev) => ({ ...prev, arrivalMode: e.target.value }))}
+              fullWidth
+              sx={fieldSx}
+            >
+              {arrivalModes.map((opt) => (
+                <MenuItem key={opt.value} value={opt.value}>
+                  {opt.label}
+                </MenuItem>
+              ))}
+            </TextField>
+          </Stack>
+          <TextField
+            label="메모"
+            value={form.note}
+            onChange={(e) => setForm((prev) => ({ ...prev, note: e.target.value }))}
+            fullWidth
+            multiline
+            minRows={3}
+            required={reasonRequired}
+            helperText={
+              reasonRequired
+                ? "보류/전원/취소 상태로 변경하려면 사유(메모)를 입력해야 합니다."
+                : undefined
+            }
+            sx={fieldSx}
+          />
           {isEditMode && receptionId && (
             <>
               <Divider />

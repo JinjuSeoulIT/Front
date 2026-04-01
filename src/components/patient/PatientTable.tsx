@@ -16,7 +16,6 @@ import {
   TableCell,
   TableContainer,
   TableHead,
-  Pagination,
   TableRow,
   Tooltip,
   Typography,
@@ -42,22 +41,6 @@ export default function PatientTable({
   onNavigateToDetail,
 }: Props) {
   const primary = selected ?? list[0] ?? null;
-  const ROWS_PER_PAGE = 10;
-  const [page, setPage] = React.useState(1);
-
-  React.useEffect(() => {
-    const maxPage = Math.max(1, Math.ceil(list.length / ROWS_PER_PAGE));
-    if (page > maxPage) {
-      setPage(maxPage);
-    }
-  }, [list.length, page]);
-
-  const pagedList = React.useMemo(() => {
-    const start = (page - 1) * ROWS_PER_PAGE;
-    return list.slice(start, start + ROWS_PER_PAGE);
-  }, [list, page]);
-
-  const totalPages = Math.max(1, Math.ceil(list.length / ROWS_PER_PAGE));
 
   return (
     <Card variant="outlined" sx={{ borderRadius: 2 }}>
@@ -90,7 +73,7 @@ export default function PatientTable({
               </TableRow>
             </TableHead>
             <TableBody>
-              {pagedList.map((p) => {
+              {list.map((p) => {
                 const isSelected = primary?.patientId === p.patientId;
                 const statusMeta = patientStatusMeta(p.statusCode);
                 return (
@@ -174,17 +157,6 @@ export default function PatientTable({
             </TableBody>
           </Table>
         </TableContainer>
-        <Box sx={{ display: "flex", justifyContent: "center", p: 2 }}>
-          <Pagination
-            count={totalPages}
-            page={page}
-            onChange={(_, value) => setPage(value)}
-            shape="rounded"
-            color="primary"
-            siblingCount={4}
-            boundaryCount={1}
-          />
-        </Box>
       </CardContent>
     </Card>
   );

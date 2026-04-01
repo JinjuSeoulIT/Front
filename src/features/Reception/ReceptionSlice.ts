@@ -100,6 +100,20 @@ const receptionSlice = createSlice({
       state.error = action.payload;
     },
 
+    // 삭제
+    deleteReceptionRequest: (state, _action: PayloadAction<string>) => {
+      state.loading = true;
+      state.error = null;
+    },
+    deleteReceptionSuccess: (state, action: PayloadAction<string>) => {
+      state.loading = false;
+      state.list = state.list.filter((p) => String(p.receptionId) !== action.payload);
+    },
+    deleteReceptionFailure: (state, action: PayloadAction<string>) => {
+      state.loading = false;
+      state.error = action.payload;
+    },
+
     // 취소
     cancelReceptionRequest: (state, _action: PayloadAction<CancelReceptionPayload>) => {
       state.loading = true;

@@ -20,7 +20,7 @@ import type {
   DoctorOption,
   PatientOption,
 } from "@/features/Reservations/ReservationTypes";
-import { fetchPatientsApi } from "@/lib/masterDataApi";
+import { fetchPatientsApi } from "@/lib/admin/masterDataApi";
 
 type InpatientReceptionFormState = {
   receptionNo: string;

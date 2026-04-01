@@ -5,6 +5,10 @@ import {
   Box,
   Button,
   Chip,
+  CircularProgress,
+  List,
+  ListItemButton,
+  ListItemText,
   Divider,
   MenuItem,
   Paper,
@@ -15,15 +19,15 @@ import {
 import LocalHospitalOutlinedIcon from "@mui/icons-material/LocalHospitalOutlined";
 import EditNoteRoundedIcon from "@mui/icons-material/EditNoteRounded";
 import type { ReceptionForm as ReceptionFormPayload } from "@/features/Reception/ReceptionTypes";
-import type { DepartmentOption, DoctorOption } from "@/features/Reservations/ReservationTypes";
-import { fetchDepartmentsApi, fetchDoctorsApi } from "@/lib/masterDataApi";
+import { searchPatientsApi } from "@/lib/patient/patientApi";
+import type { Patient } from "@/features/patients/patientTypes";
 
 type ReceptionFormState = {
   receptionNo: string;
   patientId?: number | null;
   patientName: string;
-  departmentId: string;
-  doctorId: string;
+  departmentName: string;
+  doctorName: string;
   visitType: string;
   scheduledAt: string;
   arrivedAt: string;
@@ -49,6 +53,21 @@ const statusOptions = [
   { value: "ON_HOLD", label: "보류" },
   { value: "CANCELED", label: "취소" },
 ];
+
+const departments = [
+  { id: 1, name: "내과", doctor: "송태민", doctorId: 1 },
+  { id: 2, name: "정형외과", doctor: "이현석", doctorId: 2 },
+  { id: 3, name: "소아과", doctor: "성숙희", doctorId: 3 },
+  { id: 4, name: "이비인후과", doctor: "최효정", doctorId: 4 },
+  { id: 5, name: "피부과", doctor: "홍예진", doctorId: 5 },
+];
+
+const doctors = departments.map((d) => ({
+  id: d.doctorId,
+  name: d.doctor,
+  departmentId: d.id,
+  departmentName: d.name,
+}));
 
 function toOptionalNumber(value: string) {
   const trimmed = value.trim();
@@ -79,10 +98,9 @@ export default function ReceptionForm({
   const borderTone = isEditMode ? "rgba(15,118,110,0.2)" : "rgba(43,90,169,0.2)";
 
   const [form, setForm] = React.useState<ReceptionFormState>(initial);
-  const [departments, setDepartments] = React.useState<DepartmentOption[]>([]);
-  const [doctors, setDoctors] = React.useState<DoctorOption[]>([]);
-  const [masterDataLoading, setMasterDataLoading] = React.useState(false);
-  const [masterDataError, setMasterDataError] = React.useState<string | null>(null);
+  const [patientSearchLoading, setPatientSearchLoading] = React.useState(false);
+  const [patientSearchResults, setPatientSearchResults] = React.useState<Patient[]>([]);
+  const [showPatientSearchResults, setShowPatientSearchResults] = React.useState(false);
   const fieldSx = {
     "& .MuiInputBase-root": {
       bgcolor: "#f7faff",
@@ -105,61 +123,62 @@ export default function ReceptionForm({
   }, [initial]);
 
   React.useEffect(() => {
+    const keyword = form.patientName.trim();
+    if (!keyword || isEditMode) {
+      setPatientSearchResults([]);
+      setShowPatientSearchResults(false);
+      return;
+    }
+
     let active = true;
-    const loadMasterData = async () => {
+    const timer = setTimeout(async () => {
       try {
-        setMasterDataLoading(true);
-        setMasterDataError(null);
-        const [departmentList, doctorList] = await Promise.all([
-          fetchDepartmentsApi(),
-          fetchDoctorsApi(),
-        ]);
+        setPatientSearchLoading(true);
+        const list = await searchPatientsApi("name", keyword);
         if (!active) return;
-        setDepartments(departmentList);
-        setDoctors(doctorList);
-      } catch (err: unknown) {
+        setPatientSearchResults(list.slice(0, 8));
+        setShowPatientSearchResults(list.length > 0);
+      } catch {
         if (!active) return;
-        const message =
-          err instanceof Error && err.message ? err.message : "진료과/의사 목록 조회 실패";
-        setMasterDataError(message);
+        setPatientSearchResults([]);
+        setShowPatientSearchResults(false);
       } finally {
-        if (!active) return;
-        setMasterDataLoading(false);
+        if (active) {
+          setPatientSearchLoading(false);
+        }
       }
-    };
-    void loadMasterData();
+    }, 250);
+
     return () => {
       active = false;
+      clearTimeout(timer);
     };
-  }, []);
-
-  const doctorsByDepartment = React.useMemo(() => {
-    const selectedDepartmentId = toOptionalNumber(form.departmentId);
-    if (!selectedDepartmentId) return doctors;
-    return doctors.filter(
-      (doctor) => (doctor.departmentId ?? null) === selectedDepartmentId
-    );
-  }, [doctors, form.departmentId]);
+  }, [form.patientName, isEditMode]);
 
   const handleSubmit = () => {
     if (!form.patientName.trim()) return;
-    const departmentId = toOptionalNumber(form.departmentId);
-    if (!departmentId) return;
+    if (!form.departmentName.trim()) return;
+    if (!isEditMode && !form.patientId) {
+      alert("등록된 환자 목록에서 환자를 선택해 주세요.");
+      return;
+    }
 
-    const doctorId = toOptionalNumber(form.doctorId) ?? null;
+    const selectedDept = departments.find((d) => d.name === form.departmentName);
+    const selectedDoctor = doctors.find((d) => d.name === form.doctorName);
+    if (!selectedDept) return;
 
     onSubmit({
       receptionNo: isEditMode ? form.receptionNo.trim() : "",
       patientName: form.patientName.trim(),
       patientId: form.patientId ?? null,
       visitType: "OUTPATIENT",
-      departmentId,
-      departmentName: null,
-      doctorId,
-      doctorName: null,
+      departmentId: selectedDept.id,
+      departmentName: selectedDept.name,
+      doctorId: selectedDoctor?.id ?? null,
+      doctorName: selectedDoctor?.name ?? null,
       scheduledAt: toOptionalString(form.scheduledAt),
       arrivedAt: toOptionalString(form.arrivedAt),
-      status: (form.status || "WAITING") as ReceptionFormPayload["status"],
+      status: (form.status || "WAITING") as any,
       note: toOptionalString(form.note) ?? null,
     });
   };
@@ -262,21 +281,57 @@ export default function ReceptionForm({
                 }
                 sx={fieldSx}
               />
+              {patientSearchLoading && !isEditMode && (
+                <CircularProgress size={18} sx={{ position: "absolute", top: 14, right: 12 }} />
+              )}
+              {!isEditMode && showPatientSearchResults && patientSearchResults.length > 0 && (
+                <Paper
+                  elevation={4}
+                  sx={{
+                    position: "absolute",
+                    top: "calc(100% + 6px)",
+                    left: 0,
+                    right: 0,
+                    zIndex: 30,
+                    maxHeight: 280,
+                    overflowY: "auto",
+                    borderRadius: 2,
+                  }}
+                >
+                  <List dense>
+                    {patientSearchResults.map((p) => (
+                      <ListItemButton
+                        key={p.patientId}
+                        onClick={() => {
+                          setForm((prev) => ({
+                            ...prev,
+                            patientId: p.patientId,
+                            patientName: p.name,
+                          }));
+                          setShowPatientSearchResults(false);
+                        }}
+                      >
+                        <ListItemText
+                          primary={`${p.name} · ID ${p.patientId}`}
+                          secondary={`${p.birthDate ?? "-"} · ${p.phone ?? "-"}`}
+                        />
+                      </ListItemButton>
+                    ))}
+                  </List>
+                </Paper>
+              )}
             </Box>
             <TextField
               select
               label="진료과"
-              value={form.departmentId}
+              value={form.departmentName}
               onChange={(e) => {
-                const departmentId = e.target.value;
-                const nextDoctorName =
-                  doctors.find(
-                    (doctor) => String(doctor.departmentId ?? "") === departmentId
-                  )?.doctorId ?? "";
+                const name = e.target.value;
+                const dept = departments.find((d) => d.name === name);
                 setForm((prev) => ({
                   ...prev,
-                  departmentId,
-                  doctorId: nextDoctorName ? String(nextDoctorName) : "",
+                  departmentName: name,
+                  doctorName: dept?.doctor ?? "",
                 }));
               }}
               required
@@ -284,8 +339,8 @@ export default function ReceptionForm({
               sx={fieldSx}
             >
               {departments.map((opt) => (
-                <MenuItem key={opt.departmentId} value={String(opt.departmentId)}>
-                  {opt.departmentName}
+                <MenuItem key={opt.id} value={opt.name}>
+                  {opt.name}
                 </MenuItem>
               ))}
             </TextField>
@@ -294,33 +349,26 @@ export default function ReceptionForm({
             <TextField
               select
               label="의사 이름"
-              value={form.doctorId}
+              value={form.doctorName}
               onChange={(e) => {
-                const doctorId = e.target.value;
-                const doctor = doctors.find(
-                  (item) => String(item.doctorId) === doctorId
-                );
+                const name = e.target.value;
+                const doctor = doctors.find((d) => d.name === name);
                 setForm((prev) => ({
                   ...prev,
-                  doctorId,
-                  departmentId: doctor?.departmentId ? String(doctor.departmentId) : prev.departmentId,
+                  doctorName: name,
+                  departmentName: doctor?.departmentName ?? prev.departmentName,
                 }));
               }}
               fullWidth
               sx={fieldSx}
             >
-              {doctorsByDepartment.map((opt) => (
-                <MenuItem key={opt.doctorId} value={String(opt.doctorId)}>
-                  {opt.doctorName}
+              {doctors.map((opt) => (
+                <MenuItem key={opt.id} value={opt.name}>
+                  {opt.name}
                 </MenuItem>
               ))}
             </TextField>
           </Stack>
-          {masterDataError && (
-            <Typography color="error" fontWeight={800}>
-              {masterDataError}
-            </Typography>
-          )}
           <Stack direction={{ xs: "column", sm: "row" }} spacing={1}>
             <TextField
               label="내원 유형"
@@ -406,9 +454,9 @@ export default function ReceptionForm({
             onClick={handleSubmit}
             disabled={
               loading ||
-              masterDataLoading ||
               !form.patientName.trim() ||
-              !form.departmentId.trim()
+              (!isEditMode && !form.patientId) ||
+              !form.departmentName.trim()
             }
             sx={{
               bgcolor: accent,
@@ -428,4 +476,3 @@ export default function ReceptionForm({
     </Paper>
   );
 }
-

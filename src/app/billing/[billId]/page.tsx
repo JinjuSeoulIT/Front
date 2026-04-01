@@ -4,60 +4,30 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { useDispatch, useSelector } from "react-redux";
 import type { RootState, AppDispatch } from "@/store/store";
-import toast from "react-hot-toast";
-import Script from "next/script";
-import MainLayout from "@/components/layout/MainLayout";
-
-declare global {
-  interface Window {
-    TossPayments?: any;
-  }
-}
-
-import Script from "next/script";
-declare global {
-  interface Window {
-    TossPayments?: any;
-  }
-}
 
 import {
   fetchBillingDetailRequest,
   fetchPaymentsByBillRequest,
   createPaymentRequest,
-  confirmBillRequest,
   cancelPaymentRequest,
   refundPaymentRequest,
 } from "@/features/billing/billingSlice";
 
-import type { PaymentMethod } from "@/lib/billing/billingApi";
-<<<<<<< HEAD
-=======
-import {
-  getDisplayBillingStatusLabel,
-  getDisplayBillingStatusColor,
-} from "@/lib/billing/billingStatus";
->>>>>>> feature/billing
 
-/* MUI UI */
-import {
-  Chip,
-  Card,
-  CardContent,
-  Stack,
-  Typography,
-  Button,
-  Box,
-  Divider,
-} from "@mui/material";
+// MUI Chip 사용 (청구 상태 표시)
+import { Chip } from "@mui/material";
+import MainLayout from "@/components/layout/MainLayout";
 
-/* 결제 상태 색상 */
-const getPaymentStatusColor = (status: string) => {
+
+// Bill 상태 스타일
+const getBillStatusColor = (status: string) => {
   switch (status) {
-    case "COMPLETED":
-      return "success";
-    case "REFUNDED":
+    case "READY":
+      return "default";
+    case "CONFIRMED":
       return "warning";
+    case "PAID":
+      return "success";
     case "CANCELED":
       return "error";
     default:
@@ -65,89 +35,57 @@ const getPaymentStatusColor = (status: string) => {
   }
 };
 
-/* 결제 상태 라벨 */
-const getPaymentStatusLabel = (status: string) => {
-  switch (status) {
-    case "COMPLETED":
-      return "결제 완료";
-    case "REFUNDED":
-      return "부분 환불";
-    case "CANCELED":
-      return "수납 취소";
-    default:
-      return status;
+const notifyError = (message: string) => {
+  if (typeof window !== "undefined") {
+    window.alert(message);
+  } else {
+    console.error(message);
   }
 };
 
-/* 결제 상태별 금액 라벨 */
-const getPaymentAmountLabel = (status: string) => {
-  switch (status) {
-    case "REFUNDED":
-      return "환불 금액";
-    case "CANCELED":
-      return "취소 금액";
-    default:
-      return "결제 금액";
-  }
-};
-
-/* 결제 상태별 설명 */
-const getPaymentStatusDescription = (status: string) => {
-  switch (status) {
-    case "COMPLETED":
-      return "정상 결제된 이력입니다.";
-    case "REFUNDED":
-      return "부분 환불이 반영된 이력입니다.";
-    case "CANCELED":
-      return "전체 취소된 결제 이력입니다.";
-    default:
-      return "";
-  }
-};
-
-/* 결제 수단 라벨 */
-const getPaymentMethodLabel = (method: string) => {
-  switch (method) {
-    case "CASH":
-      return "현금";
-    case "CARD":
-      return "카드";
-    case "TRANSFER":
-      return "계좌이체";
-    default:
-      return method;
-  }
-};
-
-/* 입력값 보정 */
-const normalizeAmount = (value: number, remaining: number): number => {
+const normalizeAmount = (
+  value: number,
+  remaining: number
+): number => {
   if (value < 0) return 0;
   if (value > remaining) return remaining;
   return value;
 };
 
-const formatNumber = (value: number) => {
-  return value.toLocaleString();
-};
-
-const unformatNumber = (value: string) => {
-  return Number(value.replace(/,/g, ""));
-};
-
-/* 숫자 입력 정리 */
-const sanitizeNumberInput = (value: string) => {
-  return value.replace(/[^\d]/g, "");
-};
-
-/* 스타일 */
 const inputStyle: React.CSSProperties = {
   padding: "8px",
   marginRight: "8px",
-  width: "160px",
+  width: "140px",
   border: "1px solid #ccc",
   borderRadius: "6px",
   fontSize: "14px",
-  backgroundColor: "#ffffff",
+};
+
+const fullPayBtnStyle = (loading: boolean): React.CSSProperties => ({
+  padding: "8px 16px",
+  marginRight: "8px",
+  backgroundColor: loading ? "#9e9e9e" : "#1565c0",
+  color: "white",
+  border: "none",
+  borderRadius: "6px",
+  cursor: loading ? "not-allowed" : "pointer",
+});
+
+const partialPayBtnStyle = (loading: boolean): React.CSSProperties => ({
+  padding: "8px 16px",
+  backgroundColor: loading ? "#9e9e9e" : "#2e7d32",
+  color: "white",
+  border: "none",
+  borderRadius: "6px",
+  cursor: loading ? "not-allowed" : "pointer",
+});
+
+const summaryBoxStyle: React.CSSProperties = {
+  padding: "12px",
+  border: "1px solid #ddd",
+  borderRadius: "8px",
+  marginBottom: "16px",
+  backgroundColor: "#f9f9f9",
 };
 
 const paymentCardStyle: React.CSSProperties = {
@@ -155,41 +93,29 @@ const paymentCardStyle: React.CSSProperties = {
   border: "1px solid #e0e0e0",
   borderRadius: "8px",
   marginBottom: "8px",
-  backgroundColor: "#ffffff",
-  boxShadow: "0 1px 4px rgba(0,0,0,0.05)",
 };
 
-/* 결제 상태별 카드 스타일 */
-const getPaymentCardStyle = (status: string): React.CSSProperties => {
-  switch (status) {
-    case "REFUNDED":
-      return {
-        ...paymentCardStyle,
-        border: "1px solid #f3c86a",
-        backgroundColor: "#fffaf0",
-      };
-    case "CANCELED":
-      return {
-        ...paymentCardStyle,
-        border: "1px solid #ef9a9a",
-        backgroundColor: "#fff5f5",
-      };
-    default:
-      return paymentCardStyle;
-  }
+const cancelBtnStyle: React.CSSProperties = {
+  marginTop: "8px",
+  padding: "6px 12px",
+  backgroundColor: "#d32f2f",
+  color: "white",
+  border: "none",
+  borderRadius: "6px",
+  cursor: "pointer",
+  fontSize: "12px",
 };
 
-// 결제수단 라디오 영역 스타일
-const methodBoxStyle: React.CSSProperties = {
-  display: "flex",
-  gap: "16px",
-  alignItems: "center",
-  marginTop: "12px",
-  marginBottom: "12px",
-  backgroundColor: "#ffffff",
-  padding: "10px 12px",
-  border: "1px solid #e5e7eb",
-  borderRadius: "8px",
+const refundBtnStyle: React.CSSProperties = {
+  marginTop: "8px",
+  marginLeft: "8px",
+  padding: "6px 12px",
+  backgroundColor: "#1976d2",
+  color: "white",
+  border: "none",
+  borderRadius: "6px",
+  cursor: "pointer",
+  fontSize: "12px",
 };
 
 export default function BillingDetailPage() {
@@ -202,9 +128,9 @@ export default function BillingDetailPage() {
   );
 
   const [payAmount, setPayAmount] = useState<number>(0);
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("CASH");
+
   const [refundTargetId, setRefundTargetId] = useState<number | null>(null);
-  const [refundAmountInput, setRefundAmountInput] = useState<string>("");
+  const [refundAmount, setRefundAmount] = useState<number>(0);
 
   useEffect(() => {
     if (billId) {
@@ -213,153 +139,28 @@ export default function BillingDetailPage() {
     }
   }, [billId, dispatch]);
 
-<<<<<<< HEAD
-//toss
-const tossClientKey = process.env.NEXT_PUBLIC_TOSS_CLIENT_KEY;
-const createOrderId = (billId: number) => {
-  return `bill-${billId}-${Date.now()}`;
-};
-
-const requestTossCardPayment = async (amount: number) => {
-  if (!billingDetail) return;
-
-  if (!tossClientKey) {
-    toast.error("토스 클라이언트 키가 없습니다.");
-    return;
-  }
-
-  if (!window.TossPayments) {
-    toast.error("토스 SDK가 아직 로드되지 않았습니다.");
-    return;
-  }
-
-  const orderId = createOrderId(billingDetail.billId);
-
-  sessionStorage.setItem(
-    "tossPaymentContext",
-    JSON.stringify({
-      billId: billingDetail.billId,
-      patientId: billingDetail.patientId,
-      requestedAmount: amount,
-      orderId,
-    })
-  );
-
-  try {
-    const tossPayments = window.TossPayments(tossClientKey);
-    const payment = tossPayments.payment({
-      customerKey: `patient-${billingDetail.patientId}`,
-    });
-
-    await payment.requestPayment({
-      method: "CARD",
-      amount: {
-        currency: "KRW",
-        value: amount,
-      },
-      orderId,
-      orderName: `진료비 수납 - bill ${billingDetail.billId}`,
-      successUrl: `${window.location.origin}/billing/toss/success`,
-      failUrl: `${window.location.origin}/billing/toss/fail`,
-    });
-  } catch (error) {
-    console.error("[toss] requestPayment error", error);
-    toast.error("토스 결제창 호출 중 오류가 발생했습니다.");
-  }
-};
-=======
-  const tossClientKey = process.env.NEXT_PUBLIC_TOSS_CLIENT_KEY;
-
-  const createOrderId = (billId: number) => {
-    return `bill-${billId}-${Date.now()}`;
-  };
-
-  const requestTossCardPayment = async (amount: number) => {
-    if (!billingDetail) return;
-
-    if (!tossClientKey) {
-      toast.error("토스 클라이언트 키가 없습니다.");
-      return;
-    }
-
-    if (!window.TossPayments) {
-      toast.error("토스 SDK가 아직 로드되지 않았습니다.");
-      return;
-    }
-
-    const orderId = createOrderId(billingDetail.billId);
-
-    sessionStorage.setItem(
-      "tossPaymentContext",
-      JSON.stringify({
-        billId: billingDetail.billId,
-        patientId: billingDetail.patientId,
-        requestedAmount: amount,
-        orderId,
-      })
-    );
-
-    try {
-      const tossPayments = window.TossPayments(tossClientKey);
-      const payment = tossPayments.payment({
-        customerKey: `patient-${billingDetail.patientId}`,
-      });
-
-      await payment.requestPayment({
-        method: "CARD",
-        amount: {
-          currency: "KRW",
-          value: amount,
-        },
-        orderId,
-        orderName: `진료비 수납 - bill ${billingDetail.billId}`,
-        successUrl: `${window.location.origin}/billing/toss/success`,
-        failUrl: `${window.location.origin}/billing/toss/fail`,
-      });
-    } catch (error) {
-      console.error("[toss] requestPayment error", error);
-      toast.error("토스 결제창 호출 중 오류가 발생했습니다.");
-    }
-  };
->>>>>>> feature/billing
-
   useEffect(() => {
     setPayAmount(0);
-    setPaymentMethod("CASH");
-    setRefundTargetId(null);
-    setRefundAmountInput("");
   }, [billingDetail]);
 
   const handlePayment = () => {
     if (!billingDetail) return;
 
     if (payAmount <= 0) {
-      toast.error("결제 금액을 입력하세요.");
+      notifyError("결제 금액을 입력하세요.");
       return;
     }
 
     if (payAmount > billingDetail.remainingAmount) {
-      toast.error("남은 금액보다 클 수 없습니다.");
+      notifyError("남은 금액보다 클 수 없습니다.");
       return;
     }
-
-    if (paymentMethod === "CARD") {
-<<<<<<< HEAD
-        requestTossCardPayment(payAmount);
-        return;
-  }
-=======
-      requestTossCardPayment(payAmount);
-      return;
-    }
->>>>>>> feature/billing
 
     dispatch(
       createPaymentRequest({
         billId: billingDetail.billId,
         amount: payAmount,
         patientId: billingDetail.patientId,
-        method: paymentMethod,
       })
     );
   };
@@ -383,40 +184,23 @@ const requestTossCardPayment = async (amount: number) => {
     if (!billingDetail) return;
 
     if (billingDetail.remainingAmount <= 0) {
-      toast.error("이미 전액 수납 완료되었습니다.");
-      return;
-    }
-<<<<<<< HEAD
-    if (paymentMethod === "CARD") {
-      requestTossCardPayment(billingDetail.remainingAmount);
-      return;
-  }
-=======
-
-    if (paymentMethod === "CARD") {
-      requestTossCardPayment(billingDetail.remainingAmount);
+      notifyError("이미 전액 수납 완료되었습니다.");
       return;
     }
 
->>>>>>> feature/billing
     dispatch(
       createPaymentRequest({
         billId: billingDetail.billId,
         amount: billingDetail.remainingAmount,
         patientId: billingDetail.patientId,
-        method: paymentMethod,
       })
     );
   };
 
   const formatDateTime = (isoString: string) => {
     const date = new Date(isoString);
-    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(
-      2,
-      "0"
-    )}-${String(date.getDate()).padStart(2, "0")} ${String(
-      date.getHours()
-    ).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2,"0")}-${String(date.getDate()).padStart(2,"0")} 
+    ${String(date.getHours()).padStart(2,"0")}:${String(date.getMinutes()).padStart(2,"0")}`;
   };
 
   const sortedPayments = [...payments].sort(
@@ -431,668 +215,187 @@ const requestTossCardPayment = async (amount: number) => {
     (p) => p.status === "CANCELED"
   ).length;
 
-  const refundedCount = sortedPayments.filter(
-    (p) => p.status === "REFUNDED"
-  ).length;
-
-  const hasRefundHistory = sortedPayments.some(
-    (p) => p.status === "REFUNDED"
-  );
-
-  const billItemsTotal =
-    billingDetail?.billItems?.reduce((sum, item) => sum + item.amount, 0) ?? 0;
-
   return (
-<<<<<<< HEAD
-    /* 화면 전체 배경색 추가 */
-    <main
-      style={{
-        padding: "24px",
-        backgroundColor: "#f4f6f8",
-        minHeight: "100vh",
-      }}
-    >
-      {/* 토스 sdk 스크립트 */}
-    <Script
-      src="https://js.tosspayments.com/v2/standard"
-      strategy="afterInteractive"
-    /> 
-
-      {/*제목 여백/굵기 보강 */}
-      <Typography variant="h5" sx={{ fontWeight: 700, mb: 1 }}>
-        청구 상세
-      </Typography>
-=======
     <MainLayout>
-      <main
-        style={{
-          padding: "24px",
-          backgroundColor: "#f4f6f8",
-          minHeight: "100vh",
-        }}
-      >
-        <Script
-          src="https://js.tosspayments.com/v2/standard"
-          strategy="afterInteractive"
-        />
->>>>>>> feature/billing
+    <main style={{ padding: "24px" }}>
+      <h1>청구 상세</h1>
 
-        <Typography variant="h5" sx={{ fontWeight: 700, mb: 1 }}>
-          청구 상세
-        </Typography>
+      {loading && <p>로딩 중...</p>}
+      {error && <p style={{ color: "red" }}>{error}</p>}
 
-        {loading && <p>로딩 중...</p>}
-        {error && <p style={{ color: "red" }}>{error}</p>}
+      {billingDetail && (
+        <section style={{ marginTop: "24px" }}>
 
-        {billingDetail && (
-          <Card
-            sx={{
-              mt: 3,
-              mb: 3,
-              borderRadius: 3,
-              boxShadow: 2,
-              backgroundColor: "#ffffff",
-            }}
-          >
-            <CardContent>
-              <Stack
-                direction={{ xs: "column", md: "row" }}
-                spacing={3}
-                justifyContent="space-between"
-                alignItems={{ xs: "flex-start", md: "center" }}
-              >
-                <Box>
-                  <Typography sx={{ fontSize: 12, color: "text.secondary" }}>
-                    총 금액
-                  </Typography>
-                  <Typography sx={{ fontWeight: 800, fontSize: 24 }}>
-                    {billingDetail.totalAmount.toLocaleString()} 원
-                  </Typography>
-                </Box>
+          <div>청구 ID: {billingDetail.billId}</div>
+          <div>환자 ID: {billingDetail.patientId}</div>
 
-                <Box>
-                  <Typography sx={{ fontSize: 12, color: "text.secondary" }}>
-                    결제 금액
-                  </Typography>
-                  <Typography
-                    sx={{ fontWeight: 800, fontSize: 24, color: "#1976d2" }}
-                  >
-                    {billingDetail.paidAmount.toLocaleString()} 원
-                  </Typography>
-                </Box>
+          
+          {/* 금액 표시 통일 */}
+          <div>총 금액: {billingDetail.totalAmount.toLocaleString()} 원</div>
+          <div>결제 금액: {billingDetail.paidAmount.toLocaleString()} 원</div>
 
-                <Box>
-                  <Typography sx={{ fontSize: 12, color: "text.secondary" }}>
-                    남은 금액
-                  </Typography>
-                  <Typography
-                    sx={{ fontWeight: 800, fontSize: 24, color: "#d32f2f" }}
-                  >
-                    {billingDetail.remainingAmount.toLocaleString()} 원
-                  </Typography>
-                </Box>
-
-                <Box>
-                  <Typography sx={{ fontSize: 12, color: "text.secondary" }}>
-                    현재 상태
-                  </Typography>
-                  <Chip
-                    label={getDisplayBillingStatusLabel(
-                      billingDetail.paidAmount,
-                      billingDetail.remainingAmount,
-                      billingDetail.status
-                    )}
-                    color={
-                      getDisplayBillingStatusColor(
-                        billingDetail.paidAmount,
-                        billingDetail.remainingAmount,
-                        billingDetail.status
-                      ) as any
-                    }
-                    sx={{ mt: 0.5 }}
-                  />
-                </Box>
-              </Stack>
-            </CardContent>
-          </Card>
-        )}
-
-        {billingDetail && (
-          <section style={{ marginTop: "24px" }}>
-            <Card
-              sx={{
-                mb: 3,
-                borderRadius: 3,
-                boxShadow: 2,
-                backgroundColor: "#ffffff",
+          <div>
+            남은 금액:
+            <span
+              style={{
+                color:
+                  billingDetail.remainingAmount > 0
+                    ? "#d32f2f"
+                    : "#2e7d32",
+                fontWeight: "bold",
               }}
             >
-              <CardContent>
-                <Typography variant="h6" sx={{ mb: 2 }}>
-                  청구 요약
-                </Typography>
+              {billingDetail.remainingAmount.toLocaleString()} 원
+            </span>
+          </div>
 
-                <Stack spacing={1}>
-                  <Typography>청구 ID: {billingDetail.billId}</Typography>
-                  <Typography>환자 ID: {billingDetail.patientId}</Typography>
+          
+          {/* Bill 상태 Chip */}
+          <div style={{ marginTop: "8px" }}>
+            상태:
+            <Chip
+              label={billingDetail.status}
+              color={getBillStatusColor(billingDetail.status) as any}
+              size="small"
+              style={{ marginLeft: "8px" }}
+            />
+          </div>
 
-                  <Typography>
-                    총 금액: {billingDetail.totalAmount.toLocaleString()} 원
-                  </Typography>
-
-                  <Typography>
-                    결제 금액: {billingDetail.paidAmount.toLocaleString()} 원
-                  </Typography>
-
-                  <Typography>
-                    남은 금액:
-                    <span
-                      style={{
-                        color:
-                          billingDetail.remainingAmount > 0
-                            ? "#d32f2f"
-                            : "#2e7d32",
-                        fontWeight: "bold",
-                        marginLeft: "6px",
-                      }}
-                    >
-                      {billingDetail.remainingAmount.toLocaleString()} 원
-                    </span>
-                  </Typography>
-
-                  <Typography component="div">
-                    상태:
-                    <Chip
-                      label={getDisplayBillingStatusLabel(
-                        billingDetail.paidAmount,
-                        billingDetail.remainingAmount,
-                        billingDetail.status
-                      )}
-                      color={
-                        getDisplayBillingStatusColor(
-                          billingDetail.paidAmount,
-                          billingDetail.remainingAmount,
-                          billingDetail.status
-                        ) as any
-                      }
-                      size="small"
-                      sx={{ ml: 1 }}
-                    />
-                  </Typography>
-                </Stack>
-
-                {billingDetail.status === "READY" && (
-                  <div style={{ marginTop: "12px" }}>
-                    <Button
-                      variant="contained"
-                      color="warning"
-                      onClick={() =>
-                        dispatch(confirmBillRequest(billingDetail.billId))
-                      }
-                      disabled={loading}
-                    >
-                      {loading ? "처리 중..." : "청구 확정"}
-                    </Button>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-            <Card
-              sx={{
-                mb: 3,
-                borderRadius: 3,
-                boxShadow: 2,
-                backgroundColor: "#ffffff",
-              }}
-            >
-              <CardContent>
-                <Stack
-                  direction={{ xs: "column", md: "row" }}
-                  justifyContent="space-between"
-                  alignItems={{ xs: "flex-start", md: "center" }}
-                  sx={{ mb: 2 }}
-                >
-                  <Box>
-                    <Typography variant="h6">청구 항목</Typography>
-                    <Typography
-                      sx={{ fontSize: 13, color: "text.secondary", mt: 0.5 }}
-                    >
-                      현재 청구에 포함된 항목별 금액입니다.
-                    </Typography>
-                  </Box>
-
-                  <Box sx={{ mt: { xs: 1, md: 0 } }}>
-                    <Typography sx={{ fontSize: 12, color: "text.secondary" }}>
-                      항목 합계
-                    </Typography>
-                    <Typography sx={{ fontWeight: 700, fontSize: 18 }}>
-                      {billItemsTotal.toLocaleString()} 원
-                    </Typography>
-                  </Box>
-                </Stack>
-
-                {billingDetail.billItems.length === 0 ? (
-                  <Typography sx={{ color: "text.secondary" }}>
-                    등록된 청구 항목이 없습니다.
-                  </Typography>
-                ) : (
-                  <Stack spacing={1.5}>
-                    {billingDetail.billItems.map((item, index) => (
-                      <Box key={item.billItemId}>
-                        <Stack
-                          direction={{ xs: "column", md: "row" }}
-                          justifyContent="space-between"
-                          alignItems={{ xs: "flex-start", md: "center" }}
-                          spacing={1}
-                          sx={{ py: 1 }}
-                        >
-                          <Box>
-                            <Typography sx={{ fontWeight: 600 }}>
-                              {item.itemName}
-                            </Typography>
-                            <Typography
-                              sx={{
-                                fontSize: 12,
-                                color: "text.secondary",
-                                mt: 0.5,
-                              }}
-                            >
-                              항목 ID: {item.billItemId}
-                            </Typography>
-                          </Box>
-
-                          <Typography sx={{ fontWeight: 700 }}>
-                            {item.amount.toLocaleString()} 원
-                          </Typography>
-                        </Stack>
-
-                        {index !== billingDetail.billItems.length - 1 && (
-                          <Divider />
-                        )}
-                      </Box>
-                    ))}
-                  </Stack>
-                )}
-              </CardContent>
-            </Card>
-
-            {billingDetail.status !== "READY" &&
-            billingDetail.remainingAmount > 0 && (
-              <Card
-                sx={{
-                  mb: 2,
-                  borderRadius: 3,
-                  boxShadow: 1,
-                  backgroundColor: "#ffffff",
+          {billingDetail.remainingAmount > 0 && (
+            <div style={{ marginTop: "16px" }}>
+              <input
+                type="number"
+                value={payAmount}
+                onChange={(e) => {
+                  const raw = Number(e.target.value);
+                  setPayAmount(
+                    normalizeAmount(raw, billingDetail.remainingAmount)
+                  );
                 }}
+                placeholder="결제 금액 입력"
+                style={inputStyle}
+              />
+
+              <button
+                onClick={handleFullPayment}
+                disabled={loading}
+                style={fullPayBtnStyle(loading)}
               >
-                <CardContent>
-                  <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
-                    수납 처리
-                  </Typography>
-                  <Typography
-                    sx={{ fontSize: 13, color: "text.secondary", mt: 0.5 }}
-                  >
-                    결제 금액 입력 후 전액 또는 부분 수납을 진행할 수 있습니다.
-                  </Typography>
-                </CardContent>
-              </Card>
-            )}
+                전액
+              </button>
 
-            {billingDetail.status !== "READY" &&
-            billingDetail.remainingAmount > 0 && (
-              <div style={{ marginBottom: "24px" }}>
-                <input
-                  type="text"
-                  value={payAmount === 0 ? "" : formatNumber(payAmount)}
-                  onChange={(e) => {
-                    const raw = unformatNumber(e.target.value);
+              <button
+                onClick={handlePayment}
+                disabled={
+                  loading ||
+                  payAmount <= 0 ||
+                  payAmount > billingDetail.remainingAmount
+                }
+                style={partialPayBtnStyle(loading)}
+              >
+                {loading ? "처리 중..." : "부분 수납"}
+              </button>
+            </div>
+          )}
 
-                    if (isNaN(raw)) return;
+          <section style={{ marginTop: "24px" }}>
+            <h2>수납 내역</h2>
 
-                    setPayAmount(
-                      normalizeAmount(raw, billingDetail.remainingAmount)
-                    );
-                  }}
-                  placeholder="결제 금액 입력"
-                  style={inputStyle}
-                />
+            <div style={summaryBoxStyle}>
+              <div>현재 유효 결제 금액: {billingDetail.paidAmount.toLocaleString()}원</div>
+              <div>현재 잔액: {billingDetail.remainingAmount.toLocaleString()}원</div>
+              <div>총 결제 건수: {completedCount}건</div>
+              <div>총 취소 건수: {canceledCount}건</div>
+            </div>
 
-                <div style={methodBoxStyle}>
-                  <label>
-                    <input
-                      type="radio"
-                      name="paymentMethod"
-                      value="CASH"
-                      checked={paymentMethod === "CASH"}
-                      onChange={() => setPaymentMethod("CASH")}
-                    />{" "}
-                    현금
-                  </label>
+            {sortedPayments.map((p) => (
+              <div key={p.paymentId} style={paymentCardStyle}>
+                <div>결제 ID: {p.paymentId}</div>
+                <div>결제 금액: {p.paymentAmount.toLocaleString()}원</div>
+                <div>결제 수단: {p.method}</div>
 
-                  <label>
-                    <input
-                      type="radio"
-                      name="paymentMethod"
-                      value="CARD"
-                      checked={paymentMethod === "CARD"}
-                      onChange={() => setPaymentMethod("CARD")}
-                    />{" "}
-                    카드
-                  </label>
+                <div>결제 일시: {formatDateTime(p.paidAt)}</div>
 
-                  <label>
-                    <input
-                      type="radio"
-                      name="paymentMethod"
-                      value="TRANSFER"
-                      checked={paymentMethod === "TRANSFER"}
-                      onChange={() => setPaymentMethod("TRANSFER")}
-                    />{" "}
-                    계좌이체
-                  </label>
-                </div>
-
-                <Stack direction="row" spacing={2} sx={{ mt: 2 }}>
-                  <Button
-                    variant="contained"
-                    onClick={handleFullPayment}
-                    disabled={loading}
-                  >
-                    전액 수납
-                  </Button>
-
-                  <Button
-                    variant="contained"
-                    color="success"
-                    onClick={handlePayment}
-                    disabled={
-                      loading ||
-                      payAmount <= 0 ||
-                      payAmount > billingDetail.remainingAmount
-                    }
-                  >
-                    {loading ? "처리 중..." : "부분 수납"}
-                  </Button>
-                </Stack>
-              </div>
-            )}
-
-            <Typography variant="h6" sx={{ mb: 2, mt: 4 }}>
-              수납 내역
-            </Typography>
-
-            <Card
-              sx={{
-                mb: 2,
-                borderRadius: 3,
-                boxShadow: 1,
-                backgroundColor: "#ffffff",
-              }}
-            >
-              <CardContent>
-                <Stack
-                  direction={{ xs: "column", md: "row" }}
-                  spacing={2}
-                  justifyContent="space-between"
-                >
-                  <Box>
-                    <Typography sx={{ fontSize: 12, color: "text.secondary" }}>
-                      현재 유효 결제 금액
-                    </Typography>
-                    <Typography sx={{ fontWeight: 700 }}>
-                      {billingDetail.paidAmount.toLocaleString()}원
-                    </Typography>
-                  </Box>
-
-                  <Box>
-                    <Typography sx={{ fontSize: 12, color: "text.secondary" }}>
-                      현재 잔액
-                    </Typography>
-                    <Typography sx={{ fontWeight: 700, color: "#d32f2f" }}>
-                      {billingDetail.remainingAmount.toLocaleString()}원
-                    </Typography>
-                  </Box>
-
-                  <Box>
-                    <Typography sx={{ fontSize: 12, color: "text.secondary" }}>
-                      총 결제 건수
-                    </Typography>
-                    <Typography sx={{ fontWeight: 700 }}>
-                      {completedCount}건
-                    </Typography>
-                  </Box>
-
-                  <Box>
-                    <Typography sx={{ fontSize: 12, color: "text.secondary" }}>
-                      총 취소 건수
-                    </Typography>
-                    <Typography sx={{ fontWeight: 700 }}>
-                      {canceledCount}건
-                    </Typography>
-                  </Box>
-
-                  <Box>
-                    <Typography sx={{ fontSize: 12, color: "text.secondary" }}>
-                      총 환불 건수
-                    </Typography>
-                    <Typography sx={{ fontWeight: 700 }}>
-                      {refundedCount}건
-                    </Typography>
-                  </Box>
-                </Stack>
-
-                {hasRefundHistory && (
-                  <Typography
-                    sx={{
-                      mt: 2,
-                      fontSize: 13,
-                      color: "#b26a00",
-                      fontWeight: 600,
-                    }}
-                  >
-                    부분 환불 이력이 있는 청구는 전체 수납 취소가 불가합니다.
-                  </Typography>
-                )}
-              </CardContent>
-            </Card>
-
-            {sortedPayments.map((p) => {
-              const parsedRefundAmount =
-                refundAmountInput.trim() === ""
-                  ? 0
-                  : unformatNumber(refundAmountInput);
-
-              const isCancelDisabled =
-                loading || hasRefundHistory || p.status !== "COMPLETED";
-
-              return (
-                <div key={p.paymentId} style={getPaymentCardStyle(p.status)}>
-                  <Stack
-                    direction={{ xs: "column", md: "row" }}
-                    justifyContent="space-between"
-                    alignItems={{ xs: "flex-start", md: "center" }}
-                    spacing={1}
-                    sx={{ mb: 1 }}
-                  >
-                    <Typography variant="subtitle2">
-                      거래 ID: {p.paymentId}
-                    </Typography>
-
-                    <Chip
-                      label={getPaymentStatusLabel(p.status)}
-                      color={getPaymentStatusColor(p.status) as any}
-                      size="small"
-                    />
-                  </Stack>
-
-                  <Stack spacing={0.5}>
-                    <Typography>
-                      {getPaymentAmountLabel(p.status)}:
-                      <strong style={{ marginLeft: "6px" }}>
-                        {p.paymentAmount.toLocaleString()}원
-                      </strong>
-                    </Typography>
-
-                    <Typography>
-                      결제 수단: {getPaymentMethodLabel(p.method)}
-                    </Typography>
-
-                    <Typography variant="body2" color="text.secondary">
-                      처리 일시: {formatDateTime(p.paidAt)}
-                    </Typography>
-
-                    <Typography
-                      variant="body2"
-                      sx={{
-                        mt: 0.5,
-                        color:
-                          p.status === "REFUNDED"
-                            ? "#b26a00"
-                            : p.status === "CANCELED"
-                            ? "#c62828"
-                            : "#2e7d32",
-                        fontWeight: 600,
-                      }}
+                {p.status === "COMPLETED" && (
+                  <>
+                    <button
+                      onClick={() => handleCancelPayment(p.paymentId)}
+                      style={cancelBtnStyle}
                     >
-                      {getPaymentStatusDescription(p.status)}
-                    </Typography>
-                  </Stack>
+                      수납 취소
+                    </button>
 
-                  {p.status === "COMPLETED" && (
-                    <>
-                      <Stack direction="row" spacing={1} sx={{ mt: 1 }}>
-                        <Button
-                          variant="contained"
-                          color="error"
-                          size="small"
-                          onClick={() => handleCancelPayment(p.paymentId)}
-                          disabled={isCancelDisabled}
-                        >
-                          수납 취소
-                        </Button>
+                    <button
+                      onClick={() => {
+                        setRefundTargetId(p.paymentId);
+                        setRefundAmount(0);
+                      }}
+                      style={refundBtnStyle}
+                    >
+                      부분 환불
+                    </button>
 
-                        <Button
-                          variant="contained"
-                          color="info"
-                          size="small"
-                          onClick={() => {
-                            setRefundTargetId(p.paymentId);
-                            setRefundAmountInput("");
-                          }}
-                          disabled={loading}
-                        >
-                          부분 환불
-                        </Button>
-                      </Stack>
-
-                      {hasRefundHistory && (
-                        <Typography
-                          variant="body2"
-                          sx={{
-                            mt: 1,
-                            color: "#c62828",
-                            fontWeight: 500,
-                          }}
-                        >
-                          같은 청구에 부분 환불 이력이 있어 전체 수납 취소는 비활성화됩니다.
-                        </Typography>
-                      )}
-
-                      {refundTargetId === p.paymentId && (
-                        <div style={{ marginTop: "8px" }}>
-                          <input
-                            type="text"
-                            value={refundAmountInput}
-                            onChange={(e) => {
-                              const onlyNumber = sanitizeNumberInput(
-                                e.target.value
-                              );
-
-                              if (onlyNumber === "") {
-                                setRefundAmountInput("");
-                                return;
-                              }
-
-                              const normalizedValue = normalizeAmount(
-                                Number(onlyNumber),
-                                p.paymentAmount
-                              );
-
-                              setRefundAmountInput(
-                                formatNumber(normalizedValue)
-                              );
-                            }}
-                            placeholder={`최대 ${formatNumber(
-                              p.paymentAmount
-                            )}원`}
-                            style={inputStyle}
-                          />
-
-                          <Button
-                            variant="outlined"
-                            size="small"
-                            sx={{ mt: 1, mb: 1 }}
-                            onClick={() =>
-                              setRefundAmountInput(
-                                formatNumber(p.paymentAmount)
-                              )
+                    {refundTargetId === p.paymentId && (
+                      <div style={{ marginTop: "8px" }}>
+                        <input
+                          type="number"
+                          value={refundAmount}
+                          onChange={(e) => {
+                            const value = Number(e.target.value);
+                            if (value < 0) return;
+                            if (value > p.paymentAmount) {
+                              setRefundAmount(p.paymentAmount);
+                            } else {
+                              setRefundAmount(value);
                             }
-                          >
-                            최대 금액 입력
-                          </Button>
+                          }}
+                          placeholder={`최대 ${p.paymentAmount}원`}
+                          style={inputStyle}
+                        />
 
-                          <Stack direction="row" spacing={1} sx={{ mt: 1 }}>
-                            <Button
-                              variant="contained"
-                              color="primary"
-                              size="small"
-                              onClick={() => {
-                                if (parsedRefundAmount <= 0) {
-                                  toast.error("환불 금액을 입력하세요.");
-                                  return;
-                                }
+                        <button
+                          onClick={() => {
+                            if (refundAmount <= 0) {
+                              notifyError("환불 금액을 입력하세요.");
+                              return;
+                            }
 
-                                dispatch(
-                                  refundPaymentRequest({
-                                    paymentId: p.paymentId,
-                                    amount: parsedRefundAmount,
-                                    billId: billingDetail.billId,
-                                    patientId: billingDetail.patientId,
-                                  })
-                                );
+                            dispatch(
+                              refundPaymentRequest({
+                                paymentId: p.paymentId,
+                                amount: refundAmount,
+                                billId: billingDetail.billId,
+                                patientId: billingDetail.patientId,
+                              })
+                            );
 
-                                setRefundTargetId(null);
-                                setRefundAmountInput("");
-                              }}
-                              disabled={loading || parsedRefundAmount <= 0}
-                            >
-                              환불 실행
-                            </Button>
+                            setRefundTargetId(null);
+                            setRefundAmount(0);
+                          }}
+                          style={partialPayBtnStyle(loading)}
+                        >
+                          환불 실행
+                        </button>
 
-                            <Button
-                              variant="outlined"
-                              color="inherit"
-                              size="small"
-                              onClick={() => {
-                                setRefundTargetId(null);
-                                setRefundAmountInput("");
-                              }}
-                            >
-                              입력 취소
-                            </Button>
-                          </Stack>
-                        </div>
-                      )}
-                    </>
-                  )}
-                </div>
-              );
-            })}
+                        <button
+                          onClick={() => {
+                            setRefundTargetId(null);
+                            setRefundAmount(0);
+                          }}
+                          style={{ ...cancelBtnStyle, backgroundColor:"#9e9e9e" }}
+                        >
+                          취소
+                        </button>
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+            ))}
           </section>
-        )}
-      </main>
+        </section>
+      )}
+    </main>
     </MainLayout>
   );
 }

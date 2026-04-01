@@ -15,8 +15,8 @@ function* fetchReceptionsSaga() {
 
 function* fetchReceptionSaga(action: PayloadAction<{ receptionId: string }>) {
   try {
-    const reception: Reception = yield call(api.fetchReceptionApi, action.payload.receptionId);
-    yield put(actions.fetchReceptionSuccess(reception));
+    const p: Reception = yield call(api.fetchReceptionApi, action.payload.receptionId);
+    yield put(actions.fetchReceptionSuccess(p));
   } catch (err: any) {
     yield put(actions.fetchReceptionFailure(err.message ?? "접수 조회 실패"));
   }
@@ -48,6 +48,15 @@ function* updateReceptionSaga(
   }
 }
 
+function* deleteReceptionSaga(action: PayloadAction<string>) {
+  try {
+    yield call(api.cancelReceptionApi, action.payload);
+    yield put(actions.deleteReceptionSuccess(action.payload));
+  } catch (err: any) {
+    yield put(actions.deleteReceptionFailure(err.message ?? "접수 취소 처리 실패"));
+  }
+}
+
 function* cancelReceptionSaga(action: PayloadAction<{ receptionId: string; reasonText?: string }>) {
   try {
     const updated: Reception = yield call(
@@ -67,6 +76,7 @@ function* searchReceptionsSaga(action: PayloadAction<ReceptionSearchPayload>) {
     const list: Reception[] = yield call(api.searchReceptionsApi, type, keyword);
     yield put(actions.fetchReceptionsSuccess(list));
   } catch (err: any) {
+    alert(err.message ?? "접수 검색 실패");
     yield put(actions.fetchReceptionsFailure(err.message ?? "접수 검색 실패"));
   }
 }
@@ -76,6 +86,7 @@ export function* watchReceptionSaga() {
   yield takeLatest(actions.fetchReceptionRequest.type, fetchReceptionSaga);
   yield takeLatest(actions.createReceptionRequest.type, createReceptionSaga);
   yield takeLatest(actions.updateReceptionRequest.type, updateReceptionSaga);
+  yield takeLatest(actions.deleteReceptionRequest.type, deleteReceptionSaga);
   yield takeLatest(actions.cancelReceptionRequest.type, cancelReceptionSaga);
   yield takeLatest(actions.searchReceptionsRequest.type, searchReceptionsSaga);
 }

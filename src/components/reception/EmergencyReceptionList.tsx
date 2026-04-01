@@ -10,12 +10,9 @@ import {
   Card,
   CardContent,
   Chip,
-  Dialog,
-  DialogContent,
   Divider,
   InputAdornment,
   IconButton,
-  Pagination,
   Stack,
   TextField,
   Typography,
@@ -23,7 +20,6 @@ import {
 import SearchIcon from "@mui/icons-material/Search";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import BlockOutlinedIcon from "@mui/icons-material/BlockOutlined";
-import ListAltIcon from "@mui/icons-material/ListAlt";
 import { useDispatch, useSelector } from "react-redux";
 import type { RootState, AppDispatch } from "@/store/store";
 import { emergencyReceptionActions } from "@/features/EmergencyReception/EmergencyReceptionSlice";
@@ -111,9 +107,6 @@ const summarizeOneLine = (value?: string | null, max = 18) => {
   return `${text.slice(0, max)}...`;
 };
 
-const ITEMS_PER_PAGE = 10;
-const PATIENT_LIST_ITEMS_PER_PAGE = 8;
-
 export default function EmergencyReceptionList() {
   const router = useRouter();
   const dispatch = useDispatch<AppDispatch>();
@@ -128,13 +121,6 @@ export default function EmergencyReceptionList() {
     null
   );
   const [patientNameById, setPatientNameById] = React.useState<Record<number, string>>({});
-  const [patientListModalOpen, setPatientListModalOpen] = React.useState(false);
-  const [patientListKeyword, setPatientListKeyword] = React.useState("");
-  const [patientListPage, setPatientListPage] = React.useState(1);
-  const [patientCatalog, setPatientCatalog] = React.useState<Patient[]>([]);
-  const [patientCatalogLoading, setPatientCatalogLoading] = React.useState(false);
-  const [patientCatalogError, setPatientCatalogError] = React.useState<string | null>(null);
-  const [page, setPage] = React.useState(1);
 
   React.useEffect(() => {
     dispatch(emergencyReceptionActions.fetchEmergencyReceptionsRequest());
@@ -189,21 +175,9 @@ export default function EmergencyReceptionList() {
     [router]
   );
 
-  const onOpenPatientListModal = () => {
-    setPatientListKeyword("");
-    setPatientListPage(1);
-    setPatientCatalogError(null);
-    setPatientListModalOpen(true);
-  };
-
-  const onClosePatientListModal = () => {
-    setPatientListModalOpen(false);
-  };
-
   const onSearch = () => {
     const kw = keyword.trim();
     if (!kw) return alert("검색어를 입력해주세요.");
-    setPage(1);
 
     const run = async () => {
       try {
@@ -240,7 +214,6 @@ export default function EmergencyReceptionList() {
   };
 
   const onReset = () => {
-    setPage(1);
     setKeyword("");
     setPatientSuggestions([]);
     setOpenSuggestion(false);
@@ -279,51 +252,13 @@ export default function EmergencyReceptionList() {
     };
   }, [keyword]);
 
-  React.useEffect(() => {
-    if (!patientListModalOpen) return;
-    let active = true;
-
-    const loadPatients = async () => {
-      try {
-        setPatientCatalogLoading(true);
-        setPatientCatalogError(null);
-        const patients = await fetchPatientsApi();
-        if (!active) return;
-        setPatientCatalog(patients);
-      } catch {
-        if (!active) return;
-        setPatientCatalogError("환자 목록 조회 실패");
-      } finally {
-        if (!active) return;
-        setPatientCatalogLoading(false);
-      }
-    };
-
-    void loadPatients();
-    return () => {
-      active = false;
-    };
-  }, [patientListModalOpen]);
-
   const onPickPatientSuggestion = (patient: Patient) => {
     if (!patient.patientId) return;
     const nextKeyword = patient.name?.trim() ?? "";
-    setPage(1);
     setKeyword(nextKeyword);
     setPatientSuggestions([]);
     setOpenSuggestion(false);
     setPatientSearchResultCount(1);
-    openCreateWithPatient(patient);
-  };
-
-  const onSelectPatientFromListModal = (patient: Patient) => {
-    const nextKeyword = patient.name?.trim() ?? "";
-    setPage(1);
-    setKeyword(nextKeyword);
-    setPatientSuggestions([]);
-    setOpenSuggestion(false);
-    setPatientSearchResultCount(1);
-    onClosePatientListModal();
     openCreateWithPatient(patient);
   };
 
@@ -367,54 +302,18 @@ export default function EmergencyReceptionList() {
   );
 
   const visibleList = baseVisibleList;
-  const filteredPatientCatalog = React.useMemo(() => {
-    const kw = patientListKeyword.trim().toLowerCase();
-    if (!kw) return patientCatalog;
-    return patientCatalog.filter((patient) => {
-      const fields = [
-        patient.name,
-        patient.patientNo,
-        patient.phone,
-        patient.birthDate,
-        patient.patientId ? String(patient.patientId) : "",
-      ];
-      return fields.some((value) => (value ?? "").toLowerCase().includes(kw));
-    });
-  }, [patientCatalog, patientListKeyword]);
-  const patientListTotalPages = Math.max(
-    1,
-    Math.ceil(filteredPatientCatalog.length / PATIENT_LIST_ITEMS_PER_PAGE)
-  );
-  const pagedPatientCatalog = React.useMemo(() => {
-    const start = (patientListPage - 1) * PATIENT_LIST_ITEMS_PER_PAGE;
-    return filteredPatientCatalog.slice(start, start + PATIENT_LIST_ITEMS_PER_PAGE);
-  }, [filteredPatientCatalog, patientListPage]);
-  React.useEffect(() => {
-    setPatientListPage((prev) => Math.min(prev, patientListTotalPages));
-  }, [patientListTotalPages]);
-
-  const totalCount = visibleList.length;
-  const totalPages = Math.max(1, Math.ceil(totalCount / ITEMS_PER_PAGE));
-  const pagedList = React.useMemo(() => {
-    const start = (page - 1) * ITEMS_PER_PAGE;
-    return visibleList.slice(start, start + ITEMS_PER_PAGE);
-  }, [visibleList, page]);
-  React.useEffect(() => {
-    setPage((prev) => Math.min(prev, totalPages));
-  }, [totalPages]);
 
   const primary =
-    (selected && pagedList.find((item) => item.receptionId === selected.receptionId)) ||
-    pagedList[0] ||
+    (selected && visibleList.find((item) => item.receptionId === selected.receptionId)) ||
     visibleList[0] ||
     null;
 
   React.useEffect(() => {
-    if (!pagedList.length) return;
-    if (!selected || !pagedList.some((item) => item.receptionId === selected.receptionId)) {
-      dispatch(emergencyReceptionActions.fetchEmergencyReceptionSuccess(pagedList[0]));
+    if (!visibleList.length) return;
+    if (!selected || !visibleList.some((item) => item.receptionId === selected.receptionId)) {
+      dispatch(emergencyReceptionActions.fetchEmergencyReceptionSuccess(visibleList[0]));
     }
-  }, [pagedList, selected, dispatch]);
+  }, [visibleList, selected, dispatch]);
 
   const resolvePatientName = React.useCallback(
     (item?: EmergencyReception | null) => {
@@ -605,28 +504,9 @@ export default function EmergencyReceptionList() {
               >
                 초기화
               </Button>
-              <Button
-                variant="outlined"
-                startIcon={<ListAltIcon />}
-                onClick={onOpenPatientListModal}
-                disabled={loading}
-                sx={{
-                  px: 1.8,
-                  borderRadius: 2,
-                  color: "#1f4f95",
-                  borderColor: "rgba(31,79,149,0.38)",
-                  bgcolor: "rgba(255,255,255,0.9)",
-                  "&:hover": {
-                    borderColor: "#1f4f95",
-                    bgcolor: "rgba(31,79,149,0.08)",
-                  },
-                }}
-              >
-                환자목록
-              </Button>
             </Stack>
             <Box sx={{ flex: 1 }} />
-            <Chip label={`전체 ${totalCount}`} color="primary" />
+            <Chip label={`전체 ${visibleList.length}`} color="primary" />
           </Stack>
         </CardContent>
       </Card>
@@ -740,11 +620,11 @@ export default function EmergencyReceptionList() {
               <Stack spacing={2}>
                 <Stack direction="row" justifyContent="space-between" alignItems="center">
                   <Typography fontWeight={800}>응급 접수 목록</Typography>
-                  <Chip label={`총 ${totalCount}`} size="small" color="primary" />
+                  <Chip label={`총 ${visibleList.length}`} size="small" color="primary" />
                 </Stack>
 
                 <Stack spacing={1}>
-                  {pagedList.map((item) => {
+                  {visibleList.map((item) => {
                     const isSelected = selected?.receptionId === item.receptionId;
                     const patientName = resolvePatientName(item);
 
@@ -805,120 +685,11 @@ export default function EmergencyReceptionList() {
                     <Typography color="#7b8aa9">조회된 응급 접수가 없습니다.</Typography>
                   )}
                 </Stack>
-                {visibleList.length > 0 && totalPages > 1 && (
-                  <Stack direction="row" justifyContent="center" sx={{ pt: 1 }}>
-                    <Pagination
-                      page={page}
-                      count={totalPages}
-                      onChange={(_, value) => setPage(value)}
-                      color="primary"
-                      size="small"
-                    />
-                  </Stack>
-                )}
               </Stack>
             </CardContent>
           </Card>
         </Box>
       </Box>
-
-      <Dialog
-        open={patientListModalOpen}
-        onClose={onClosePatientListModal}
-        fullWidth
-        maxWidth="md"
-      >
-        <DialogContent sx={{ p: 3 }}>
-          <Stack spacing={1.5}>
-            <Stack direction="row" justifyContent="space-between" alignItems="center">
-              <Typography variant="h5" fontWeight={900}>
-                환자목록
-              </Typography>
-              <Chip label={`총 ${filteredPatientCatalog.length}`} color="primary" />
-            </Stack>
-
-            <TextField
-              size="small"
-              placeholder="이름/환자번호/연락처로 검색"
-              value={patientListKeyword}
-              onChange={(e) => {
-                setPatientListKeyword(e.target.value);
-                setPatientListPage(1);
-              }}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <SearchIcon sx={{ fontSize: 19, color: "#7f93b5" }} />
-                  </InputAdornment>
-                ),
-              }}
-            />
-
-            {patientCatalogLoading ? (
-              <Typography sx={{ color: "#7b8aa9" }}>환자 목록 불러오는 중...</Typography>
-            ) : (
-              <Stack spacing={1}>
-                {pagedPatientCatalog.map((patient) => (
-                  <Button
-                    key={patient.patientId}
-                    onClick={() => onSelectPatientFromListModal(patient)}
-                    sx={{
-                      justifyContent: "flex-start",
-                      textTransform: "none",
-                      px: 1.6,
-                      py: 1.25,
-                      borderRadius: 2,
-                      color: "#1f2a44",
-                      border: "1px solid #e3ebf8",
-                      bgcolor: "#fff",
-                      "&:hover": {
-                        borderColor: "#9cb5de",
-                        bgcolor: "rgba(43,90,169,0.06)",
-                      },
-                    }}
-                  >
-                    <Box sx={{ textAlign: "left", width: "100%", minWidth: 0 }}>
-                      <Typography fontWeight={800} noWrap>
-                        {patient.name} · {patient.gender ?? "-"} · {patient.birthDate ?? "-"}
-                      </Typography>
-                      <Typography sx={{ color: "#7b8aa9", fontSize: 12 }} noWrap>
-                        환자ID {patient.patientId} · {patient.patientNo ?? "-"} · {patient.phone ?? "-"}
-                      </Typography>
-                    </Box>
-                  </Button>
-                ))}
-                {!pagedPatientCatalog.length && (
-                  <Typography sx={{ color: "#7b8aa9" }}>조회된 환자가 없습니다.</Typography>
-                )}
-              </Stack>
-            )}
-
-            {filteredPatientCatalog.length > 0 && patientListTotalPages > 1 && (
-              <Stack direction="row" justifyContent="center">
-                <Pagination
-                  page={patientListPage}
-                  count={patientListTotalPages}
-                  onChange={(_, value) => setPatientListPage(value)}
-                  color="primary"
-                  size="small"
-                />
-              </Stack>
-            )}
-
-            {patientCatalogError && (
-              <Typography color="error" fontWeight={700}>
-                {patientCatalogError}
-              </Typography>
-            )}
-
-            <Stack direction="row" justifyContent="flex-end">
-              <Button variant="text" onClick={onClosePatientListModal}>
-                닫기
-              </Button>
-            </Stack>
-          </Stack>
-        </DialogContent>
-      </Dialog>
 
       {error && (
         <Typography color="error" fontWeight={800}>
