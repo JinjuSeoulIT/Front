@@ -65,7 +65,7 @@ const receptionSlice = createSlice({
       state.error = action.payload;
     },
 
-    DetailReceptionRequest(state, _action: PayloadAction<ReceptionIdNumber>) {
+    DetailReceptionRequest(state, _action: PayloadAction<number>) {
       state.loading = true;
       state.error = null;
     },

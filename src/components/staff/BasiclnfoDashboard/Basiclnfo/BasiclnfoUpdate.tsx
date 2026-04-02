@@ -12,10 +12,13 @@ import { resetSuccessEnd } from "@/features/staff/doctor/doctorSlice";
 import { departmentListRequest } from "@/features/staff/department/departmentSlisct";
 import { positionListRequest } from "@/features/staff/position/positionSlice";
 
+
+//공통
 const BasicInfoUpdate = ({ staffId }: staffIdNumber) => {
   const dispatch = useDispatch();
   const router = useRouter();
-  const addressRef = useRef<HTMLInputElement | null>(null);
+
+  const address = useRef<HTMLInputElement | null>(null);
 
   const { StaffDetail, updateSuccess, loading, error } = useSelector((state: RootState) => state.staff);
 
@@ -30,6 +33,8 @@ const BasicInfoUpdate = ({ staffId }: staffIdNumber) => {
   //⭐직책 셀렉터값
   const { positionList   } = useSelector((state: RootState) => state.position);
 
+
+  
   //맵 방식 (Map)
   const departmentMap = new Map(
   Departmentlist.map((item) => [item.deptId, item]));
@@ -105,31 +110,32 @@ const BasicInfoUpdate = ({ staffId }: staffIdNumber) => {
         address1: form.address1.trim(),
         address2: form.address2.trim(),
         status: form.status.trim() || "ACTIVE",
+
     }
        dispatch(updateStaffRequest({staffId, staffReq}));
-  };
+    };
 
-  useEffect(() => {
+    useEffect(() => {
     if (!updateSuccess || !StaffDetail) return;
 
     handleDetail(StaffDetail);
 
     dispatch(resetSuccessEnd());
-  }, [dispatch, StaffDetail, updateSuccess]);
+    }, [dispatch, StaffDetail, updateSuccess]);
 
 
 
-  const handleChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const handleChange = (event: ChangeEvent<HTMLInputElement>) => {
     const { name, value } = event.target;
     setForm((prev) => ({ ...prev, [name]: value }));
-  };
+    };
   
 
 
 
 
-  //분기점 라우팅
-  const handleDetail = (staff: staffResponse) => {
+    //분기점 라우팅
+    const handleDetail = (staff: staffResponse) => {
     if (staff.doctorType) return router.push(`/staff/doctor/${staff.staffId}/detail`);
 
     if (staff.nurseType) return router.push(`/staff/nurse/${staff.staffId}/detail`);
@@ -137,14 +143,14 @@ const BasicInfoUpdate = ({ staffId }: staffIdNumber) => {
     if (staff.receptionType) return router.push(`/staff/reception/${staff.staffId}/detail`);
 
     return router.push(`/staff/Basiclnfo/${staff.staffId}/detail`);
-  };
+    };
 
 
 
 
 
-  //주소
-  const openPostcode = () => {
+    //주소
+    const openPostcode = () => {
     const daum = (window as any).daum;
     if (!daum?.Postcode) {
       alert("주소 검색 모듈을 불러오는 중입니다.");
@@ -155,31 +161,33 @@ const BasicInfoUpdate = ({ staffId }: staffIdNumber) => {
       oncomplete: (data: any) => {
         const selectedAddress = data.roadAddress || data.jibunAddress || "";
         setForm((prev) => ({ ...prev, zipCode: data.zonecode ?? "", address1: selectedAddress }));
-        setTimeout(() => addressRef.current?.focus(), 0);
-      },
+        setTimeout(() => address.current?.focus(), 0);
+    },
     }).open();
-  };
+    };
 
-  return (
-  <>
+    return (
+    <>
     <Script
-      src="https://t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"
-      strategy="afterInteractive"
+    src="https://t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"
+    strategy="afterInteractive"
     />
 
     <Box sx={{ maxWidth: 820, mx: "auto", px: 2, py: 2 }}>
-      <Paper sx={{ p: 3, borderRadius: 3, border: "1px solid #dbe5f5" }}>
-        <Typography variant="h6" fontWeight={800} sx={{ mb: 2 }}>
-          직원 공통 정보 수정
-        </Typography>
+    <Paper sx={{ p: 3, borderRadius: 3, border: "1px solid #dbe5f5" }}>
+    <Typography variant="h6" fontWeight={800} sx={{ mb: 2 }}>
+    직원 공통 정보 수정
+    </Typography>
 
-        <Box component="form" onSubmit={handleSubmit}>
+          <Box component="form" onSubmit={handleSubmit}>
           <Stack spacing={2}>
+
+
             {/* 1행: 부서 + 직책 */}
             <Stack direction={{ xs: "column", md: "row" }} spacing={2}>
               
-              
-              
+
+              {/*부서*/}
               <TextField
                 select
                 label="부서"
@@ -191,12 +199,13 @@ const BasicInfoUpdate = ({ staffId }: staffIdNumber) => {
               >
                 <MenuItem value="">부서를 선택하세요</MenuItem>
                 {Departmentlist.map((dept) => (
-                  <MenuItem key={dept.deptId} value={dept.deptId}>
-                    {dept.deptName} ({dept.deptId})
-                  </MenuItem>
+                <MenuItem key={dept.deptId} value={dept.deptId}>
+                {dept.deptName} ({dept.deptId})
+                </MenuItem>
                 ))}
               </TextField>
 
+              {/*직책*/}
               <TextField
                 select
                 label="직책"
@@ -208,12 +217,14 @@ const BasicInfoUpdate = ({ staffId }: staffIdNumber) => {
               >
                 <MenuItem value="">직책을 선택하세요</MenuItem>
                 {positionList.map((pos) => (
-                  <MenuItem key={pos.positionId} value={pos.positionId}>
-                    {pos.positionName} ({pos.positionId})
+                 <MenuItem key={pos.positionId} value={pos.positionId}>
+                {pos.positionName} ({pos.positionId})
                   </MenuItem>
                 ))}
               </TextField>
             </Stack>
+
+
 
             {selectedDepartment && (
               <Alert severity="info">
@@ -324,7 +335,7 @@ const BasicInfoUpdate = ({ staffId }: staffIdNumber) => {
 
             {/* 8행: 주소2 */}
             <TextField
-              inputRef={addressRef}
+              inputRef={address}
               label="주소2"
               name="address2"
               value={form.address2}
@@ -332,8 +343,8 @@ const BasicInfoUpdate = ({ staffId }: staffIdNumber) => {
               fullWidth
             />
 
-            {/* 버튼 */}
-            <Stack direction="row" spacing={1} justifyContent="flex-end">
+              {/* 버튼 */}
+              <Stack direction="row" spacing={1} justifyContent="flex-end">
               <Button
                 variant="outlined"
                 onClick={() => router.replace("/staff/Basiclnfo/list")}
@@ -344,10 +355,10 @@ const BasicInfoUpdate = ({ staffId }: staffIdNumber) => {
 
               <Button type="submit" variant="contained" disabled={loading}>
                 수정
-              </Button>
-            </Stack>
+          </Button>
           </Stack>
-        </Box>
+          </Stack>
+          </Box>
 
         {error && (
           <Alert severity="error" sx={{ mt: 2 }}>
@@ -355,8 +366,8 @@ const BasicInfoUpdate = ({ staffId }: staffIdNumber) => {
           </Alert>
         )}
       </Paper>
-    </Box>
-  </>
-);
-}
+      </Box>
+      </>
+      );
+      }
 export default BasicInfoUpdate;

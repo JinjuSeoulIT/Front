@@ -32,7 +32,7 @@ import { DEPT_ID } from "@/features/staff/department/departmentType";
 
 
 
-
+//공통
 const BasicInfoList = () => {
   const dispatch = useDispatch();
   const router = useRouter();
@@ -40,8 +40,8 @@ const BasicInfoList = () => {
   const { Stafflist, StaffSearch, loading, error } = useSelector((state: RootState) => state.staff);
   
 
-  //삭제
-  const [staffDelete, setstaffDelete] = useState<string | null>(null);
+  //⭐삭제 (모달)                                number | undefined //undefined는 “값이 아직 없음 / 안 정해짐”
+  const [staffDelete, setstaffDelete] = useState<number | null>(null); //널도 포함
 
   //검색 스테이트
   const [search, setSearch] = useState("");
@@ -51,6 +51,8 @@ const BasicInfoList = () => {
 
   
   useEffect(() => {
+ 
+
     dispatch(StafflistRequest());
     dispatch(departmentListRequest());
   }, [dispatch]);
@@ -73,7 +75,7 @@ const BasicInfoList = () => {
   //수정
   const handleEdit = (staff: staffResponse) => router.push(`/staff/Basiclnfo/${staff.staffId}/edit`);
 
-  //삭제 (모달형)
+  //⭐삭제 (모달형)
   const handleOpenDeleteDialog = (staffId: number) => setstaffDelete(staffId);
 
   const handleCloseDeleteDialog = () => setstaffDelete(null);
@@ -106,8 +108,15 @@ const BasicInfoList = () => {
       <Paper sx={{ p: 3, borderRadius: 3, border: "1px solid #dbe5f5" }}>
       <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
       <Typography variant="h6" fontWeight={800}>직원 공통 목록</Typography>
-      
+
+
+
       <Stack direction="row" spacing={1}>
+
+
+
+
+
 
             {/* 분기별 라우팅*/}
             <Button variant="outlined" onClick={() => router.push("/staff")}>직원 홈</Button>
@@ -116,11 +125,10 @@ const BasicInfoList = () => {
 
             <Button variant="contained" onClick={() => router.push(`/staff/location/list`)} sx={{ bgcolor: "#1a38e2" }}>+ 직원배치</Button>
 
-            <Button variant="contained" onClick={() => router.push(`/staff/Basiclnfo/board`)} sx={{ bgcolor: "#da342f" }}>+ 직원등록</Button>
-
             <Button variant="contained" onClick={() => router.push(`/staff/position/list`)} sx={{ bgcolor: "#da342f" }}>+ 직책목록</Button>
 
-
+            <Button variant="contained"onClick={() => router.push("/staff/Basiclnfo/hub")}sx={{ bgcolor: "#da342f" }}> + 직원등록</Button>
+            
             <Button variant="contained" onClick={() => router.push(`/staff/doctor/medical/list`)} sx={{ bgcolor: "#da342f" }}>+ 과목목록</Button>
 
         </Stack>
@@ -217,7 +225,8 @@ const BasicInfoList = () => {
           </Table>
           </Paper>
 
-      <BasicInfoDelete open={!!staffDelete} staffId={staffDelete} onClose={handleCloseDeleteDialog} />
+      <BasicInfoDelete open={!!staffDelete} staffId={staffDelete!}  //널이아님 보장
+      onClose={handleCloseDeleteDialog} />
       {error && <Alert severity="error" sx={{ mt: 2 }}>{error}</Alert>}
       </Box>
   );

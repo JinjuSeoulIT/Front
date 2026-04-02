@@ -58,6 +58,7 @@ function* searchStaffListSaga(action: PayloadAction<SearchStaffPayload>): SagaIt
     yield put(searchStaffListFailure(response.message));
     }
     } catch (error: unknown) {
+
     yield put(searchStaffListFailure( "공통조회 검색 실패 500"));
     }
     }
@@ -66,17 +67,26 @@ function* searchStaffListSaga(action: PayloadAction<SearchStaffPayload>): SagaIt
 
 function* StaffListSaga(): SagaIterator {
   try {
-    const res: ApiResponse<staffResponse[]> = yield call(StafflistApi);
-    if (res.success) {
-      yield put(StafflistSuccess(res.data));
-    } else {
-      yield put(StafflistFailure(res.message));
-    }
-  } catch (error: unknown) {
-    yield put(StafflistFailure( "직원 목록 조회 실패"));
-  }
-}
+    const response: ApiResponse<staffResponse[]> = yield call(StafflistApi);
+    if (response.success) {
 
+    console.log(response.message);
+    yield put(StafflistSuccess(response.data));
+    } else {
+
+    console.log("정상 실패 응답:", response.message);
+    yield put(StafflistFailure(response.message));
+   
+
+    }   
+    } catch (error: unknown) {
+    yield put(StafflistFailure( "직원 목록 조회 실패"));
+    }
+    }
+
+
+
+    
 function* detailStaffSaga(action: PayloadAction<string>): SagaIterator {
   try {
     const res: ApiResponse<staffResponse> = yield call(DetailStaffApi, action.payload);

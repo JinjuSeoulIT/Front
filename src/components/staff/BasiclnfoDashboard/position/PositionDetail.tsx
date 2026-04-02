@@ -19,6 +19,9 @@ import {
 } from "@/features/staff/position/positionSlice";
 import { PositionIdParam } from "@/features/staff/position/positiontypes";
 
+
+
+//직책
 const PositionDetail = ({ positionId }: PositionIdParam) => {
   const dispatch = useDispatch();
   const router = useRouter();

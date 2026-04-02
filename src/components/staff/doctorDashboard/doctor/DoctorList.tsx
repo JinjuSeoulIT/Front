@@ -15,6 +15,7 @@ import StatusBadge from "../../BasiclnfoDashboard/BasiclnfoStatus";
 import DoctorFont from "../DoctorFont";
 // import DoctorSearchBar from "./doctorSearchBar";
 
+////의사
 const DoctorList = () => {
   const dispatch = useDispatch();
   const router = useRouter();

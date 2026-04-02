@@ -28,7 +28,7 @@ const NurseDetail = ({ staffId }: NurseIdNumber) => {
   
   useEffect(() => {
     if (!staffId) return;
-    dispatch(DetailNurseRequest({ staffId }));
+    dispatch(DetailNurseRequest( staffId ));
     dispatch(resetSuccessEnd());
   }, [dispatch, staffId]);
 

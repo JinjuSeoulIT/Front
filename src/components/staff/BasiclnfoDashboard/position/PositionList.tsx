@@ -19,6 +19,9 @@ import {
 import type { RootState } from "@/store/rootReducer";
 import { positionListRequest } from "@/features/staff/position/positionSlice";
 
+
+
+//직책
 const PositionList = () => {
   const dispatch = useDispatch();
   const router = useRouter();

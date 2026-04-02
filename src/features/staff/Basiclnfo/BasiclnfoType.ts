@@ -3,13 +3,13 @@ export type Props = { params: Promise<{ id: string }> };
 //컴포넌트 이동
 export type PropsOpen = {
   open: boolean;
-  staffId: number | string | null;
+  staffId: number;
   onClose: () => void;
 };
 
 
 export type staffResponse = {
-  staffId: number | string;
+  staffId: number;
   deptId: string;
   positionId :string;
 
@@ -32,7 +32,7 @@ export type staffResponse = {
 };
 
 export type staffCreateRequest = {
-  staffId: number | string;
+  staffId: number;
   deptId: string;
   positionId :string;
 
@@ -73,13 +73,13 @@ export const initialstaffCreateForm: staffCreateRequest = {
 
 
 export type staffIdNumber = {
-  staffId: number | string;
+  staffId: number;
 };
 
 
 
 export type staffUpdateRequest = {
-  staffId: number | string;
+  staffId: number;
   deptId: string;
   positionId :String;
 
@@ -113,7 +113,7 @@ export const initialstaffUpdateForm: staffUpdateRequest = {
 };
 
 export type staffIdnNumber = {
-  staffId: number | string;
+  staffId: number ;
   staffReq: staffUpdateRequest;
 };
 

@@ -12,6 +12,7 @@ import { departmentListRequest } from "@/features/staff/department/departmentSli
 import { formatPhoneKR, sanitizeBirthDate, sanitizeGenderCode } from "@/components/staff/BasiclnfoDashboard/BasiclnfoUtils";
 import { positionListRequest } from "@/features/staff/position/positionSlice";
 
+//공통
 const BasicInfoCreate = () => {
   const dispatch = useDispatch();
   const router = useRouter();
@@ -31,14 +32,17 @@ const BasicInfoCreate = () => {
 
 
 
+//재요청 X
 
+useEffect(() => {
+  if (Departmentlist.length === 0) {
+    dispatch(departmentListRequest());
+  }
 
-  //⭐부서목록 리랜더링
-  useEffect(() => {dispatch(departmentListRequest());}, [dispatch]);
-
-  //⭐직책목록 리랜더링
-  useEffect(() => {dispatch(positionListRequest())},[dispatch]);
-
+  if (positionList.length === 0) {
+    dispatch(positionListRequest());
+  }
+}, [dispatch, Departmentlist.length, positionList.length]);
 
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {

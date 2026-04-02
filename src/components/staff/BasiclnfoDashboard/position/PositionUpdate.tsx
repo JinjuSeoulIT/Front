@@ -28,6 +28,9 @@ import {
 const POSITION_TYPE_OPTIONS = ["DOCTOR", "NURSE", "RECEPTION", "ADMIN", "COMMON"];
 const MANAGER_YN_OPTIONS = ["Y", "N"];
 
+
+
+//직책
 const PositionUpdate = ({ positionId }: PositionIdParam) => {
   const dispatch = useDispatch();
   const router = useRouter();

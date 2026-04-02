@@ -18,7 +18,8 @@ import AssignmentIndIcon from "@mui/icons-material/AssignmentInd";
 
 
 
-  const StaffOnboardingHub = () => {
+
+  const BasiclnfoHub= () => {
   const router = useRouter();
 
 
@@ -246,4 +247,4 @@ import AssignmentIndIcon from "@mui/icons-material/AssignmentInd";
   );
 };
 
-export default StaffOnboardingHub;
+export default BasiclnfoHub;

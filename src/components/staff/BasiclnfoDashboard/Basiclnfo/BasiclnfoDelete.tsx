@@ -11,7 +11,7 @@ import {
 } from "@/features/staff/Basiclnfo/BasiclnfoSlict";
 import { PropsOpen } from "@/features/staff/Basiclnfo/BasiclnfoType";
 
-    //모달창
+    //모달창 //공통 삭제
     const BasicInfoDelete = ({ open, staffId, onClose }: PropsOpen) => {
 
     const dispatch = useDispatch();
@@ -21,9 +21,12 @@ import { PropsOpen } from "@/features/staff/Basiclnfo/BasiclnfoType";
 
     const handleConfirmDelete = () => {
       if (!staffId) return;
-    dispatch(deleteStaffRequest({ staffId }));
+    dispatch(deleteStaffRequest( staffId ));
     };
   
+
+
+    
     //모달창
     useEffect(() => {
     if (!deleteSuccess) return;

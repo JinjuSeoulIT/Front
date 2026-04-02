@@ -18,6 +18,9 @@ import {
 } from "@/features/staff/position/positionSlice";
 import { PositionIdParam } from "@/features/staff/position/positiontypes";
 
+
+
+//직책
 const PositionDelete = ({ positionId }: PositionIdParam) => {
   const dispatch = useDispatch();
   const router = useRouter();

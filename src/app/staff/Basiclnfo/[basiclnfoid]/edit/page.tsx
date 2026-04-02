@@ -7,7 +7,7 @@ export default async function StaffEditPage({ params }: { params: Promise<{ basi
   
   return (
     <MainLayout showSidebar={false}>
-      <BasicInfoUpdate staffId={staffId} />
+      <BasicInfoUpdate staffId={Number(staffId)} />
     </MainLayout>
   );
 }

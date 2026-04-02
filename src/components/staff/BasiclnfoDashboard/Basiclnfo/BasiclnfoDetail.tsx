@@ -10,6 +10,8 @@ import { staffIdNumber } from "@/features/staff/Basiclnfo/BasiclnfoType";
 import { departmentListRequest } from "@/features/staff/department/departmentSlisct";
 import { positionListRequest } from "@/features/staff/position/positionSlice";
 
+
+//공통
 const BasicInfoDetail = ({ staffId }: staffIdNumber) => {
   const dispatch = useDispatch();
   const router = useRouter();

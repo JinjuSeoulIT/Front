@@ -30,7 +30,9 @@ import {
 const POSITION_TYPE_OPTIONS = ["DOCTOR", "NURSE", "RECEPTION", "ADMIN", "COMMON"];
 const MANAGER_YN_OPTIONS = ["Y", "N"];
 
-const PositionCreate = () => {
+
+  //직책
+  const PositionCreate = () => {
   const dispatch = useDispatch();
   const router = useRouter();
   const { loading, error, createSuccess } = useSelector(
@@ -39,9 +41,9 @@ const PositionCreate = () => {
 
   const [form, setForm] = useState<PositionRequest>(initialPositionForm);
 
-  useEffect(() => {
+    useEffect(() => {
     if (createSuccess) {
-      alert("직책 등록이 완료되었습니다.");
+      alert("직책 등록이 완료되었습니다."); //alert팝업창
       dispatch(resetPositionState());
       router.push("/staff/position/list");
     }

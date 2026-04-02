@@ -2,7 +2,6 @@ import { call, put, takeLatest } from "redux-saga/effects";
 import type { SagaIterator } from "redux-saga";
 import type { PayloadAction } from "@reduxjs/toolkit";
 
-
 import type {
   ApiResponse,
   DoctorCreateRequest,
@@ -18,7 +17,7 @@ import {
   DoctorListRequest,
   DoctorListSuccess,
   DoctorListFailure,
-  
+
   DetailDoctorRequest,
   DetailDoctorSuccess,
   DetailDoctorFailure,
@@ -54,30 +53,23 @@ import {
   searchDoctorListApi,
 } from "@/lib/staff/employeedoctorAPI";
 
-
-
-
-
-
-
-//검색
+// 검색
 function* searchDoctorListSaga(action: PayloadAction<SearchDoctorPayload>): SagaIterator {
   try {
     const { search, searchType } = action.payload;
-    const response:ApiResponse<DoctorResponse[]> = yield call(searchDoctorListApi, search, searchType);
+    const response: ApiResponse<DoctorResponse[]> = yield call(searchDoctorListApi, search, searchType);
     console.log(response);
     if (response.success) {
-    yield put(searchDoctorListSuccess(response.data));
+      yield put(searchDoctorListSuccess(response.data));
     } else {
-    yield put(searchDoctorListFailure(response.message));
+      yield put(searchDoctorListFailure(response.message));
     }
-  
   } catch (error: unknown) {
-    yield put(searchDoctorListFailure( "의사 검색 실패 500"));
+    yield put(searchDoctorListFailure("의사 검색 실패 500"));
   }
 }
 
-//조회
+// 조회
 function* doctorListSaga(): SagaIterator {
   try {
     const response: ApiResponse<DoctorResponse[]> = yield call(DoctorProfileListApi);
@@ -87,25 +79,33 @@ function* doctorListSaga(): SagaIterator {
       yield put(DoctorListFailure(response.message));
     }
   } catch (error: unknown) {
-    yield put(DoctorListFailure( "의사 목록 조회 실패 500"));
+    yield put(DoctorListFailure("의사 목록 조회 실패 500"));
   }
 }
 
-//상세조회
-function* detailDoctorSaga(action: PayloadAction<DoctorIdNumber>): SagaIterator {
+// 상세조회
+function* detailDoctorSaga(action: PayloadAction<number>): SagaIterator {
   try {
-    const response: ApiResponse<DoctorResponse> = yield call(DoctorProfileDetailApi, action.payload);
+    // ✅ slice에서 payload를 number로 보내므로 saga도 number 기준으로 맞춤
+    const staffId = action.payload;
+
+    // ✅ NaN / undefined 방어
+    if (!Number.isFinite(staffId)) {
+      throw new Error(`유효하지 않은 staffId: ${staffId}`);
+    }
+
+    const response: ApiResponse<DoctorResponse> = yield call(DoctorProfileDetailApi, { staffId });
     if (response.success) {
       yield put(DetailDoctorSuccess(response.data));
     } else {
       yield put(DetailDoctorFailure(response.message));
     }
   } catch (error: unknown) {
-    yield put(DetailDoctorFailure( "의사 상세 조회 실패 500" ));
+    yield put(DetailDoctorFailure("의사 상세 조회 실패 500"));
   }
 }
 
-//생성
+// 생성
 function* createDoctorSaga(action: PayloadAction<DoctorCreateRequest>): SagaIterator {
   try {
     const response: ApiResponse<DoctorResponse> = yield call(createDoctorApi, action.payload);
@@ -119,7 +119,7 @@ function* createDoctorSaga(action: PayloadAction<DoctorCreateRequest>): SagaIter
   }
 }
 
-//수정
+// 수정
 function* updateDoctorSaga(action: PayloadAction<DoctorUpdateNumber>): SagaIterator {
   try {
     const { staffId, doctorReq } = action.payload;
@@ -134,7 +134,7 @@ function* updateDoctorSaga(action: PayloadAction<DoctorUpdateNumber>): SagaItera
   }
 }
 
-//삭제
+// 삭제
 function* deleteDoctorSaga(action: PayloadAction<DoctorIdNumber>): SagaIterator {
   try {
     const response: ApiResponse<void> = yield call(deleteDoctorApi, action.payload.staffId);
@@ -148,8 +148,7 @@ function* deleteDoctorSaga(action: PayloadAction<DoctorIdNumber>): SagaIterator 
   }
 }
 
-
-//업로드
+// 업로드
 function* uploadDoctorFileSaga(action: PayloadAction<DoctorFile>): SagaIterator {
   try {
     const { staffId, file } = action.payload;
@@ -160,10 +159,9 @@ function* uploadDoctorFileSaga(action: PayloadAction<DoctorFile>): SagaIterator 
       yield put(uploadDoctorFileFailure(response.message));
     }
   } catch (error: unknown) {
-    yield put(uploadDoctorFileFailure( "파일 업로드 실패 500"));
+    yield put(uploadDoctorFileFailure("파일 업로드 실패 500"));
   }
 }
-
 
 export function* watchEmployeeDoctorSaga(): SagaIterator {
   yield takeLatest(searchDoctorListRequest.type, searchDoctorListSaga);

@@ -32,6 +32,7 @@ import { BasiclnfoDraft } from "@/features/staff/Basiclnfo/BasiclnfoSlict";
 
 
 
+//의사
 export default function DoctorBasicInfoCreate() {
 
   const dispatch = useDispatch();
@@ -50,11 +51,19 @@ export default function DoctorBasicInfoCreate() {
 
 
 
-//⭐부서목록 리랜더링
-useEffect(() => {dispatch(departmentListRequest());}, [dispatch]);
 
-//⭐직책목록 리랜더링
-useEffect(() => {dispatch(positionListRequest())},[dispatch]);
+
+//재요청 X
+
+useEffect(() => {
+  if (Departmentlist.length === 0) {
+    dispatch(departmentListRequest());
+  }
+
+  if (positionList.length === 0) {
+    dispatch(positionListRequest());
+  }
+}, [dispatch, Departmentlist.length, positionList.length]);
 
 
 

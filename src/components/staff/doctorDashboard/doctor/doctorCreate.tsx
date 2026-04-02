@@ -26,6 +26,8 @@ import { clearBasicDraft } from "@/features/staff/Basiclnfo/BasiclnfoSlict";
 
 
 
+
+//의사
 export default function DoctorCreate() {
   const dispatch = useDispatch();
   const router = useRouter();
@@ -48,6 +50,8 @@ const [form, setForm] = useState(initialDoctorCreateForm);
 
 
 
+
+  
 
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {

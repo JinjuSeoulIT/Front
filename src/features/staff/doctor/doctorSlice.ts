@@ -101,7 +101,7 @@ const doctorSlice = createSlice({
     },
 
     //상세
-    DetailDoctorRequest: (state, action: PayloadAction<DoctorStaffIdParam>) => {
+    DetailDoctorRequest: (state, action: PayloadAction<number>) => {
       state.loading = true;
       state.error = null;
     },

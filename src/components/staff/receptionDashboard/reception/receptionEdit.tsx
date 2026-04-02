@@ -29,7 +29,7 @@ const ReceptionEdit = ({ staffId }: ReceptionIdNumber) => {
 
   useEffect(() => {
     if (!staffId) return;
-    dispatch(DetailReceptionRequest({ staffId }));
+    dispatch(DetailReceptionRequest( staffId ));
   }, [dispatch, staffId]);
 
   useEffect(() => {
