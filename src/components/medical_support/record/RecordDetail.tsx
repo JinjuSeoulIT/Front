@@ -259,9 +259,9 @@ export default function RecordDetail() {
                 <Grid size={{ xs: 12, md: 6 }}>
                   <DetailItem label="간호사 ID" value={record.nursingId || "-"} />
                 </Grid>
-                <Grid size={{ xs: 12, md: 6 }}>
+                {/* <Grid size={{ xs: 12, md: 6 }}>
                   <DetailItem label="진료 ID" value={record.visitId || "-"} />
-                </Grid>
+                </Grid> */}
                 <Grid size={{ xs: 12, md: 6 }}>
                   <DetailItem label="진료과" value={record.departmentName || "-"} />
                 </Grid>
