@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import type { RootState, AppDispatch } from "@/store/store";
 
@@ -21,6 +21,9 @@ import {
 } from "@mui/material";
 
 import { fetchOutstandingBillsRequest } from "@/features/billing/billingSlice";
+import { fetchPatientsApi } from "@/lib/patient/patientApi";
+import type { Patient } from "@/features/patients/patientTypes";
+import { getBillingStatusLabel } from "@/lib/billing/billingStatus";
 
 export default function OutstandingBillingPage() {
   const dispatch = useDispatch<AppDispatch>();
@@ -29,10 +32,65 @@ export default function OutstandingBillingPage() {
     (state: RootState) => state.billing
   );
 
+  /**
+   * 추가:
+   * patientId -> patientName 매핑용 상태
+   */
+  const [patientNameById, setPatientNameById] = useState<Record<number, string>>(
+    {}
+  );
+
   //미수금 조회
   useEffect(() => {
     dispatch(fetchOutstandingBillsRequest());
   }, [dispatch]);
+
+  /**
+   * 추가:
+   * 환자 목록 전체 조회 후 patientId -> name 매핑 생성
+   */
+  useEffect(() => {
+    let active = true;
+
+    const loadPatients = async () => {
+      try {
+        const patients: Patient[] = await fetchPatientsApi();
+
+        if (!active) return;
+
+        const byId = patients.reduce<Record<number, string>>((acc, patient) => {
+          if (patient.patientId && patient.name?.trim()) {
+            acc[patient.patientId] = patient.name.trim();
+          }
+          return acc;
+        }, {});
+
+        setPatientNameById(byId);
+      } catch (err) {
+        console.error("[billing/outstanding] failed to load patients", err);
+
+        if (!active) return;
+        setPatientNameById({});
+      }
+    };
+
+    loadPatients();
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  /**
+   * 추가:
+   * patientId로 환자 이름 찾기
+   */
+  const resolvePatientName = useCallback(
+    (patientId: number) => {
+      return patientNameById[patientId] || "-";
+    },
+    [patientNameById]
+  );
 
   /* ================================
      추가: 진료일 최신순(내림차순) 정렬용 목록
@@ -62,6 +120,7 @@ export default function OutstandingBillingPage() {
             <TableHead>
               <TableRow>
                 <TableCell>청구번호</TableCell>
+                <TableCell>환자명</TableCell>
                 <TableCell>환자ID</TableCell>
                 <TableCell>진료일</TableCell>
                 <TableCell>총 금액</TableCell>
@@ -88,6 +147,8 @@ export default function OutstandingBillingPage() {
                     </Link>
                   </TableCell>
 
+                  <TableCell>{resolvePatientName(bill.patientId)}</TableCell>
+
                   <TableCell>{bill.patientId}</TableCell>
 
                   <TableCell>{bill.treatmentDate}</TableCell>
@@ -98,7 +159,7 @@ export default function OutstandingBillingPage() {
 
                   <TableCell>
                     <Chip
-                      label={bill.status}
+                      label={getBillingStatusLabel(bill.status)}
                       color={
                         bill.status === "PAID"
                           ? "success"
@@ -117,7 +178,7 @@ export default function OutstandingBillingPage() {
               ================================= */}
               {sortedBillingList.length === 0 && !loading && (
                 <TableRow>
-                  <TableCell colSpan={5} align="center">
+                  <TableCell colSpan={6} align="center">
                     미수금 데이터가 없습니다
                   </TableCell>
                 </TableRow>
