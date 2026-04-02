@@ -7,10 +7,6 @@ import type { RootState, AppDispatch } from "@/store/store";
 import toast from "react-hot-toast";
 import Script from "next/script";
 import MainLayout from "@/components/layout/MainLayout";
-import {
-  getDisplayBillingStatusLabel,
-  getDisplayBillingStatusColor,
-} from "@/lib/billing/billingStatus";
 
 declare global {
   interface Window {
@@ -28,6 +24,10 @@ import {
 } from "@/features/billing/billingSlice";
 
 import type { PaymentMethod } from "@/lib/billing/billingApi";
+import {
+  getDisplayBillingStatusLabel,
+  getDisplayBillingStatusColor,
+} from "@/lib/billing/billingStatus";
 
 /* MUI UI */
 import {
@@ -314,10 +314,12 @@ export default function BillingDetailPage() {
       toast.error("이미 전액 수납 완료되었습니다.");
       return;
     }
+
     if (paymentMethod === "CARD") {
       requestTossCardPayment(billingDetail.remainingAmount);
       return;
     }
+
     dispatch(
       createPaymentRequest({
         billId: billingDetail.billId,
@@ -472,7 +474,6 @@ export default function BillingDetailPage() {
 
                 <Stack spacing={1}>
                   <Typography>청구 ID: {billingDetail.billId}</Typography>
-
                   <Typography>환자 ID: {billingDetail.patientId}</Typography>
 
                   <Typography>
@@ -520,7 +521,6 @@ export default function BillingDetailPage() {
                   </Typography>
                 </Stack>
 
-                {/* 청구 확정 버튼 */}
                 {billingDetail.status === "READY" && (
                   <div style={{ marginTop: "12px" }}>
                     <Button

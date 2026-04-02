@@ -1,7 +1,7 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import type { RootState, AppDispatch } from "@/store/store";
 
@@ -24,6 +24,8 @@ import {
 
 import { fetchBillsRequest } from "@/features/billing/billingSlice";
 import { getBillingStatusLabel } from "@/lib/billing/billingStatus";
+import { fetchPatientsApi } from "@/lib/patient/patientApi";
+import type { Patient } from "@/features/patients/patientTypes";
 
 export default function BillingListPage() {
   const searchParams = useSearchParams();
@@ -35,6 +37,14 @@ export default function BillingListPage() {
     (state: RootState) => state.billing
   );
 
+  /**
+   * 추가:
+   * patientId -> patientName 매핑용 상태
+   */
+  const [patientNameById, setPatientNameById] = useState<Record<number, string>>(
+    {}
+  );
+
   const STATUS_OPTIONS = ["READY", "CONFIRMED", "PAID"] as const;
 
   useEffect(() => {
@@ -42,6 +52,53 @@ export default function BillingListPage() {
       dispatch(fetchBillsRequest(status));
     }
   }, [dispatch, status]);
+
+  /**
+   * 추가:
+   * 환자 목록 전체 조회 후 patientId -> name 매핑 생성
+   */
+  useEffect(() => {
+    let active = true;
+
+    const loadPatients = async () => {
+      try {
+        const patients: Patient[] = await fetchPatientsApi();
+
+        if (!active) return;
+
+        const byId = patients.reduce<Record<number, string>>((acc, patient) => {
+          if (patient.patientId && patient.name?.trim()) {
+            acc[patient.patientId] = patient.name.trim();
+          }
+          return acc;
+        }, {});
+
+        setPatientNameById(byId);
+      } catch (err) {
+        console.error("[billing/list] failed to load patients", err);
+
+        if (!active) return;
+        setPatientNameById({});
+      }
+    };
+
+    loadPatients();
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  /**
+   * 추가:
+   * patientId로 환자 이름 찾기
+   */
+  const resolvePatientName = useCallback(
+    (patientId: number) => {
+      return patientNameById[patientId] || "-";
+    },
+    [patientNameById]
+  );
 
   /* 
      진료일 최신순(내림차순) 정렬용 목록
@@ -102,6 +159,7 @@ export default function BillingListPage() {
             <TableHead>
               <TableRow>
                 <TableCell>청구번호</TableCell>
+                <TableCell>환자명</TableCell>
                 <TableCell>환자ID</TableCell>
                 <TableCell>진료일</TableCell>
                 <TableCell>총 금액</TableCell>
@@ -128,6 +186,7 @@ export default function BillingListPage() {
                     </Link>
                   </TableCell>
 
+                  <TableCell>{resolvePatientName(bill.patientId)}</TableCell>
                   <TableCell>{bill.patientId}</TableCell>
                   <TableCell>{bill.treatmentDate}</TableCell>
                   <TableCell>{bill.totalAmount.toLocaleString()} 원</TableCell>
@@ -152,7 +211,7 @@ export default function BillingListPage() {
                */}
               {sortedBillingList.length === 0 && !loading && (
                 <TableRow>
-                  <TableCell colSpan={5} align="center">
+                  <TableCell colSpan={6} align="center">
                     조회 결과가 없습니다
                   </TableCell>
                 </TableRow>
