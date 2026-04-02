@@ -19,7 +19,10 @@ import {
 } from "@/features/staff/position/positionSlice";
 import { PositionIdParam } from "@/features/staff/position/positiontypes";
 
-const PositionDetail = ({ positionId }: PositionIdParam) => {
+
+
+//직책
+  const PositionDetail = ({ positionId }: PositionIdParam) => {
   const dispatch = useDispatch();
   const router = useRouter();
   const { positionDetail, loading, error } = useSelector(
@@ -35,7 +38,7 @@ const PositionDetail = ({ positionId }: PositionIdParam) => {
   }, [dispatch, positionId]);
 
   return (
-    <Paper sx={{ p: 4, maxWidth: 900, mx: "auto", mt: 4 }}>
+      <Paper sx={{ p: 4, maxWidth: 900, mx: "auto", mt: 4 }}>
       <Typography variant="h5" fontWeight="bold" gutterBottom>
         직책 상세
       </Typography>

@@ -1,5 +1,5 @@
 export type ReceptionResponse = {
-  staffId: string;
+  staffId: number ;
   deptId?: string;
   positionId? :String;
   
@@ -20,11 +20,11 @@ export type ReceptionResponse = {
 
 
 export type ReceptionIdNumber = {
-  staffId: string;
+  staffId: number;
 };
 
 export type ReceptionCreateRequest = {
-  staffId: string;
+  staffId: number ;
   deptId: string;
   positionId? :String;
 
@@ -52,7 +52,7 @@ export type ReceptionCreateRequest = {
 };
 
 export const initialReceptionCreateForm: ReceptionCreateRequest = {
-  staffId: "",
+  staffId: 0,
   deptId: "",
   positionId :"",
 
@@ -78,7 +78,7 @@ export const initialReceptionCreateForm: ReceptionCreateRequest = {
 };
 
 export type ReceptionUpdateRequest = {
-  staffId: string;
+  staffId: number ;
   jobTypeCd: string;
   deskNo: string;
   shiftType: string;
@@ -91,7 +91,7 @@ export type ReceptionUpdateRequest = {
 };
 
 export const initialReceptionUpdateForm: ReceptionUpdateRequest = {
-  staffId: "",
+  staffId: 0,
   jobTypeCd: "",
   deskNo: "",
   shiftType: "",
@@ -104,7 +104,7 @@ export const initialReceptionUpdateForm: ReceptionUpdateRequest = {
 };
 
 export type ReceptionUpdateNumber = {
-  staffId: string;
+  staffId: number;
   receptionReq: ReceptionUpdateRequest;
 };
 

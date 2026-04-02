@@ -55,7 +55,7 @@ const departmentSlice = createSlice({
 
 
     
-    departmentDetailRequest(state, _action: PayloadAction<string>) {
+    departmentDetailRequest(state, _action: PayloadAction<number>) {
       state.loading = true;
       state.error = null;
     },

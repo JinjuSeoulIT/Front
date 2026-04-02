@@ -48,7 +48,7 @@ const NurseCreatePage = () => {
     }
 
     const request: NurseCreateRequest = {
-      staffId: basicInfo.staffId.trim(),
+      staffId: Number(basicInfo.staffId),
       deptId: basicInfo.deptId.trim(),
       positionId: basicInfo.positionId.trim(),
 

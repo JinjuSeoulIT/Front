@@ -38,15 +38,20 @@ export default function NurseBasicInfoCreate() {
 
 
 
-//⭐부서목록 리랜더링
-useEffect(() => {dispatch(departmentListRequest());}, [dispatch]);
-
-//⭐직책목록 리랜더링
-useEffect(() => {dispatch(positionListRequest())},[dispatch]);
 
 
 
+//재요청 X
 
+useEffect(() => {
+  if (Departmentlist.length === 0) {
+    dispatch(departmentListRequest());
+  }
+
+  if (positionList.length === 0) {
+    dispatch(positionListRequest());
+  }
+}, [dispatch, Departmentlist.length, positionList.length]);
 
 
   const handleChange = (event: ChangeEvent<HTMLInputElement>) => {
@@ -99,7 +104,7 @@ useEffect(() => {dispatch(positionListRequest())},[dispatch]);
     event.preventDefault();
 
     const basicInfo: staffCreateRequest = {
-      staffId: form.staffId.trim(),
+      staffId: Number(form.staffId),
       deptId: form.deptId.trim(),
       positionId: form.positionId.trim(),
 

@@ -25,7 +25,7 @@ import { locationCreateRequest, resetLocationState } from "@/features/staff/loca
 
 
 
-const LocationCreate = () => {
+  const LocationCreate = () => {
   const dispatch = useDispatch();
   const router = useRouter();
 
@@ -59,14 +59,15 @@ const LocationCreate = () => {
     }
      dispatch(locationCreateRequest(locationReq)
     );
-  };
+    };
 
     
 
   const handleChange =(event: ChangeEvent<HTMLInputElement>) => {
       const { name, value } = event.target;
     setForm((prev) => ({ ...prev, [name] :value,
-      }));
+      
+    }));
     };
 
    

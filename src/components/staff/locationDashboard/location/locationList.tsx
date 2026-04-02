@@ -19,7 +19,7 @@ import {
 import type { RootState } from "@/store/rootReducer";
 import { locationListRequest } from "@/features/staff/location/locationSlice";
 
-const LocationList = () => {
+  const LocationList = () => {
   const dispatch = useDispatch();
   const router = useRouter();
   const { locationList, loading, error } = useSelector((state: RootState) => state.location);
@@ -31,13 +31,13 @@ const LocationList = () => {
   return (
     <Paper sx={{ p: 4, maxWidth: 1300, mx: "auto", mt: 4 }}>
       <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 3 }}>
-        <Box>
-          <Typography variant="h5" fontWeight="bold">
+      <Box>
+      <Typography variant="h5" fontWeight="bold">
             위치 목록
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
+      </Typography>
+       <Typography variant="body2" color="text.secondary">
             등록된 부서 위치와 안내 정보를 조회합니다.
-          </Typography>
+        </Typography>
         </Box>
 
 

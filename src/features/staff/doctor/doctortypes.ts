@@ -1,15 +1,15 @@
 // ✅ 의사 응답
 export type DoctorResponse = {
-  staffId: string;
+  staffId: number;
   deptId?: string;
-  positionId? :String;
+  positionId?: string;
 
   name?: string;
-  status : string;
- 
+  status: string;
+
   licenseNo: string;
   doctorType: string | null;
-  specialtyId: string;
+  specialtyId: number | string;
   doctorFileUrl: string | null;
   extNo: string;
   profileSummary: string;
@@ -17,28 +17,22 @@ export type DoctorResponse = {
   careerDetail: string;
 };
 
-
+// ✅ staffId를 URL/path variable로 보낼 때는 number로 고정
+// 이유: 문자열 "undefined"가 들어가면 백엔드 Long 변환에서 바로 터짐
 export type DoctorStaffIdParam = {
-  staffId: string;
+  staffId: number;
 };
 
-
-
-
-
-
-//생성
+// ✅ 상세/수정/업로드 컴포넌트 공통 props
 export type DoctorIdNumber = {
-  staffId: string;
+  staffId: number;
 };
 
 // ✅ 의사 생성/수정은 의사 상세 테이블 컬럼만 전송
 export type DoctorCreateRequest = {
-  
-  
-  staffId: string;
+  staffId: number;
   deptId: string;
-  positionId? :String;
+  positionId?: string;
 
   name: string;
   phone: string;
@@ -50,25 +44,20 @@ export type DoctorCreateRequest = {
   address2: string;
   status: string;
 
-
   licenseNo: string;
-  specialtyId: string;
+  specialtyId: number;
   doctorType?: string | null;
   doctorFileUrl: string | null;
   extNo: string;
   profileSummary: string;
   education: string;
   careerDetail: string;
-
-
-
-}
+};
 
 export const initialDoctorCreateForm: DoctorCreateRequest = {
-  
-  staffId: "",
+  staffId: 0,
   deptId: "",
-  positionId : "",
+  positionId: "",
 
   name: "",
   phone: "",
@@ -79,27 +68,22 @@ export const initialDoctorCreateForm: DoctorCreateRequest = {
   address1: "",
   address2: "",
   status: "ACTIVE",
-  
 
   licenseNo: "",
-  specialtyId: "",
+  specialtyId: 0,
   doctorType: "DOCTOR",
   doctorFileUrl: "",
   extNo: "",
   profileSummary: "",
   education: "",
   careerDetail: "",
-  
 };
-//생성
 
-
-
-///수정
+// 수정
 export type DoctorUpdateRequest = {
-  staffId: string;
+  staffId: number;
   licenseNo: string;
-  specialtyId: string;
+  specialtyId: number | string;
   doctorFileUrl: string | null;
   extNo: string;
   profileSummary: string;
@@ -108,9 +92,9 @@ export type DoctorUpdateRequest = {
 };
 
 export const initialDoctorUpdateForm: DoctorUpdateRequest = {
-  staffId: "",
+  staffId: 0,
   licenseNo: "",
-  specialtyId: "",
+  specialtyId: 0,
   doctorFileUrl: "",
   extNo: "",
   profileSummary: "",
@@ -119,19 +103,12 @@ export const initialDoctorUpdateForm: DoctorUpdateRequest = {
 };
 
 export type DoctorUpdateNumber = {
-  staffId: string;
+  staffId: number;
   doctorReq: DoctorUpdateRequest;
 };
-///수정
-
-
-
-
-
-
 
 export type DoctorFile = {
-  staffId: string;
+  staffId: number;
   file: File;
 };
 
@@ -149,20 +126,13 @@ export type ApiResponse<T> = {
   data: T;
 };
 
-
-
-//컴포넌트 타입
+// 컴포넌트 타입
 export type Props = { params: Promise<{ id: string }> };
 
-
-
-//검색 타입
+// 검색 타입
 export type DoctorSearchType = "all" | "name" | "specialty" | "staffId" | "dept" | "extNo";
 
 export type SearchDoctorPayload = {
   search: string;
   searchType: DoctorSearchType;
-  // onSearch: (search: string, searchType: DoctorSearchType) => void;  //부모에게 넘겨주는형식
 };
-
-

@@ -38,16 +38,19 @@ export default function ReceptionBasicInfoCreate() {
 
 
 
-//⭐부서목록 리랜더링
-useEffect(() => {dispatch(departmentListRequest());}, [dispatch]);
-
-//⭐직책목록 리랜더링
-useEffect(() => {dispatch(positionListRequest())},[dispatch]);
 
 
+//재요청 X
 
+useEffect(() => {
+  if (Departmentlist.length === 0) {
+    dispatch(departmentListRequest());
+  }
 
-
+  if (positionList.length === 0) {
+    dispatch(positionListRequest());
+  }
+}, [dispatch, Departmentlist.length, positionList.length]);
 
 
   const handleChange = (event: ChangeEvent<HTMLInputElement>) => {
@@ -100,7 +103,7 @@ useEffect(() => {dispatch(positionListRequest())},[dispatch]);
     event.preventDefault();
 
     const basicInfo: staffCreateRequest = {
-      staffId: form.staffId.trim(),
+      staffId: Number(form.staffId),
       deptId: form.deptId.trim(),
       positionId: form.positionId.trim(),
 
@@ -126,7 +129,7 @@ useEffect(() => {dispatch(positionListRequest())},[dispatch]);
         strategy="afterInteractive"
       />
 
-      <Box sx={{ maxWidth: 820, mx: "auto", px: 2, py: 2 }}>
+        <Box sx={{ maxWidth: 820, mx: "auto", px: 2, py: 2 }}>
         <Paper sx={{ p: 3, borderRadius: 3, border: "1px solid #dbe5f5" }}>
           <Typography variant="h6" fontWeight={800} sx={{ mb: 1 }}>
             원무 공통 정보 작성

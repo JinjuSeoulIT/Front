@@ -41,19 +41,19 @@ export const createNurseApi = async (nurseReq: NurseCreateRequest): Promise<ApiR
 };
 
 //수정
-export const updateNursedApi = async (staffId: string, nurseReq: NurseUpdateRequest): Promise<ApiResponse<NurseResponse>> => {
+export const updateNursedApi = async (staffId: number , nurseReq: NurseUpdateRequest): Promise<ApiResponse<NurseResponse>> => {
   const response = await apiNurse.put<ApiResponse<NurseResponse>>(`/api/nurse/edit/${staffId}`, nurseReq);
   return response.data;
 };
 
 //영구 삭제
-export const deleteNurseApi = async (staffId: string): Promise<ApiResponse<void>> => {
+export const deleteNurseApi = async (staffId: number ): Promise<ApiResponse<void>> => {
   const response = await apiNurse.delete<ApiResponse<void>>(`/api/nurse/delete/${staffId}`);
   return response.data;
 };
 
 //업로드
-export async function uploadFileApi(staffId: string, file: File): Promise<ApiResponse<FileUploadResDTO>> {
+export async function uploadFileApi(staffId: number , file: File): Promise<ApiResponse<FileUploadResDTO>> {
   const form = new FormData();
   form.append("NurseFile", file);
 

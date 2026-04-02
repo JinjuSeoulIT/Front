@@ -18,7 +18,7 @@ import NurseFont from "../NurseFont";
 
 
 
-const NurseList = () => {
+  const NurseList = () => {
   const dispatch = useDispatch();
   const router = useRouter();
   const { nurselist, nurseSearch ,loading ,error} = useSelector((state: RootState) => state.nurse);
@@ -39,10 +39,10 @@ const NurseList = () => {
 
   const handleCreate = () => router.push("/staff/Basiclnfo/list");
 
-  // const handleDetail = (staffId: string) => router.push(`/staff/nurse/${staffId}/detail`);
+  // const handleDetail = (staffId: number) => router.push(`/staff/nurse/${staffId}/detail`);
 
 
-  const handleEdit = (staffId: string) => router.push(`/staff/nurse/${staffId}/edit`);
+  const handleEdit = (staffId: number) => router.push(`/staff/nurse/${staffId}/edit`);
 
 
 

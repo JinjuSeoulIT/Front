@@ -87,7 +87,9 @@ const StaffSlice = createSlice({
       state.error = action.payload;
     },
 
-    DetailStaffRequest(state, _action: PayloadAction<string>) {
+
+
+    DetailStaffRequest(state, _action: PayloadAction<number>) {
       state.loading = true;
       state.error = null;
       state.StaffDetail = null;
@@ -133,7 +135,7 @@ const StaffSlice = createSlice({
 
 
 
-    deleteStaffRequest(state, _action: PayloadAction<staffIdNumber>) {
+    deleteStaffRequest(state, _action: PayloadAction<number>) {
       state.loading = true;
       state.error = null;
       state.deleteSuccess = false;

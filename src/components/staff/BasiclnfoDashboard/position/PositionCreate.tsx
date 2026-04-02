@@ -27,38 +27,38 @@ import {
 
 
 
-const POSITION_TYPE_OPTIONS = ["DOCTOR", "NURSE", "RECEPTION", "ADMIN", "COMMON"];
-const MANAGER_YN_OPTIONS = ["Y", "N"];
+  const POSITION_TYPE_OPTIONS = ["DOCTOR", "NURSE", "RECEPTION", "ADMIN", "COMMON"];
+  const MANAGER_YN_OPTIONS = ["Y", "N"];
 
-const PositionCreate = () => {
+
+  //직책
+  const PositionCreate = () => {
   const dispatch = useDispatch();
   const router = useRouter();
-  const { loading, error, createSuccess } = useSelector(
-    (state: RootState) => (state as any).position ?? { loading: false, error: null, createSuccess: false }
-  );
+  const { loading, error, createSuccess } = useSelector( (state: RootState) => state.position);
 
   const [form, setForm] = useState<PositionRequest>(initialPositionForm);
 
-  useEffect(() => {
+    useEffect(() => {
     if (createSuccess) {
-      alert("직책 등록이 완료되었습니다.");
+      alert("직책 등록이 완료되었습니다."); //alert팝업창
       dispatch(resetPositionState());
       router.push("/staff/position/list");
     }
-  }, [createSuccess, dispatch, router]);
+    }, [createSuccess, dispatch, router]);
 
-  const handleChange =
-    (field: keyof PositionRequest) => (event: ChangeEvent<HTMLInputElement>) => {
+      const handleChange =
+     (field: keyof PositionRequest) => (event: ChangeEvent<HTMLInputElement>) => {
       setForm((prev) => ({
         ...prev,
         [field]: event.target.value,
       }));
-    };
+      };
 
-  const handleSubmit = (event: FormEvent) => {
-    event.preventDefault();
-
-    dispatch(
+      const handleSubmit = (event: FormEvent) => {
+      event.preventDefault();
+ 
+      dispatch(
       positionCreateRequest({
         positionId: form.positionId.trim(),
         positionType: form.positionType.trim(),
@@ -68,22 +68,22 @@ const PositionCreate = () => {
         managerYn: form.managerYn.trim() || "N",
         rmk: form.rmk.trim(),
       })
-    );
-  };
+      );
+      };
 
   return (
-    <Paper sx={{ p: 4, maxWidth: 900, mx: "auto", mt: 4 }}>
-      <Typography variant="h5" fontWeight="bold" gutterBottom>
-        직책 등록
-      </Typography>
+          <Paper sx={{ p: 4, maxWidth: 900, mx: "auto", mt: 4 }}>
+          <Typography variant="h5" fontWeight="bold" gutterBottom>
+           직책 등록
+           </Typography>
 
-      <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-        직책 마스터 정보를 등록합니다.
-      </Typography>
+           <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+           직책 마스터 정보를 등록합니다.
+           </Typography>
 
-      <Box component="form" onSubmit={handleSubmit}>
-        <Stack spacing={2.5}>
-          {error && <Alert severity="error">{error}</Alert>}
+           <Box component="form" onSubmit={handleSubmit}>
+            <Stack spacing={2.5}>
+             {error && <Alert severity="error">{error}</Alert>}
 
           <Stack direction={{ xs: "column", md: "row" }} spacing={2}>
             <TextField
@@ -165,10 +165,10 @@ const PositionCreate = () => {
             <Button type="submit" variant="contained" disabled={loading}>
               {loading ? "등록 중..." : "등록"}
             </Button>
-          </Stack>
-        </Stack>
-      </Box>
-    </Paper>
+            </Stack>
+           </Stack>
+           </Box>
+          </Paper>
   );
 };
 

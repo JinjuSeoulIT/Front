@@ -18,7 +18,7 @@ const NurseUpdate = ({ staffId }: NurseIdNumber) => {
     
     useEffect(() => {
     if (!staffId) return;
-    dispatch(DetailNurseRequest({ staffId }));
+    dispatch(DetailNurseRequest( staffId ));
   }, [dispatch, staffId]);
 
 
@@ -44,7 +44,7 @@ const NurseUpdate = ({ staffId }: NurseIdNumber) => {
       const nurseReq: NurseUpdateRequest = {
 
         
-      staffId:   (form.staffId ?? staffId).trim(),
+      staffId: Number(String(form.staffId ?? staffId).trim()),
       licenseNo: (form.licenseNo ?? "").trim(),
       shiftType: (form.shiftType ?? "").trim(),
       nurseFileUrl: form.nurseFileUrl ?? null,

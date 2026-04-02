@@ -10,6 +10,8 @@ import { staffIdNumber } from "@/features/staff/Basiclnfo/BasiclnfoType";
 import { departmentListRequest } from "@/features/staff/department/departmentSlisct";
 import { positionListRequest } from "@/features/staff/position/positionSlice";
 
+
+//공통
 const BasicInfoDetail = ({ staffId }: staffIdNumber) => {
   const dispatch = useDispatch();
   const router = useRouter();
@@ -53,7 +55,7 @@ const BasicInfoDetail = ({ staffId }: staffIdNumber) => {
 
 
   return (
-    <Box sx={{ maxWidth: 820, mx: "auto", px: 2, py: 2 }}>
+      <Box sx={{ maxWidth: 820, mx: "auto", px: 2, py: 2 }}>
       <Paper sx={{ p: 3, borderRadius: 3, border: "1px solid #dbe5f5" }}>
       <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
       <Typography variant="h6" fontWeight={800}>직원 공통 상세</Typography>

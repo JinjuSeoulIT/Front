@@ -18,7 +18,10 @@ import {
 } from "@/features/staff/position/positionSlice";
 import { PositionIdParam } from "@/features/staff/position/positiontypes";
 
-const PositionDelete = ({ positionId }: PositionIdParam) => {
+
+
+//직책
+  const PositionDelete = ({ positionId }: PositionIdParam) => {
   const dispatch = useDispatch();
   const router = useRouter();
   const { positionDetail, loading, error, deleteSuccess } = useSelector(

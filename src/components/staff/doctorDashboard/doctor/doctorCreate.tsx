@@ -26,6 +26,8 @@ import { clearBasicDraft } from "@/features/staff/Basiclnfo/BasiclnfoSlict";
 
 
 
+
+//의사
 export default function DoctorCreate() {
   const dispatch = useDispatch();
   const router = useRouter();
@@ -49,6 +51,8 @@ const [form, setForm] = useState(initialDoctorCreateForm);
 
 
 
+  
+
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -59,7 +63,7 @@ const [form, setForm] = useState(initialDoctorCreateForm);
     }
     const doctorReq: DoctorCreateRequest = {
       //⭐ 공통 (기존값)
-      staffId: doctorBasiclnfo.staffId.trim(),
+      staffId: Number(doctorBasiclnfo.staffId),
       deptId: doctorBasiclnfo.deptId.trim(),
       positionId: doctorBasiclnfo.positionId.trim(),
 
@@ -76,7 +80,7 @@ const [form, setForm] = useState(initialDoctorCreateForm);
 
       // 의사
       licenseNo: form.licenseNo.trim(),
-      specialtyId: form.specialtyId.trim(),
+      specialtyId: String(form.specialtyId ?? "").trim(),
       doctorType: "DOCTOR",
       doctorFileUrl: (form.doctorFileUrl ?? "").trim(),
       profileSummary: form.profileSummary.trim(),
@@ -117,7 +121,7 @@ const [form, setForm] = useState(initialDoctorCreateForm);
 
 
   return (
-    <Box sx={{ maxWidth: 780, mx: "auto", px: { xs: 2, md: 0 } }}>
+      <Box sx={{ maxWidth: 780, mx: "auto", px: { xs: 2, md: 0 } }}>
       <Paper
         elevation={0}
         sx={{

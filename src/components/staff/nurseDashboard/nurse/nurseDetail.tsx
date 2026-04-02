@@ -11,7 +11,7 @@ import { NurseIdNumber } from "@/features/staff/nurse/nurseTypes";
 import NurseUpload from "./nurseUpload";
 import StatusBadge from "../../BasiclnfoDashboard/BasiclnfoStatus";
 
-const NurseDetail = ({ staffId }: NurseIdNumber) => {
+  const NurseDetail = ({ staffId }: NurseIdNumber) => {
   const dispatch = useDispatch();
   const router = useRouter();
   const { nurseDetail, loading, error } = useSelector((state: RootState) => state.nurse);
@@ -28,7 +28,7 @@ const NurseDetail = ({ staffId }: NurseIdNumber) => {
   
   useEffect(() => {
     if (!staffId) return;
-    dispatch(DetailNurseRequest({ staffId }));
+    dispatch(DetailNurseRequest( staffId ));
     dispatch(resetSuccessEnd());
   }, [dispatch, staffId]);
 

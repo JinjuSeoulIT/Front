@@ -29,7 +29,7 @@ const ReceptionEdit = ({ staffId }: ReceptionIdNumber) => {
 
   useEffect(() => {
     if (!staffId) return;
-    dispatch(DetailReceptionRequest({ staffId }));
+    dispatch(DetailReceptionRequest( staffId ));
   }, [dispatch, staffId]);
 
   useEffect(() => {
@@ -64,7 +64,7 @@ const ReceptionEdit = ({ staffId }: ReceptionIdNumber) => {
     dispatch(updateReceptionRequest({
       staffId,
       receptionReq: {
-        staffId: form.staffId.trim(),
+        staffId: Number(form.staffId),
         jobTypeCd: form.jobTypeCd.trim(),
         deskNo: form.deskNo.trim(),
         shiftType: form.shiftType.trim(),

@@ -15,6 +15,7 @@ import StatusBadge from "../../BasiclnfoDashboard/BasiclnfoStatus";
 import DoctorFont from "../DoctorFont";
 // import DoctorSearchBar from "./doctorSearchBar";
 
+////의사
 const DoctorList = () => {
   const dispatch = useDispatch();
   const router = useRouter();
@@ -36,7 +37,7 @@ const DoctorList = () => {
   //생성 라우팅
   const handleCreate = () => router.push("/staff/Basiclnfo/list");
   //수정 라우팅
-  const handleEdit = (staffId: string) => router.push(`/staff/doctor/${staffId}/edit`);
+  const handleEdit = (staffId: number) => router.push(`/staff/doctor/${staffId}/edit`);
 
 
 

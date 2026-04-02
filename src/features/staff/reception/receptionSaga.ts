@@ -24,18 +24,23 @@ import {
   createReceptionFailure,
   createReceptionRequest,
   createReceptionSuccess,
+
   deleteReceptionFailure,
   deleteReceptionRequest,
   deleteReceptionSuccess,
+
   DetailReceptionFailure,
   DetailReceptionRequest,
   DetailReceptionSuccess,
+
   ReceptionListFailure,
   ReceptionListRequest,
   ReceptionListSuccess,
+
   searchReceptionListFailure,
   searchReceptionListRequest,
   searchReceptionListSuccess,
+  
   updateReceptionFailure,
   updateReceptionRequest,
   updateReceptionSuccess,
@@ -73,6 +78,7 @@ function* detailReceptionSaga(action: PayloadAction<ReceptionIdNumber>): SagaIte
     const response: ApiResponse<ReceptionResponse> = yield call(DetailReceptionApi, action.payload);
     if (response.success) {
       yield put(DetailReceptionSuccess(response.data));
+         console.log(response.message)
     } else {
       yield put(DetailReceptionFailure(response.message));
     }
@@ -86,6 +92,7 @@ function* createReceptionSaga(action: PayloadAction<ReceptionCreateRequest>): Sa
     const response: ApiResponse<ReceptionResponse> = yield call(createReceptionApi, action.payload);
     if (response.success) {
       yield put(createReceptionSuccess(response.data));
+      console.log(response.message)
     } else {
       yield put(createReceptionFailure(response.message));
     }

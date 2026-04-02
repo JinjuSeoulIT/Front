@@ -64,11 +64,11 @@ const ReceptionList = () => {
     router.push(`/staff/reception/${reception.staffId}/detail`);
   };
 
-  const goEdit = (staffId: string) => {
+  const goEdit = (staffId: number) => {
     router.push(`/staff/reception/${staffId}/edit`);
   };
 
-  const goDelete = (staffId: string) => {
+  const goDelete = (staffId: number) => {
     router.push(`/staff/reception/${staffId}/delete`);
   };
 
@@ -76,11 +76,11 @@ const ReceptionList = () => {
     <Box sx={{ maxWidth: 1480, mx: "auto", px: 2, py: 2 }}>
       <Paper sx={{ p: 3, borderRadius: 3, border: "1px solid #dbe5f5" }}>
         <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
-          <Typography variant="h6" fontWeight={800}>원무 직원 목록</Typography>
-          <Stack direction="row" spacing={1}>
-            <Button variant="outlined" onClick={() => router.push("/staff")}>직원 홈</Button>
-            <Button variant="contained" onClick={() => router.push("/staff/Basiclnfo/list")}>직원 목록</Button>
-          </Stack>
+        <Typography variant="h6" fontWeight={800}>원무 직원 목록</Typography>
+        <Stack direction="row" spacing={1}>
+        <Button variant="outlined" onClick={() => router.push("/staff")}>직원 홈</Button>
+        <Button variant="contained" onClick={() => router.push("/staff/Basiclnfo/list")}>직원 목록</Button>
+        </Stack>
         </Stack>
 
         <Box component="form" onSubmit={handleSubmit} sx={{ mb: 2 }}>

@@ -19,7 +19,10 @@ import {
 import type { RootState } from "@/store/rootReducer";
 import { positionListRequest } from "@/features/staff/position/positionSlice";
 
-const PositionList = () => {
+
+
+//직책
+  const PositionList = () => {
   const dispatch = useDispatch();
   const router = useRouter();
   const { positionList, loading, error } = useSelector((state: RootState) => state.position);
@@ -56,15 +59,15 @@ const PositionList = () => {
       <Table>
         <TableHead>
           <TableRow>
-            <TableCell>직책 ID</TableCell>
-            <TableCell>직책 유형</TableCell>
-            <TableCell>직책 코드</TableCell>
-            <TableCell>직책 레벨</TableCell>
-            <TableCell>직책명</TableCell>
-            <TableCell>관리자 여부</TableCell>
-            <TableCell>비고</TableCell>
-            <TableCell align="center">관리</TableCell>
-          </TableRow>
+         <TableCell>직책 ID</TableCell>
+         <TableCell>직책 유형</TableCell>
+         <TableCell>직책 코드</TableCell>
+         <TableCell>직책 레벨</TableCell>
+         <TableCell>직책명</TableCell>
+         <TableCell>관리자 여부</TableCell>
+         <TableCell>비고</TableCell>
+         <TableCell align="center">관리</TableCell>
+        </TableRow>
         </TableHead>
         <TableBody>
           {!loading && positionList.length === 0 && (
@@ -108,13 +111,13 @@ const PositionList = () => {
                   >
                     삭제
                   </Button>
-                </Stack>
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </Paper>
+                  </Stack>
+                  </TableCell>
+                  </TableRow>
+                  ))}
+                  </TableBody>
+                  </Table>
+                  </Paper>
   );
 };
 

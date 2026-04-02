@@ -17,13 +17,13 @@ const ReceptionDetail = ({ staffId }: ReceptionIdNumber) => {
 
   useEffect(() => {
     if (!staffId) return;
-    dispatch(DetailReceptionRequest({ staffId }));
+    dispatch(DetailReceptionRequest( staffId ));
   }, [dispatch, staffId]);
 
   return (
     <Box sx={{ maxWidth: 980, mx: "auto", px: 2, py: 2 }}>
-      <Paper sx={{ p: 3, borderRadius: 3, border: "1px solid #dbe5f5" }}>
-        <Stack spacing={2}>
+          <Paper sx={{ p: 3, borderRadius: 3, border: "1px solid #dbe5f5" }}>
+          <Stack spacing={2}>
           <Typography variant="h6" fontWeight={800}>원무 상세 조회</Typography>
 
           {loading && <Box sx={{ display: "flex", justifyContent: "center", py: 4 }}><CircularProgress /></Box>}
@@ -31,7 +31,7 @@ const ReceptionDetail = ({ staffId }: ReceptionIdNumber) => {
 
           {receptionDetail && (
             <>
-              <Table size="small">
+                <Table size="small">
                 <TableBody>
                 <TableRow>
 
@@ -102,7 +102,11 @@ const ReceptionDetail = ({ staffId }: ReceptionIdNumber) => {
                 <TableCell sx={{ fontWeight: 700 }}>비고</TableCell>
                 <TableCell>{receptionDetail.rmk ?? "-"}</TableCell>
                 </TableRow>
-                <TableRow><TableCell sx={{ fontWeight: 700 }}>상태</TableCell><TableCell><StatusBadge status={receptionDetail.status ?? "-"} /></TableCell></TableRow>
+                <TableRow>
+                <TableCell sx={{ fontWeight: 700 }}>상태</TableCell>
+                <TableCell>
+                <StatusBadge status={receptionDetail.status ?? "-"} /></TableCell>
+                </TableRow>
                 </TableBody>
                 </Table>
 
@@ -122,8 +126,8 @@ const ReceptionDetail = ({ staffId }: ReceptionIdNumber) => {
             </>
           )}
         </Stack>
-      </Paper>
-    </Box>
+        </Paper>
+        </Box>
   );
 };
 
