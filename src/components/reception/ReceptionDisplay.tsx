@@ -20,7 +20,7 @@ type ReceptionStatusNormalized = "WAITING" | "CALLED" | "IN_PROGRESS" | "DONE";
 type ReceptionStatusChangedEvent = {
   receptionId?: number;
   patientName?: string | null;
-  departmentId?: number | null;
+  departmentId?: string | number | null;
   departmentName?: string | null;
   toStatus?: string | null;
   changedAt?: string | null;
@@ -202,7 +202,7 @@ export default function ReceptionDisplay() {
         }
         if (!departmentName && payload.departmentId != null) {
           const found = departments.find(
-            (item) => item.departmentId === payload.departmentId
+            (item) => String(item.departmentId) === String(payload.departmentId)
           );
           departmentName = found?.departmentName?.trim() || "";
         }

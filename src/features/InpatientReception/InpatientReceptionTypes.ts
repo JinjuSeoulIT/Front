@@ -13,7 +13,7 @@ export interface InpatientReception {
   receptionNo: string;
   patientId: number;
   visitType: string;
-  departmentId: number;
+  departmentId: string;
   doctorId?: number | null;
   reservationId?: number | null;
   scheduledAt?: string | null;
@@ -31,7 +31,7 @@ export interface InpatientReception {
 export type InpatientReceptionForm = {
   receptionNo: string;
   patientId: number;
-  departmentId: number;
+  departmentId: string;
   doctorId?: number | null;
   scheduledAt?: string | null;
   arrivedAt?: string | null;

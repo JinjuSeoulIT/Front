@@ -46,6 +46,13 @@ const api = axios.create({
   baseURL: process.env.NEXT_PUBLIC_RECEPTION_API_BASE_URL ?? "http://192.168.1.55:8283",
 });
 
+const normalizeDepartmentId = (value: unknown) => String(value ?? "").trim();
+
+const normalizeReception = (item: Reception): Reception => ({
+  ...item,
+  departmentId: normalizeDepartmentId((item as Reception & { departmentId?: unknown }).departmentId),
+});
+
 function unwrap<T>(data: VisitApiResponse<T> | T): T {
   if (data && typeof data === "object" && "result" in (data as VisitApiResponse<T>)) {
     return ((data as VisitApiResponse<T>).result ?? null) as T;
@@ -77,7 +84,7 @@ export const fetchReceptionsApi = async (): Promise<Reception[]> => {
   if (!res.data.success) {
     throw new Error(res.data.message || "Fetch failed");
   }
-  return res.data.result;
+  return (res.data.result ?? []).map(normalizeReception);
 };
 
 export const fetchReceptionApi = async (receptionId: string): Promise<Reception> => {
@@ -85,7 +92,7 @@ export const fetchReceptionApi = async (receptionId: string): Promise<Reception>
   if (!res.data.success) {
     throw new Error(res.data.message || "Fetch failed");
   }
-  return res.data.result;
+  return normalizeReception(res.data.result);
 };
 
 export const createReceptionApi = async (form: ReceptionForm): Promise<void> => {
@@ -122,7 +129,7 @@ export const cancelReceptionApi = async (
   if (!res.data.success) {
     throw new Error(res.data.message || "Cancel failed");
   }
-  return res.data.result;
+  return normalizeReception(res.data.result);
 };
 
 export const searchReceptionsApi = async (
@@ -136,5 +143,5 @@ export const searchReceptionsApi = async (
   if (!res.data.success) {
     return [];
   }
-  return res.data.result;
+  return (res.data.result ?? []).map(normalizeReception);
 };

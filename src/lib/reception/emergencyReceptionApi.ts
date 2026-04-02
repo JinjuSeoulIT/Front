@@ -10,6 +10,17 @@ const api = axios.create({
   baseURL: process.env.NEXT_PUBLIC_RECEPTION_API_BASE_URL ?? "http://192.168.1.55:8283",
 });
 
+const normalizeDepartmentId = (value: unknown) => String(value ?? "").trim();
+
+const normalizeEmergencyReception = (
+  item: EmergencyReception
+): EmergencyReception => ({
+  ...item,
+  departmentId: normalizeDepartmentId(
+    (item as EmergencyReception & { departmentId?: unknown }).departmentId
+  ),
+});
+
 function toApiErrorMessage(err: unknown, fallback: string) {
   if (axios.isAxiosError(err)) {
     const message =
@@ -42,7 +53,7 @@ export const fetchEmergencyReceptionsApi = async (): Promise<EmergencyReception[
   if (!res.data.success) {
     throw new Error(res.data.message || "Fetch failed");
   }
-  return res.data.result;
+  return (res.data.result ?? []).map(normalizeEmergencyReception);
 };
 
 export const fetchEmergencyReceptionApi = async (
@@ -54,7 +65,7 @@ export const fetchEmergencyReceptionApi = async (
   if (!res.data.success) {
     throw new Error(res.data.message || "Fetch failed");
   }
-  return res.data.result;
+  return normalizeEmergencyReception(res.data.result);
 };
 
 export const createEmergencyReceptionApi = async (
@@ -71,7 +82,7 @@ export const createEmergencyReceptionApi = async (
     const unwrapped = unwrapApiResult<EmergencyReception | null>(
       res.data as ApiResponse<EmergencyReception | null> | EmergencyReception | null
     );
-    return isEmergencyReception(unwrapped) ? unwrapped : null;
+    return isEmergencyReception(unwrapped) ? normalizeEmergencyReception(unwrapped) : null;
   } catch (err) {
     throw new Error(toApiErrorMessage(err, "Create failed"));
   }
@@ -130,7 +141,7 @@ export const searchEmergencyReceptionsApi = async (
   if (!res.data.success) {
     return [];
   }
-  return res.data.result;
+  return (res.data.result ?? []).map(normalizeEmergencyReception);
 };
 
 

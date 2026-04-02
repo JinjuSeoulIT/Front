@@ -96,14 +96,14 @@ export default function InpatientReceptionList() {
     patientName: "",
   });
   const [createModalForm, setCreateModalForm] = React.useState<{
-    departmentId: number;
+    departmentId: string;
     doctorId: number | null;
     admissionPlanAt: string;
     wardId: string;
     roomId: string;
     note: string;
   }>({
-    departmentId: 0,
+    departmentId: "",
     doctorId: null,
     admissionPlanAt: toLocalDateTimeValue(new Date()),
     wardId: "",
@@ -262,15 +262,15 @@ export default function InpatientReceptionList() {
   const doctorsForSelectedDepartment = React.useMemo(() => {
     if (!createModalForm.departmentId) return doctors;
     return doctors.filter(
-      (doctor) => (doctor.departmentId ?? null) === createModalForm.departmentId
+      (doctor) => (doctor.departmentId ?? "") === createModalForm.departmentId
     );
   }, [createModalForm.departmentId, doctors]);
 
   React.useEffect(() => {
     if (!createModalOpen) return;
-    const defaultDepartmentId = departments[0]?.departmentId ?? 0;
+    const defaultDepartmentId = departments[0]?.departmentId ?? "";
     const defaultDoctorId =
-      doctors.find((doctor) => (doctor.departmentId ?? null) === defaultDepartmentId)?.doctorId ??
+      doctors.find((doctor) => (doctor.departmentId ?? "") === defaultDepartmentId)?.doctorId ??
       null;
     setCreateModalForm({
       departmentId: defaultDepartmentId,
@@ -303,7 +303,7 @@ export default function InpatientReceptionList() {
 
     const doctor =
       doctors.find((item) => item.doctorId === createModalForm.doctorId) ??
-      doctors.find((item) => (item.departmentId ?? null) === department.departmentId) ??
+      doctors.find((item) => (item.departmentId ?? "") === department.departmentId) ??
       null;
 
     dispatch(
@@ -715,9 +715,9 @@ export default function InpatientReceptionList() {
               label={"진료과"}
               value={createModalForm.departmentId}
               onChange={(e) => {
-                const departmentId = Number(e.target.value);
+                const departmentId = e.target.value;
                 const nextDoctorId =
-                  doctors.find((doctor) => (doctor.departmentId ?? null) === departmentId)
+                  doctors.find((doctor) => (doctor.departmentId ?? "") === departmentId)
                     ?.doctorId ?? null;
                 setCreateModalForm((prev) => ({
                   ...prev,
@@ -728,7 +728,7 @@ export default function InpatientReceptionList() {
               fullWidth
             >
               {departments.map((item) => (
-                <MenuItem key={item.departmentId} value={item.departmentId}>
+                <MenuItem key={item.departmentId} value={String(item.departmentId)}>
                   {item.departmentName}
                 </MenuItem>
               ))}
@@ -740,8 +740,13 @@ export default function InpatientReceptionList() {
               label={"담당의"}
               value={createModalForm.doctorId ?? ""}
               onChange={(e) => {
-                const doctorId = Number(e.target.value);
-                const doctor = doctors.find((item) => item.doctorId === doctorId);
+                const rawDoctorId = String(e.target.value ?? "").trim();
+                const parsedDoctorId = rawDoctorId ? Number(rawDoctorId) : NaN;
+                const doctorId = Number.isFinite(parsedDoctorId) ? parsedDoctorId : null;
+                const doctor =
+                  doctorId == null
+                    ? undefined
+                    : doctors.find((item) => item.doctorId === doctorId);
                 setCreateModalForm((prev) => ({
                   ...prev,
                   doctorId,

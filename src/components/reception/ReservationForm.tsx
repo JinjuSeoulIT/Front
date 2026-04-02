@@ -154,9 +154,9 @@ export default function ReservationForm({
   };
 
   const getDoctorsByDepartment = (departmentId: string) => {
-    const deptId = Number(departmentId);
-    if (Number.isNaN(deptId)) return doctorOptions;
-    return doctorOptions.filter((d) => (d.departmentId ?? null) === deptId);
+    const deptId = departmentId.trim();
+    if (!deptId) return doctorOptions;
+    return doctorOptions.filter((d) => (d.departmentId ?? "") === deptId);
   };
 
   const handleDepartmentChange = (value: string) => {
@@ -189,7 +189,7 @@ export default function ReservationForm({
       ...prev,
       doctorId: value,
       doctorName: selected?.doctorName ?? "",
-      departmentId: selected?.departmentId ? String(selected.departmentId) : prev.departmentId,
+      departmentId: selected?.departmentId ?? prev.departmentId,
       departmentName: dept?.departmentName ?? prev.departmentName,
     }));
   };
@@ -200,7 +200,7 @@ export default function ReservationForm({
       return;
     }
     const patientId = toOptionalNumber(form.patientId);
-    const departmentId = toOptionalNumber(form.departmentId);
+    const departmentId = toOptionalString(form.departmentId);
 
     if (!form.patientName.trim() || !departmentId) return;
 

@@ -10,12 +10,21 @@ const api = axios.create({
   baseURL: process.env.NEXT_PUBLIC_RECEPTION_API_BASE_URL ?? "http://192.168.1.55:8283",
 });
 
+const normalizeDepartmentId = (value: unknown) => String(value ?? "").trim();
+
+const normalizeInpatientReception = (item: InpatientReception): InpatientReception => ({
+  ...item,
+  departmentId: normalizeDepartmentId(
+    (item as InpatientReception & { departmentId?: unknown }).departmentId
+  ),
+});
+
 export const fetchInpatientReceptionsApi = async (): Promise<InpatientReception[]> => {
   const res = await api.get<ApiResponse<InpatientReception[]>>("/api/inpatient-receptions");
   if (!res.data.success) {
     throw new Error(res.data.message || "Fetch failed");
   }
-  return res.data.result;
+  return (res.data.result ?? []).map(normalizeInpatientReception);
 };
 
 export const fetchInpatientReceptionApi = async (
@@ -27,7 +36,7 @@ export const fetchInpatientReceptionApi = async (
   if (!res.data.success) {
     throw new Error(res.data.message || "Fetch failed");
   }
-  return res.data.result;
+  return normalizeInpatientReception(res.data.result);
 };
 
 export const createInpatientReceptionApi = async (
@@ -66,7 +75,7 @@ export const searchInpatientReceptionsApi = async (
   if (!res.data.success) {
     return [];
   }
-  return res.data.result;
+  return (res.data.result ?? []).map(normalizeInpatientReception);
 };
 
 

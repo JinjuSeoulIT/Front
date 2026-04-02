@@ -110,8 +110,10 @@ const triageLevelOptions = [
   { value: "5", label: "5 - 비응급" },
 ];
 
-const EMERGENCY_DEPARTMENT_ID = 5;
-const EMERGENCY_DEPARTMENT_NAME = "응급의학과";
+const EMERGENCY_DEPARTMENT_ID =
+  (process.env.NEXT_PUBLIC_EMERGENCY_DEPARTMENT_ID ?? "5").trim() || "5";
+const EMERGENCY_DEPARTMENT_NAME =
+  (process.env.NEXT_PUBLIC_EMERGENCY_DEPARTMENT_NAME ?? "응급의학과").trim() || "응급의학과";
 
 const statusLabelToCode: Record<string, string> = {
   "접수 완료": "REGISTERED",
@@ -284,7 +286,7 @@ export default function EmergencyReceptionForm({
   React.useEffect(() => {
     const nextForm: EmergencyReceptionFormState = {
       ...initial,
-      departmentId: String(EMERGENCY_DEPARTMENT_ID),
+      departmentId: EMERGENCY_DEPARTMENT_ID,
       status: statusLabelToCode[initial.status] ?? initial.status,
       arrivalMode: arrivalLabelToCode[initial.arrivalMode] ?? initial.arrivalMode,
     };
@@ -405,7 +407,7 @@ export default function EmergencyReceptionForm({
   const handleSubmit = () => {
     const effectivePatientId = form.patientId.trim() || (isEditMode ? initial.patientId.trim() : "");
     const patientId = toOptionalNumber(effectivePatientId);
-    const departmentId = toOptionalNumber(form.departmentId);
+    const departmentId = toOptionalString(form.departmentId);
     const triageLevel = toOptionalNumber(form.triageLevel);
 
     if (!patientId || !departmentId || !triageLevel || !form.chiefComplaint.trim()) return;

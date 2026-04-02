@@ -20,7 +20,7 @@ import type {
   DoctorOption,
   PatientOption,
 } from "@/features/Reservations/ReservationTypes";
-import { fetchPatientsApi } from "@/lib/masterDataApi";
+import { fetchDepartmentsApi, fetchDoctorsApi, fetchPatientsApi } from "@/lib/masterDataApi";
 
 type InpatientReceptionFormState = {
   receptionNo: string;
@@ -56,22 +56,6 @@ const statusOptions = [
   { value: "ON_HOLD", label: "보류" },
   { value: "CANCELED", label: "취소" },
   { value: "INACTIVE", label: "비활성" },
-];
-
-const departmentOptions: DepartmentOption[] = [
-  { departmentId: 1, departmentName: "내과" },
-  { departmentId: 2, departmentName: "정형외과" },
-  { departmentId: 3, departmentName: "소아과" },
-  { departmentId: 4, departmentName: "이비인후과" },
-  { departmentId: 5, departmentName: "피부과" },
-];
-
-const doctorOptions: DoctorOption[] = [
-  { doctorId: 1, doctorName: "송태민", departmentId: 1 },
-  { doctorId: 2, doctorName: "이현석", departmentId: 2 },
-  { doctorId: 3, doctorName: "성숙희", departmentId: 3 },
-  { doctorId: 4, doctorName: "최효정", departmentId: 4 },
-  { doctorId: 5, doctorName: "홍예진", departmentId: 5 },
 ];
 
 function toOptionalNumber(value: string) {
@@ -118,6 +102,8 @@ export default function InpatientReceptionForm({
 
   const [form, setForm] = React.useState<InpatientReceptionFormState>(initial);
   const [patients, setPatients] = React.useState<PatientOption[]>([]);
+  const [departmentOptions, setDepartmentOptions] = React.useState<DepartmentOption[]>([]);
+  const [doctorOptions, setDoctorOptions] = React.useState<DoctorOption[]>([]);
   const [listError, setListError] = React.useState<string | null>(null);
 
   React.useEffect(() => {
@@ -129,9 +115,15 @@ export default function InpatientReceptionForm({
     const load = async () => {
       try {
         setListError(null);
-        const patientList = await fetchPatientsApi();
+        const [patientList, departments, doctors] = await Promise.all([
+          fetchPatientsApi(),
+          fetchDepartmentsApi(),
+          fetchDoctorsApi(),
+        ]);
         if (!mounted) return;
         setPatients(patientList);
+        setDepartmentOptions(departments);
+        setDoctorOptions(doctors);
       } catch (err) {
         if (!mounted) return;
         const message =
@@ -146,9 +138,9 @@ export default function InpatientReceptionForm({
   }, []);
 
   const getDoctorsByDepartment = (departmentId: string) => {
-    const deptId = Number(departmentId);
-    if (Number.isNaN(deptId)) return doctorOptions;
-    return doctorOptions.filter((d) => (d.departmentId ?? null) === deptId);
+    const normalizedDepartmentId = departmentId.trim();
+    if (!normalizedDepartmentId) return doctorOptions;
+    return doctorOptions.filter((d) => (d.departmentId ?? "") === normalizedDepartmentId);
   };
 
   const handleDepartmentChange = (value: string) => {
@@ -172,7 +164,7 @@ export default function InpatientReceptionForm({
 
   const handleSubmit = () => {
     const patientId = toOptionalNumber(form.patientId);
-    const departmentId = toOptionalNumber(form.departmentId);
+    const departmentId = toOptionalString(form.departmentId);
 
     if (!patientId || !departmentId || !form.admissionPlanAt.trim()) return;
 

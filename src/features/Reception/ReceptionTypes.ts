@@ -14,7 +14,7 @@ export interface Reception {
   patientId: number;
   patientName?: string | null;
   visitType: string;
-  departmentId: number;
+  departmentId: string;
   departmentName?: string | null;
   doctorId?: number | null;
   doctorName?: string | null;
@@ -42,7 +42,7 @@ export interface ReceptionForm {
   patientId?: number | null;
   patientName?: string | null;
   visitType: string;
-  departmentId?: number | null;
+  departmentId?: string | null;
   departmentName?: string | null;
   doctorId?: number | null;
   doctorName?: string | null;

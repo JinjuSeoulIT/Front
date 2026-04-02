@@ -50,16 +50,16 @@ const statusOptions = [
   { value: "CANCELED", label: "취소" },
 ];
 
+function toOptionalString(value: string) {
+  const trimmed = value.trim();
+  return trimmed.length === 0 ? undefined : trimmed;
+}
+
 function toOptionalNumber(value: string) {
   const trimmed = value.trim();
   if (!trimmed) return undefined;
   const parsed = Number(trimmed);
   return Number.isNaN(parsed) ? undefined : parsed;
-}
-
-function toOptionalString(value: string) {
-  const trimmed = value.trim();
-  return trimmed.length === 0 ? undefined : trimmed;
 }
 
 export default function ReceptionForm({
@@ -134,19 +134,18 @@ export default function ReceptionForm({
   }, []);
 
   const doctorsByDepartment = React.useMemo(() => {
-    const selectedDepartmentId = toOptionalNumber(form.departmentId);
+    const selectedDepartmentId = form.departmentId.trim();
     if (!selectedDepartmentId) return doctors;
     return doctors.filter(
-      (doctor) => (doctor.departmentId ?? null) === selectedDepartmentId
+      (doctor) => (doctor.departmentId ?? "") === selectedDepartmentId
     );
   }, [doctors, form.departmentId]);
  // 진료과를 선택하면 자동으로 진료과에 맞는 의사가 선택됨
   const handleSubmit = () => {
     if (!form.patientName.trim()) return;
-    const departmentId = toOptionalNumber(form.departmentId);
+    const departmentId = toOptionalString(form.departmentId);
     if (!departmentId) return;
-
-    const doctorId = toOptionalNumber(form.doctorId) ?? null;
+    const doctorId = toOptionalNumber(form.doctorId);
 
     onSubmit({
       receptionNo: isEditMode ? form.receptionNo.trim() : "",
@@ -155,7 +154,7 @@ export default function ReceptionForm({
       visitType: "OUTPATIENT",
       departmentId,
       departmentName: null,
-      doctorId,
+      doctorId: doctorId ?? null,
       doctorName: null,
       scheduledAt: toOptionalString(form.scheduledAt),
       arrivedAt: toOptionalString(form.arrivedAt),

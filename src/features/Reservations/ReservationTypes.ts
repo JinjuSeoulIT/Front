@@ -5,7 +5,7 @@ export interface Reservation {
   reservationNo: string;
   patientId: number;
   patientName?: string | null;
-  departmentId: number;
+  departmentId: string;
   departmentName?: string | null;
   doctorId?: number | null;
   doctorName?: string | null;
@@ -29,7 +29,7 @@ export type ReservationForm = {
   reservationNo: string;
   patientId?: number | null;
   patientName?: string | null;
-  departmentId: number;
+  departmentId: string;
   departmentName?: string | null;
   doctorId?: number | null;
   doctorName?: string | null;
@@ -44,14 +44,14 @@ export type PatientOption = {
 };
 
 export type DepartmentOption = {
-  departmentId: number;
+  departmentId: string;
   departmentName: string;
 };
 
 export type DoctorOption = {
   doctorId: number;
   doctorName: string;
-  departmentId?: number | null;
+  departmentId?: string | null;
 };
 
 export type ReservationSearchType =
