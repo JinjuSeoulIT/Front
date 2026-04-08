@@ -1,0 +1,95 @@
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: hospital-redis-auth-menu-staff
+    command: >
+      redis-server --appendonly yes --requirepass ${SPRING_REDIS_PASSWORD:-111111}
+    ports:
+      - "${REDIS_HOST_PORT:-6379}:6379"
+    volumes:
+      - redis-auth-menu-staff-data:/data
+    restart: unless-stopped
+
+  auth-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: hospital-auth-service
+    environment: &backend_common_env
+      SERVER_PORT: 8081
+      APP_SERVER_ROLE: auth
+      SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL:-jdbc:log4jdbc:oracle:thin:@//192.168.1.67:1521/XE}
+      SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME:-hospital}
+      SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD:-1111}
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: 6379
+      SPRING_DATA_REDIS_PASSWORD: ${SPRING_REDIS_PASSWORD:-111111}
+      SPRING_REDIS_HOST: redis
+      SPRING_REDIS_PORT: 6379
+      SPRING_REDIS_PASSWORD: ${SPRING_REDIS_PASSWORD:-111111}
+      SPRING_CACHE_TYPE: redis
+      APP_STORAGE_TYPE: ${APP_STORAGE_TYPE:-none}
+      APP_JWT_SECRET: ${APP_JWT_SECRET:-hospital-demo-jwt-secret-key-change-me-2026-hospital}
+      APP_JWT_EXPIRATION_MS: ${APP_JWT_EXPIRATION_MS:-28800000}
+      APP_AUTH_COOKIE_MAX_AGE_SECONDS: ${APP_AUTH_COOKIE_MAX_AGE_SECONDS:-28800}
+      APP_AUTH_SESSION_IDLE_SECONDS: ${APP_AUTH_SESSION_IDLE_SECONDS:-7200}
+      APP_AUTH_SESSION_ABSOLUTE_SECONDS: ${APP_AUTH_SESSION_ABSOLUTE_SECONDS:-43200}
+      APP_AUTH_INTROSPECTION_SECRET: ${APP_AUTH_INTROSPECTION_SECRET:-local-dev-introspection-secret-change-me}
+      APP_VERIFY_EMAIL_MOCK: ${APP_VERIFY_EMAIL_MOCK:-true}
+      APP_VERIFY_SMS_MOCK: ${APP_VERIFY_SMS_MOCK:-true}
+      APP_CORS_ALLOWED_ORIGIN_PATTERNS: ${APP_CORS_ALLOWED_ORIGIN_PATTERNS:-*}
+      JAVA_TOOL_OPTIONS: -Duser.timezone=UTC -Doracle.jdbc.timezoneAsRegion=false
+    depends_on:
+      - redis
+    expose:
+      - "8081"
+    restart: unless-stopped
+
+  menu-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: hospital-menu-service
+    environment:
+      <<: *backend_common_env
+      APP_SERVER_ROLE: menu
+    depends_on:
+      - redis
+    expose:
+      - "8081"
+    restart: unless-stopped
+
+  staff-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: hospital-staff-service
+    environment:
+      <<: *backend_common_env
+      APP_SERVER_ROLE: staff
+    depends_on:
+      - redis
+    expose:
+      - "8081"
+    restart: unless-stopped
+
+  frontend-gateway:
+    image: nginx:1.27-alpine
+    container_name: hospital-frontend-gateway
+    depends_on:
+      - auth-service
+      - menu-service
+      - staff-service
+    ports:
+      - "${GATEWAY_HOST_PORT:-5555}:5555"
+    environment:
+      GATEWAY_PORT: 5555
+      FRONTEND_UPSTREAM: ${FRONTEND_UPSTREAM:-host.docker.internal:3001}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - ./nginx/frontend-gateway.conf.template:/etc/nginx/templates/default.conf.template:ro
+    restart: unless-stopped
+
+volumes:
+  redis-auth-menu-staff-data:
